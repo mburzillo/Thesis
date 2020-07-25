@@ -5,3 +5,4 @@
 # But not these files...
 !.gitignore
 !README.md
+!all_40_tracts.Rmd

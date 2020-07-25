@@ -1,0 +1,62 @@
+---
+title: "all_40_tracts"
+author: "Maria Burzillo"
+date: "4/21/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(foreign)
+library(sf)
+library(shapefiles)
+library(tmap)
+```
+
+
+```{r}
+
+tracts_shape <- st_read("nhgis0003_1940_try2/US_tract_1940.shp")
+
+tm_shape(tracts_shape) +
+  tm_polygons(col = "white")
+
+```
+
+```{r}
+library(readr)
+nhgis0004_ds76_1940_tract <- read_csv("nhgis0004_ds76_1940_tract.csv")
+
+nhgis_1940_tract <- nhgis0004_ds76_1940_tract
+
+nhgis_1940_tract %>%
+  group_by(AREANAME) %>%
+  summarise(n = n()) %>%
+  separate(AREANAME, c("trash", "keep"), "IN ") %>%
+  select(city = keep) %>%
+  separate(city, c("city", "state")) %>%
+  group_by(city, state) %>%
+  summarise(n = n()) %>%
+  view()
+
+```
+
+```{r}
+nhgis0007_ds76_1940_tract %>%
+  separate(AREANAME, c("trash", "keep"), "IN ") %>%
+  select(city = keep) %>%
+  separate(city, c("city", "state")) %>%
+  group_by(city, state) %>%
+  summarise(n = n())
+
+
+  
+
+nhgis_1940_tract %>%
+  select(STATEA, COUNTYA, PRETRACTA, TRACTA, POSTTRCTA, AREANAME) %>%
+  group_by(STATEA, COUNTYA) %>%
+  summarise(n= n())
+
+```
+
