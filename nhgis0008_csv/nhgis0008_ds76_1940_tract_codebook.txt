@@ -1,0 +1,471 @@
+--------------------------------------------------------------------------------
+Codebook for NHGIS data file 'nhgis0008_ds76_1940_tract'
+--------------------------------------------------------------------------------
+ 
+Contents
+    - Data Summary
+    - Data Dictionary
+    - Citation and Use
+ 
+Additional documentation on NHGIS data sources is available at: 
+    https://www.nhgis.org/documentation/tabular-data 
+ 
+--------------------------------------------------------------------------------
+Data Summary
+--------------------------------------------------------------------------------
+ 
+Year:             1940
+Geographic level: Census Tract (by State--County)
+Dataset:          1940 Census: Population & Housing Data [Tracts & NY Health Areas: Major Cities & Surrounds]
+   NHGIS code:    1940_tPH_Major
+   NHGIS ID:      ds76
+ 
+Tables:
+ 
+1. Occupied Dwelling Units
+   Universe:    Occupied Dwelling Units
+   Source code: NT5
+   NHGIS code:  BVP
+ 
+2. Population per Occupied Dwelling Unit
+   Universe:    Occupied Dwelling Units
+   Source code: NT6
+   NHGIS code:  BVQ
+ 
+3. Total Occupied Dwelling Units
+   Universe:    Occupied Dwelling Units
+   Source code: NT12
+   NHGIS code:  BUE
+ 
+4. Total Dwelling Units
+   Universe:    Dwelling Units
+   Source code: NT26
+   NHGIS code:  BU1
+ 
+5. Occupied Dwelling Units by Tenure
+   Universe:    Occupied Dwelling Units
+   Source code: NT27
+   NHGIS code:  BU2
+ 
+6. Occupied Dwelling Units by Tenure by Race
+   Universe:    Occupied Dwelling Units
+   Source code: NT28
+   NHGIS code:  BU3
+ 
+7. Vacant Dwelling Units by Market Status
+   Universe:    Vacant Dwelling Units
+   Source code: NT29
+   NHGIS code:  BU4
+ 
+8. Dwelling Units by Type of Structure
+   Universe:    Dwelling Units
+   Source code: NT30
+   NHGIS code:  BU6
+ 
+9. Occupied Dwelling Units by Number of Occupants
+   Universe:    Occupied Dwelling Units
+   Source code: NT31
+   NHGIS code:  BU7
+ 
+10. Occupied Dwelling Units by Average Number of Persons per Room
+    Universe:    Occupied Dwelling Units
+    Source code: NT32
+    NHGIS code:  BU8
+ 
+11. Tenant Occupied Dwelling Units by Average Number of Persons per Room
+    Universe:    Tenant-Occupied Dwelling Units
+    Source code: NT33
+    NHGIS code:  BU9
+ 
+12. Number of Homes for Which Value was Reported
+    Universe:    Homes for Which Value was Reported
+    Source code: NT34
+    NHGIS code:  BVA
+ 
+13. Homes for Which Value was Reported by Reported Value
+    Universe:    Homes for Which Value was Reported
+    Source code: NT35
+    NHGIS code:  BVB
+ 
+14. Median Value of Homes for Which Value was Reported
+    Universe:    Homes for Which Value was Reported
+    Source code: NT36
+    NHGIS code:  BVC
+ 
+15. Homes that Reported Contract Monthly Rent
+    Universe:    Homes that Reported Contract Monthly Rent
+    Source code: NT37
+    NHGIS code:  BVD
+ 
+16. Homes by Contract Monthly Rent
+    Universe:    Reported Homes with Contract Monthly Rent
+    Source code: NT38
+    NHGIS code:  BVE
+ 
+17. Median Contract Monthly Rent
+    Universe:    Reported Homes with Contract Monthly Rent
+    Source code: NT39
+    NHGIS code:  BVF
+ 
+18. Total Homes that Reported Gross Monthly Rent
+    Universe:    Homes that Reported Gross Monthly Rent
+    Source code: NT40
+    NHGIS code:  BVH
+ 
+19. Homes by Gross Monthly Rent
+    Universe:    Reported Homes with Gross Monthly Rent
+    Source code: NT41
+    NHGIS code:  BVI
+ 
+20. Median Gross Monthly Rent
+    Universe:    Reported Homes with Gross Monthly Rent
+    Source code: NT42
+    NHGIS code:  BVJ
+ 
+21. Dwelling Units by State of Repair
+    Universe:    Dwelling Units
+    Source code: NT43
+    NHGIS code:  BVK
+ 
+22. Occupied Dwelling Units by State of Repair by Plumbing
+    Universe:    Occupied Dwelling Units Reporting State of Repair
+    Source code: NT44
+    NHGIS code:  BVL
+ 
+23. Occupied Dwelling Units by Radio Ownership
+    Universe:    Occupied Dwelling Units
+    Source code: NT45
+    NHGIS code:  BVM
+ 
+24. Occupied Dwelling Units by Refrigeration
+    Universe:    Occupied Dwelling Units
+    Source code: NT46
+    NHGIS code:  BVN
+ 
+25. Occupied Dwelling Units by Heating
+    Universe:    Occupied Dwelling Units
+    Source code: NT47
+    NHGIS code:  BVO
+ 
+--------------------------------------------------------------------------------
+Data Dictionary
+--------------------------------------------------------------------------------
+ 
+Context Fields 
+    GISJOIN:     GIS Join Match Code
+    YEAR:        Data File Year
+    STATE:       State Name
+    STATEA:      State Code
+    COUNTY:      County Name
+    COUNTYA:     County Code
+    PRETRACTA:   Census Tract Prefix Code
+    TRACTA:      Census Tract Code
+    POSTTRCTA:   Census Tract Suffix Code
+    AREANAME:    Area Name
+ 
+Table 1:     Occupied Dwelling Units
+Universe:    Occupied Dwelling Units
+Source code: NT5
+NHGIS code:  BVP
+    BVP001:      Total
+ 
+Table 2:     Population per Occupied Dwelling Unit
+Universe:    Occupied Dwelling Units
+Source code: NT6
+NHGIS code:  BVQ
+    BVQ001:      Population per occupied dwelling unit
+ 
+Table 3:     Total Occupied Dwelling Units
+Universe:    Occupied Dwelling Units
+Source code: NT12
+NHGIS code:  BUE
+    BUE001:      Total
+ 
+Table 4:     Total Dwelling Units
+Universe:    Dwelling Units
+Source code: NT26
+NHGIS code:  BU1
+    BU1001:      Total
+ 
+Table 5:     Occupied Dwelling Units by Tenure
+Universe:    Occupied Dwelling Units
+Source code: NT27
+NHGIS code:  BU2
+    BU2001:      Owner occupied
+    BU2002:      Tenant occupied
+ 
+Table 6:     Occupied Dwelling Units by Tenure by Race
+Universe:    Occupied Dwelling Units
+Source code: NT28
+NHGIS code:  BU3
+    BU3001:      Owner occupied >> White
+    BU3002:      Owner occupied >> Negro
+    BU3003:      Owner occupied >> Other non-white
+    BU3004:      Tenant occupied >> White
+    BU3005:      Tenant occupied >> Negro
+    BU3006:      Tenant occupied >> Other non-white
+ 
+Table 7:     Vacant Dwelling Units by Market Status
+Universe:    Vacant Dwelling Units
+Source code: NT29
+NHGIS code:  BU4
+    BU4001:      For sale or rent
+    BU4002:      Not for sale or rent
+ 
+Table 8:     Dwelling Units by Type of Structure
+Universe:    Dwelling Units
+Source code: NT30
+NHGIS code:  BU6
+    BU6001:      One-family detached
+    BU6002:      One-family attached
+    BU6003:      Two-family side by side
+    BU6004:      Two family other
+    BU6005:      Three-family
+    BU6006:      Four-family
+    BU6007:      One--four-family with business
+    BU6008:      Five--nine-family
+    BU6009:      Ten--nineteen-family
+    BU6010:      Twenty--family+
+    BU6011:      Other
+ 
+Table 9:     Occupied Dwelling Units by Number of Occupants
+Universe:    Occupied Dwelling Units
+Source code: NT31
+NHGIS code:  BU7
+    BU7001:      1-person
+    BU7002:      2-persons
+    BU7003:      3-persons
+    BU7004:      4-persons
+    BU7005:      5-persons
+    BU7006:      6-persons
+    BU7007:      7-persons
+    BU7008:      8-persons
+    BU7009:      9-persons
+    BU7010:      10-persons
+    BU7011:      11-persons
+ 
+Table 10:    Occupied Dwelling Units by Average Number of Persons per Room
+Universe:    Occupied Dwelling Units
+Source code: NT32
+NHGIS code:  BU8
+    BU8001:      Under .51
+    BU8002:      .51 - .75
+    BU8003:      .76 - 1.00
+    BU8004:      1.01 - 1.50
+    BU8005:      1.51 - 2.00
+    BU8006:      2.01+
+    BU8007:      Not reporting
+ 
+Table 11:    Tenant Occupied Dwelling Units by Average Number of Persons per Room
+Universe:    Tenant-Occupied Dwelling Units
+Source code: NT33
+NHGIS code:  BU9
+    BU9001:      Under .51
+    BU9002:      .51 - .75
+    BU9003:      .76 - 1.00
+    BU9004:      1.01 - 1.50
+    BU9005:      1.51 - 2.00
+    BU9006:      2.01+
+    BU9007:      Not reporting
+ 
+Table 12:    Number of Homes for Which Value was Reported
+Universe:    Homes for Which Value was Reported
+Source code: NT34
+NHGIS code:  BVA
+    BVA001:      Total
+ 
+Table 13:    Homes for Which Value was Reported by Reported Value
+Universe:    Homes for Which Value was Reported
+Source code: NT35
+NHGIS code:  BVB
+    BVB001:      Under $500
+    BVB002:      $500 - $699
+    BVB003:      $700 - $999
+    BVB004:      $1000 - $1499
+    BVB005:      $1500 - $1999
+    BVB006:      $2000 - $2499
+    BVB007:      $2500 - $2999
+    BVB008:      $3000 - $3999
+    BVB009:      $4000 - $4999
+    BVB010:      $5000 - $5999
+    BVB011:      $6000 - $7499
+    BVB012:      $7500 - $9999
+    BVB013:      $10000 - $14999
+    BVB014:      $15000 - $19999
+    BVB015:      $20000+
+ 
+Table 14:    Median Value of Homes for Which Value was Reported
+Universe:    Homes for Which Value was Reported
+Source code: NT36
+NHGIS code:  BVC
+    BVC001:      Median value
+ 
+Table 15:    Homes that Reported Contract Monthly Rent
+Universe:    Homes that Reported Contract Monthly Rent
+Source code: NT37
+NHGIS code:  BVD
+    BVD001:      Total
+ 
+Table 16:    Homes by Contract Monthly Rent
+Universe:    Reported Homes with Contract Monthly Rent
+Source code: NT38
+NHGIS code:  BVE
+    BVE001:      Under $5
+    BVE002:      $5 - $6
+    BVE003:      $7 - $9
+    BVE004:      $10 - $14
+    BVE005:      $15 - $19
+    BVE006:      $20 - $24
+    BVE007:      $25 - $29
+    BVE008:      $30 - $39
+    BVE009:      $40 - $49
+    BVE010:      $50 - $59
+    BVE011:      $60 - $74
+    BVE012:      $75 - $99
+    BVE013:      $100 - $149
+    BVE014:      $150 - $199
+    BVE015:      $200+
+ 
+Table 17:    Median Contract Monthly Rent
+Universe:    Reported Homes with Contract Monthly Rent
+Source code: NT39
+NHGIS code:  BVF
+    BVF001:      Median contract monthly rent
+ 
+Table 18:    Total Homes that Reported Gross Monthly Rent
+Universe:    Homes that Reported Gross Monthly Rent
+Source code: NT40
+NHGIS code:  BVH
+    BVH001:      Total
+ 
+Table 19:    Homes by Gross Monthly Rent
+Universe:    Reported Homes with Gross Monthly Rent
+Source code: NT41
+NHGIS code:  BVI
+    BVI001:      Under $5
+    BVI002:      $5 - $6
+    BVI003:      $7 - $9
+    BVI004:      $10 - $14
+    BVI005:      $15 - $19
+    BVI006:      $20 - $24
+    BVI007:      $25 - $29
+    BVI008:      $30 - $39
+    BVI009:      $40 - $49
+    BVI010:      $50 - $59
+    BVI011:      $60 - $74
+    BVI012:      $75 - $99
+    BVI013:      $100+
+ 
+Table 20:    Median Gross Monthly Rent
+Universe:    Reported Homes with Gross Monthly Rent
+Source code: NT42
+NHGIS code:  BVJ
+    BVJ001:      Median gross monthly rent
+ 
+Table 21:    Dwelling Units by State of Repair
+Universe:    Dwelling Units
+Source code: NT43
+NHGIS code:  BVK
+    BVK001:      Not needing major repairs
+    BVK002:      Needing major repairs
+    BVK003:      Not reporting
+ 
+Table 22:    Occupied Dwelling Units by State of Repair by Plumbing
+Universe:    Occupied Dwelling Units Reporting State of Repair
+Source code: NT44
+NHGIS code:  BVL
+    BVL001:      Not needing major repairs >> Bath and toilet
+    BVL002:      Not needing major repairs >> Toilet, no bath
+    BVL003:      Not needing major repairs >> Water, no toilet
+    BVL004:      Not needing major repairs >> No water
+    BVL005:      Needing major repairs >> Bath and toilet
+    BVL006:      Needing major repairs >> Toilet, no bath
+    BVL007:      Needing major repairs >> Water, no toilet
+    BVL008:      Needing major repairs >> No water
+ 
+Table 23:    Occupied Dwelling Units by Radio Ownership
+Universe:    Occupied Dwelling Units
+Source code: NT45
+NHGIS code:  BVM
+    BVM001:      Radio
+    BVM002:      No radio
+    BVM003:      Not reporting
+ 
+Table 24:    Occupied Dwelling Units by Refrigeration
+Universe:    Occupied Dwelling Units
+Source code: NT46
+NHGIS code:  BVN
+    BVN001:      Mechanical
+    BVN002:      Ice
+    BVN003:      Other
+    BVN004:      None
+    BVN005:      Not reporting
+ 
+Table 25:    Occupied Dwelling Units by Heating
+Universe:    Occupied Dwelling Units
+Source code: NT47
+NHGIS code:  BVO
+    BVO001:      Central heat
+    BVO002:      No central heat
+    BVO003:      Not reporting
+ 
+--------------------------------------------------------------------------------
+Citation and Use of NHGIS Data
+--------------------------------------------------------------------------------
+ 
+All persons are granted a limited license to use this documentation and the
+accompanying data, subject to the following conditions:
+
+* REDISTRIBUTION: You will not redistribute the data without permission.
+
+  You may publish a subset of the data to meet journal requirements for accessing 
+  data related to a particular publication. Contact us for permission for any other 
+  redistribution; we will consider requests for free and commercial redistribution.
+
+* CITATION: You will cite NHGIS appropriately.
+
+    * Publications and research reports employing NHGIS data (either tabular or GIS) 
+      should include the following citation:
+
+        Steven Manson, Jonathan Schroeder, David Van Riper, and Steven Ruggles. 
+        IPUMS National Historical Geographic Information System: Version 14.0 
+        [Database]. Minneapolis, MN: IPUMS. 2019. 
+        http://doi.org/10.18128/D050.V14.0
+
+    * Publications and research reports employing school attendance areas data 
+      (either tabular or GIS) must cite it appropriately. The citation should 
+      include the following:
+
+        The College of William and Mary and the Minnesota Population Center.
+        School Attendance Boundary Information System (SABINS): Version 1.0.
+        Minneapolis, MN: University of Minnesota 2011.
+
+    * For policy briefs, online resources, or articles in the popular press, we 
+      recommend that you cite the use of NHGIS data as follows:
+
+        IPUMS NHGIS, University of Minnesota, www.nhgis.org.
+
+    * If possible, citations involving school attendance areas should also include
+      the URL for the SABINS site:
+
+        http://www.sabinsdata.org/.
+
+These terms of use are a legally binding agreement. You can use the data only in 
+accordance with these terms, and any other use is a violation of the agreement. 
+Violations may result in revocation of the agreement and prohibition from using other 
+IPUMS data. If IPUMS or our partners are harmed from your violation, you are 
+responsible for all damages, including reasonable attorney's fees and expenses.
+        
+In addition, we request that users send us a copy of any publications, research
+reports, or educational material making use of the data or documentation.
+
+Send electronic material to: nhgis@umn.edu
+
+Printed matter should be sent to:
+
+    IPUMS NHGIS
+    Institute for Social Research and Data Innovation
+    University of Minnesota
+    50 Willey Hall
+    225 19th Ave S
+    Minneapolis, MN 55455

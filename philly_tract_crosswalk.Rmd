@@ -1,0 +1,105 @@
+---
+title: "Philly Tract Crosswalk"
+author: "Maria Burzillo"
+date: "4/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+```
+
+```{r}
+
+first_try_penn <- read_csv("~/Desktop/first_try_penn.csv")
+
+penn_1950_holc_intersect <- read_csv("~/Desktop/penn_1950_holc_intersect.csv")
+
+
+```
+
+```{r}
+
+penn <- first_try_penn %>%
+  select(TRACTID_50 = TRACTID, TOTALPOP_50 = TOTALPOP, area_50, TR42_D90_, TR42_D90_I, area_90, area_inter, inter_to_90_area_ratio) %>%
+  mutate(weighted_50_pop = inter_to_90_area_ratio * TOTALPOP_50)
+
+penn %>%
+  group_by(TR42_D90_) %>%
+  summarise(n=n()) %>%
+  arrange(n)
+
+
+penn_sum <- penn  %>%
+  group_by(TR42_D90_) %>%
+  summarise(sum_weighted_50_pop = sum(weighted_50_pop),
+            n = n())
+```
+
+```{r}
+penn %>%
+  filter(TR42_D90_ == 2247)
+```
+
+```{r}
+holc_1950 <- penn_1950_holc_intersect %>%
+  select(TRACTID_50 = TRACTID, area_50, name_holc = NAME, holc_num = GRADE, holc_letter = HOLCLETTER, area_holc, area_inter) %>%
+  mutate(ratio_area_holc_to_area_50 = area_inter/area_50) %>%
+  mutate(weighted_holc_50 = ratio_area_holc_to_area_50 * holc_num) 
+
+# add another grade where values not within (1,4) are assigned zero so they will not be weighted
+
+holc_1950$alt_grade_num <- ifelse(holc_1950$holc_num %in% c(1,2,3,4), holc_1950$holc_num, 0)
+holc_1950$indicator_bad_num <- ifelse(holc_1950$holc_num %in% c(1,2,3,4), 0, 1)
+
+holc_1950 <- holc_1950 %>%
+  # new area to base calc off of for ratios if the area has "bad" grade
+  mutate(alt_ratio_area = area_inter/(area_50 - (indicator_bad_num * area_inter)),
+    alt_weight = alt_ratio_area * alt_grade_num )
+
+holc_1950_sum <- holc_1950 %>%
+  group_by(TRACTID_50) %>%
+  summarise(sum_weighted_holc_50 = sum(weighted_holc_50),
+            ceiling_holc_50 = ceiling(sum_weighted_holc_50),
+            alt_weighted = sum(alt_weight),
+            alt_ceiling = ceiling(alt_weighted))
+
+holc_1950_sum %>%
+  group_by(alt_ceiling) %>%
+  summarise(n = n())
+
+holc_1950_sum %>%
+  filter(alt_ceiling == 5) %>%
+  view()
+
+range(holc_1950_sum$alt_weighted)
+
+range(holc_1950$ratio_area_holc_to_area_50)
+range(holc_1950$weighted_holc_50)
+range(holc_1950$ceiling_holc_50)
+
+# red = continuous grade, blue  ceiling
+
+holc_1950_sum %>%
+  ggplot() +
+  geom_histogram(aes(x = sum_weighted_holc_50), fill = "red", alpha = .5) +
+  geom_histogram(aes(x = ceiling_holc_50), fill = "blue", alpha = .5)
+
+holc_1950 %>%
+  group_by(name_holc) %>%
+  summarise(mean_holc = mean(holc_num)) %>%
+  ggplot()+
+  geom_histogram(aes(x = mean_holc))
+```
+
+```{r}
+holc_1950 %>%
+  filter(TRACTID_50 == "35-XX")
+```
+
+```{r}
+
+```
+
