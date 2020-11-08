@@ -1,0 +1,82 @@
+---
+title: "Demographic and Tract Merge"
+author: "Maria Burzillo"
+date: "11/8/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readr)
+library(rstanarm)
+```
+
+```{r import data, include = FALSE}
+
+nhgis0019_ds92_1960_tract <- read_csv("Demographic Data/nhgis0019_csv/nhgis0019_ds92_1960_tract.csv")
+
+# rename 
+
+race_1960_demo <- nhgis0019_ds92_1960_tract
+
+```
+
+```{r merge data, include = FALSE}
+
+phoenix_tract_grade_demo <- left_join(phoenix_tract_grades, race_1960_demo, by = "GISJOIN")
+
+phoenix_tract_grade_demo$tot_persons <- phoenix_tract_grade_demo$CA4001
+
+```
+
+
+```{r calculating proportions, include = FALSE}
+
+#Table 2:     Total Nonwhite Population
+#Universe:    Nonwhite Persons
+#Source code: NT62
+#NHGIS code:  B9T
+#    B9T001:      Total
+ 
+#Table 3:     Population by Race [from printed report]
+#Universe:    Persons
+#Source code: NBT5
+#NHGIS code:  B7B
+#    B7B001:      White
+#    B7B002:      Negro
+#    B7B003:      Other races
+
+phoenix_tract_grade_demo$prop_non_white <- phoenix_tract_grade_demo$B9T001 / phoenix_tract_grade_demo$tot_persons
+
+phoenix_tract_grade_demo$prop_white <- phoenix_tract_grade_demo$B7B001/phoenix_tract_grade_demo$tot_persons
+
+phoenix_tract_grade_demo$prop_black <- phoenix_tract_grade_demo$B7B002/phoenix_tract_grade_demo$tot_persons
+
+phoenix_tract_grade_demo$prop_other <- phoenix_tract_grade_demo$B7B003/phoenix_tract_grade_demo$tot_persons
+ 
+phoenix_tract_grade_demo <- phoenix_tract_grade_demo %>%
+  mutate(pct_white = 100 * prop_white,
+         pct_black = 100 * prop_black,
+         pct_other = 100 * prop_other,
+         pct_non_white = 100 * prop_non_white)
+
+
+phoenix_tract_grade_demo %>%
+  mutate(prop_non_white_calc = prop_other + prop_black) %>%
+  select(prop_non_white, prop_non_white_calc)
+
+```
+
+```{r}
+phoenix_tract_grade_demo %>%
+  ggplot(aes(x = pct_black, y= rounded_tract_holc_grade)) +
+  geom_point() +
+  geom_smooth()
+  
+```
+
+```{r}
+m1 <- stan_glm(phoenix_tract_grade_demo$rounded_tract_holc_grade ~ phoenix_tract_grade_demo$pct_black)
+print(m1,3)
+```
+
