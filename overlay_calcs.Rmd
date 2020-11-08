@@ -1,0 +1,52 @@
+---
+title: "Overlay Calcs"
+author: "Maria Burzillo"
+date: "11/8/2020"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+```
+
+```{r import data, include = FALSE}
+phoenix_overlay <- read_csv("Overlay Files from QGIS/phoenix_overlay.csv")
+
+```
+
+```{r assign HOLC grades a number, include = FALSE}
+
+# create new var and assign holc_grade_num NA value
+phoenix_overlay$holc_grade_num <- NA
+
+phoenix_overlay$holc_grade_num[phoenix_overlay$holc_grade == "A"] <- 1
+phoenix_overlay$holc_grade_num[phoenix_overlay$holc_grade == "B"] <- 2
+phoenix_overlay$holc_grade_num[phoenix_overlay$holc_grade == "C"] <- 3
+phoenix_overlay$holc_grade_num[phoenix_overlay$holc_grade == "D"] <- 4
+
+
+
+```
+
+```{r create weighted grade}
+
+# create weighted_holc_num as the product of the intersect_over_tract (proportion of the tract taken up by the intersect area) and the holc grade number value
+
+phoenix_overlay$weighted_holc_num <- phoenix_overlay$holc_grade_num * phoenix_overlay$intersect_over_tract
+
+```
+
+```{r}
+
+# now, for each census tract, we want to add up all of the weighted holc nums 
+
+phoenix_tract_grades <- phoenix_overlay %>%
+  group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2) %>%
+  summarise(area_accounted_for = sum(intersect_over_tract),
+            weighted_tract_holc_grade = sum(weighted_holc_num)/area_accounted_for,
+            rounded_tract_holc_grade = round(weighted_tract_holc_grade,0))
+
+```
+
