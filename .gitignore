@@ -1,3 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
 
-# Ignore everything
+
 *
+
+!*.Rmd
+!all_40_tracts.Rmd

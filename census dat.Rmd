@@ -1,0 +1,25 @@
+---
+title: "census data"
+author: "Maria Burzillo"
+date: "4/9/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ipumsr)
+```
+
+
+```{r}
+
+if (!require("ipumsr")) stop("Reading IPUMS data into R requires the ipumsr package. It can be installed using the following command: install.packages('ipumsr')")
+
+ddi <- read_ipums_ddi("usa_00001.dat")
+data <- read_ipums_micro(ddi)
+
+
+
+```
+
+

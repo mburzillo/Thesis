@@ -1,0 +1,441 @@
+---
+title: "ipums_40_cutoff"
+author: "Maria Burzillo"
+date: "4/26/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(ipumsr)
+library(readxl)
+```
+
+```{r original}
+
+# load in the data file paths
+
+cutoff_one_percent_file <- "/Users/mariaburzillo/Desktop/Thesis/thesis/usa_00003.dat"
+
+cutoff_ddi_one_percent_file <- "/Users/mariaburzillo/Desktop/Thesis/thesis/ddi_usa_00003_one_percent.xml"
+
+cutoff_five_percent_file <- "/Users/mariaburzillo/Desktop/Thesis/thesis/usa_00004.dat"
+
+cutoff_ddi_five_percent_file <- "/Users/mariaburzillo/Desktop/Thesis/thesis/ddi_usa_00004_five_percent.xml"
+
+bad_city_correspondence <- read_excel("~/Desktop/Thesis/bad__city_correspondence.xlsx")
+
+# load in the data
+
+cutoff_ddi_1 <- read_ipums_ddi(cutoff_ddi_one_percent_file)
+
+cutoff_data_1 <- read_ipums_micro(cutoff_ddi_one_percent_file, data_file = cutoff_one_percent_file)
+
+cutoff_ddi_5 <- read_ipums_ddi(cutoff_ddi_five_percent_file)
+
+cutoff_data_5 <- read_ipums_micro(cutoff_ddi_five_percent_file, data_file = cutoff_five_percent_file)
+
+
+```
+
+```{r city_name_correspondence}
+
+city_name_correspondence <- bad_city_correspondence %>%
+  separate(`CITY City`, c("CITY", "cityname"), sep = 4) %>%
+  mutate(CITY_no_0 = NA)
+
+
+for (x in 1: nrow(city_name_correspondence)) {
+  city_name = city_name_correspondence$CITY[x]
+  print(city_name)
+  for (i in 1:3) {
+    if (substr(city_name, 1,1) == "0") {
+      city_name = substr(city_name, 2, nchar(city_name))
+      print(city_name)
+      city_name_correspondence$CITY_no_0[x] = city_name
+    }
+    else {
+      city_name_correspondence$CITY_no_0[x] = city_name
+    }
+  }
+}
+
+city_name_correspondence
+
+
+
+
+```
+
+
+```{r}
+
+# define year sub-sets for 1% samples
+
+thirty <- cutoff_data_1 %>%
+  filter(YEAR == 1930)
+
+forty <- cutoff_data_1 %>%
+  filter(YEAR == 1940)
+
+fifty <- cutoff_data_1 %>%
+  filter(YEAR == 1950)
+
+sixty <- cutoff_data_1 %>%
+  filter(YEAR == 1960)
+
+# define year sub-sets for 5% samples
+
+thirty_5 <- cutoff_data_5 %>%
+  filter(YEAR == 1930)
+
+sixty_5 <- cutoff_data_5 %>%
+  filter(YEAR == 1960)
+
+
+thirty_sub <- thirty %>%
+  filter(CITY != 0) %>%
+  head(50)
+
+thirty_sub <- sample_n(filter(thirty, CITY != 0), 100)
+
+#write.csv(thirty_sub, "example_1930_data.csv")
+
+#write.csv(thirty, "1930_data.csv")
+
+
+
+```
+
+
+
+```{r city}
+
+#each observation is a person
+
+pop_thirty <- thirty %>%
+  filter(CITY != 0) %>%
+  mutate(weighted_person = PERWT/100) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(weighted_pop_1_percent = sum(weighted_person)) %>%
+  mutate(weighted_pop = 100 * weighted_pop_1_percent)
+
+pop_forty <- forty %>%
+  filter(CITY != 0) %>%
+  mutate(weighted_person = PERWT/100) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(weighted_pop_1_percent = sum(weighted_person)) %>%
+  mutate(weighted_pop = 100 * weighted_pop_1_percent)
+
+pop_fifty <- fifty %>%
+  filter(CITY != 0) %>%
+  mutate(weighted_person = PERWT/100) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(weighted_pop_1_percent = sum(weighted_person)) %>%
+  mutate(weighted_pop = 100 * weighted_pop_1_percent)
+
+pop_sixty <- sixty %>%
+  filter(CITY != 0) %>%
+  mutate(weighted_person = PERWT/100) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(weighted_pop_1_percent = sum(weighted_person)) %>%
+  mutate(weighted_pop = 100 * weighted_pop_1_percent)
+
+pop_thirty_5 <- thirty_5 %>%
+  filter(CITY != 0) %>%
+  mutate(weighted_person = PERWT/100) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(weighted_pop_1_percent = sum(weighted_person)) %>%
+  mutate(weighted_pop = 20 * weighted_pop_1_percent)
+
+
+
+# 737 cities that have populaiton below 40,000:
+
+pop_thirty %>%
+  filter(weighted_pop < 40000) %>%
+  nrow()
+
+# 312 cities between the 20-60 range
+
+pop_thirty %>%
+  filter(weighted_pop < 60000 & weighted_pop > 20000) %>%
+  nrow()
+
+# 128 cities between 30-50
+
+pop_thirty %>%
+  filter(weighted_pop < 50000 & weighted_pop > 30000)
+
+### SAME THING BUT WITH 5% SAMPLE
+
+pop_thirty_5 <- thirty_5 %>%
+  mutate(weighted_person = PERWT/100) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(weighted_pop_1_percent = sum(weighted_person)) %>%
+  mutate(weighted_pop = 20 * weighted_pop_1_percent)
+
+
+# 734 cities that have populaiton below 40,000:
+
+pop_thirty_5 %>%
+  filter(weighted_pop < 40000) %>%
+  nrow()
+
+# 315 cities here between the 20-60 range
+
+pop_thirty_5 %>%
+  filter(weighted_pop < 60000 & weighted_pop > 20000) %>%
+  nrow()
+
+# 116 cities between 30-50
+
+pop_thirty_5 %>%
+  filter(weighted_pop < 50000 & weighted_pop > 30000)
+
+pop_thirty %>%
+  filter(CITY == 810)
+
+pop_forty %>%
+  filter(CITY == 810)
+
+
+```
+
+```{r citypop}
+
+# 848 cities < 40k
+
+pop_thirty %>%
+  filter(CITYPOP < 40000/100) %>%
+  nrow()
+
+# 312 cities between the 20-60 range
+
+pop_thirty %>%
+  filter(CITYPOP < 60000/100 & CITYPOP > 20000/100) %>%
+  nrow()
+
+# 116 cities between 30-50
+
+pop_thirty_30_50 <- pop_thirty %>%
+  filter(CITYPOP < 50000/100 & CITYPOP > 30000/100)
+
+pop_forty_30_50 <- pop_forty %>%
+  filter(CITYPOP < 50000/100 & CITYPOP > 30000/100)
+
+pop_fifty_30_50 <- pop_fifty %>%
+  filter(CITYPOP < 50000/100 & CITYPOP > 30000/100)
+
+pop_sixty_30_50 <- pop_sixty %>%
+  filter(CITYPOP < 50000/100 & CITYPOP > 30000/100)
+
+pop_thirty_5_30_50 <- pop_thirty_5 %>%
+  filter(CITYPOP < 50000/100 & CITYPOP > 30000/100)
+
+
+
+city_name_correspondence_2 <- city_name_correspondence %>%
+  mutate(CITY_2 = as.integer(CITY_no_0))
+
+
+
+
+```
+
+```{r exporting_data}
+
+pop_thirty_30_50_names <- left_join(pop_thirty_30_50, city_name_correspondence_2, by = c("CITY" = "CITY_2")) %>%
+  mutate(pop = 100 * CITYPOP)
+
+pop_forty_30_50_names <- left_join(pop_forty_30_50, city_name_correspondence_2, by = c("CITY" = "CITY_2")) %>%
+  mutate(pop = 100 * CITYPOP)
+
+pop_fifty_30_50_names <- left_join(pop_fifty_30_50, city_name_correspondence_2, by = c("CITY" = "CITY_2")) %>%
+  mutate(pop = 100 * CITYPOP)
+
+pop_sixty_30_50_names <- left_join(pop_sixty_30_50, city_name_correspondence_2, by = c("CITY" = "CITY_2")) %>%
+  mutate(pop = 100 * CITYPOP)
+
+pop_thirty_5_30_50_names <- left_join(pop_thirty_5_30_50, city_name_correspondence_2, by = c("CITY" = "CITY_2")) %>%
+  mutate(pop = 100 * CITYPOP)
+
+# 116
+nrow(pop_thirty_30_50_names)
+# 8
+nrow(pop_forty_30_50_names)
+# 2
+nrow(pop_fifty_30_50_names)
+# 0
+nrow(pop_sixty_30_50_names)
+
+pop_thirty_30_50_names %>%
+  filter(pop < 40000)
+
+pop_thirty_5_30_50_names %>%
+  filter(pop < 40000)
+
+cities_1930_30k_to_50k <- pop_thirty_30_50_names %>%
+  select(CITY, cityname, CITYPOP, pop)
+
+write.csv(cities_1930_30k_to_50k, "cities_1930_30k_to_50k.csv")
+
+pop_thirty_30_40 <- pop_thirty_30_50_names %>%
+  filter(pop < 40000)
+
+pop_thirty_30_40$in_richmond <- rep(NA, 71)
+pop_thirty_30_40$in_richmond <- c(0,0,0,0,0,0,0,0,0,0,
+                                  0,0,0,0,0,0,0,0,0,0,
+                                  0,0,0,0,0,0,0,0,0,0,
+                                  0,0,0,0,0,0,0,0,1,0,
+                                  0,0,0,0,0,0,0,0,0,1,
+                                  0,0,0,0,0,0,0,0,0,0,
+                                  0,0,0,1,0,0,0,0,0,0,
+                                  0)
+
+pop_thirty_30_40$in_census_40 <- rep(NA, 71)
+pop_thirty_30_40$in_census_40 <- c(1,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,1,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,0,0,0,0,
+                                   0,1,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,1,0,0,0,
+                                   0,0,0,0,0,0,0,1,0,0,
+                                   0)
+
+pop_thirty_30_40$in_census_50 <- rep(NA, 71)
+pop_thirty_30_40$in_census_50 <- c(1,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,1,0,0,0,0,0,0,
+                                   0,0,1,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,0,0,0,1,
+                                   0,1,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,1,0,0,0,
+                                   0,0,0,1,0,1,1,1,1,0,
+                                   0)
+                                
+pop_thirty_30_40$in_census_60 <- rep(NA, 71)
+pop_thirty_30_40$in_census_60 <- c(1,1,0,0,0,0,0,0,0,0,
+                                   1,0,0,1,0,1,0,0,1,1,
+                                   0,1,1,0,0,0,1,0,0,0,
+                                   0,0,1,0,0,1,0,0,0,1,
+                                   1,1,1,0,0,0,0,0,1,1,
+                                   0,1,1,1,1,1,1,0,0,1,
+                                   0,0,1,1,0,1,1,1,0,0,
+                                   0)
+
+
+pop_thirty_40_50 <- pop_thirty_30_50_names %>%
+  filter(pop > 40000)
+
+pop_thirty_40_50$in_richmond <- c(1,1,1,1,0,1,0,0,1,1,0,1,1,1,0,1,1,0,1,0,
+  1,1,1,1,0,1,1,1,1,1,0,1,0,1,0,1,1,0,0,1,
+  1,1,0,0,1)
+
+pop_thirty_40_50$in_census_40 <- rep(NA, 45)
+pop_thirty_40_50$in_census_40 <- c(0,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,0,0,0,1,
+                                   0,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0)
+
+pop_thirty_40_50$in_census_50 <- rep(NA, 45)
+pop_thirty_40_50$in_census_50 <- c(0,0,0,0,1,1,1,1,0,0,
+                                   0,0,0,1,0,0,0,0,0,1,
+                                   0,0,0,0,0,0,0,0,0,0,
+                                   0,0,0,0,0,0,1,0,0,0,
+                                   0,0,0,0,0)
+                                
+pop_thirty_40_50$in_census_60 <- rep(NA, 45)
+pop_thirty_40_50$in_census_60 <- c(0,1,0,0,1,1,1,1,1,1,
+                                   1,0,0,1,0,0,0,0,1,1,
+                                   1,1,1,0,1,1,1,0,0,0,
+                                   1,1,1,0,0,0,1,1,1,1,
+                                   0,1,1,0,1)
+
+
+
+
+
+
+
+
+# 5 cities 30-40 with 40 census tracts
+sum(pop_thirty_30_40$in_census_40)
+
+# 11 cities 30-40 with 50 census tracts
+sum(pop_thirty_30_40$in_census_50)
+
+# 30 cities 30-40 with 60 census tracts
+sum(pop_thirty_30_40$in_census_60)
+
+
+
+
+# 1 cities 40_50 with 40 census tracts
+sum(pop_thirty_40_50$in_census_40)
+
+# 7 cities 40_50 with 50 census tracts
+sum(pop_thirty_40_50$in_census_50)
+
+# 27 cities 40_50 with 60 census tracts
+sum(pop_thirty_40_50$in_census_60)
+
+
+```
+
+```{r potential_sample_below_cutoff}
+
+##### to be in sample below cutoff, need to be in 30-40 range, not in Richhmond
+
+# 5 census tracts for 40
+
+pop_thirty_30_40 %>%
+  filter(in_richmond == 0) %>%
+  filter(in_census_40 == 1)
+
+# 10 census tracts for 50
+
+pop_thirty_30_40 %>%
+  filter(in_richmond == 0) %>%
+  filter(in_census_50 == 1)
+
+
+# 28 census tracts for 60
+
+pop_thirty_30_40 %>%
+  filter(in_richmond == 0) %>%
+  filter(in_census_60 == 1) %>%
+  select(CITY, cityname, pop, in_richmond, in_census_40, in_census_50, in_census_60) %>%
+  view()
+
+```
+
+
+```{r potential_sample_above_cutoff}
+
+##### to be in sample below cutoff, need to be in 30-40 range, in Richhmond
+
+# 0 census tracts for 40
+
+pop_thirty_40_50 %>%
+  filter(in_richmond == 1) %>%
+  filter(in_census_40 == 1)
+
+# 3 census tracts for 50
+
+pop_thirty_40_50 %>%
+  filter(in_richmond == 1) %>%
+  filter(in_census_50 == 1)
+
+
+# 16 census tracts for 60
+
+pop_thirty_40_50 %>%
+  filter(in_richmond == 1) %>%
+  filter(in_census_60 == 1)%>%
+  select(CITY, cityname, pop, in_richmond, in_census_40, in_census_50, in_census_60) %>%
+  view()
+
+```
+

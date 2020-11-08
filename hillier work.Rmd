@@ -1,0 +1,83 @@
+---
+title: "Hillier_work"
+author: "Maria Burzillo"
+date: "4/5/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(foreign)
+library(sf)
+library(shapefiles)
+library(tmap)
+```
+
+```{r}
+tracts_shape <- st_read("HOLC_Hillier/1950_tracts.shp")
+holc_shape <- st_read("HOLC_Hillier/HOLC_1937.shp")
+mortgages_shape <- st_read("HOLC_Hillier/Mortgages.shp")
+philly_va <- st_read("PAPhiladelphia1937/cartodb-query.shp")
+philly_1990_census_tracts <- st_read("Philly_1990_tract/tr42_d90.shp")
+```
+
+```{r}
+
+range(mortgages_shape$Year)
+
+```
+
+
+
+```{r}
+tm_shape(tracts_shape) +
+  tm_polygons(col = "white") +
+  tm_shape(holc_shape) +
+  tm_polygons(col = "HOLCLETTER", alpha = .75, border.col =  NULL)
+```
+
+```{r}
+tm_shape(holc_shape) +
+  tm_polygons(col = "HOLCLETTER") +
+  tm_shape(mortgages_shape) +
+  tm_dots()
+```
+
+```{r}
+tm_shape(tracts_shape) +
+  tm_polygons(col = "white") +
+tm_shape(mortgages_shape) +
+  tm_dots(col = "Irate")
+```
+
+
+
+```{r}
+
+# 1937 map made by Richmond significantly different than the one used by Hillier...would the analysis differ? would be interesting to test...
+
+tm_shape(philly_va) +
+  tm_polygons(col = "holc_grade") 
+```
+
+```{r}
+tm_shape(tracts_shape) +
+  tm_polygons(col = "white")+
+  tm_shape(philly_va) +
+  tm_polygons(col = "holc_grade", border.col = NULL, alpha = .65) 
+
+```
+```{r}
+# 1950 and 1990 tracts
+
+tm_shape(tracts_shape) +
+  tm_polygons(col = "white", border.col = "blue") +
+  tm_shape(philly_1990_census_tracts) +
+  tm_polygons(col = "white", border.col = "red")
+```
+```{r}
+tm_shape(philly_1990_census_tracts) +
+  tm_polygons()
+```
+
