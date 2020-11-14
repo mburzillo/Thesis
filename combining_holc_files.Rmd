@@ -1,0 +1,46 @@
+---
+title: "Combining HOLC Files"
+author: "Maria Burzillo"
+date: "11/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(sf)
+```
+
+```{r import HOLC shapefiles, include = FALSE}
+
+phoenix_shp <- st_read("Shapefiles/Richmond HOLC Files/AZPhoenix19XX/cartodb-query.shp")
+stockton_shp <- st_read("Shapefiles/Richmond HOLC Files/CAStockton1938/cartodb-query.shp")
+st_petersburg_shp <- st_read("Shapefiles/Richmond HOLC Files/FLStPetersburg1937/cartodb-query.shp")
+```
+
+```{r append city names, include = FALSE}
+
+phoenix_shp$city_name = "Phoenix"
+stockton_shp$city_name = "Stockton"
+st_petersburg_shp$city_name = "St. Petersburg"
+
+
+```
+
+```{r bind into one shapefile, include = FALSE}
+
+# get rid of holc_area variable on phoenix_shp
+phoenix_shp <- phoenix_shp %>%
+  select(-holc_area)
+
+all_holc_shape_files <- rbind(phoenix_shp, stockton_shp)
+
+```
+
+
+```{r export shapefile for use in gis, include = FALSE}
+
+
+st_write(all_holc_shape_files, "all_holc_shape_files.shp")
+```
+
