@@ -44,3 +44,30 @@ all_holc_shape_files <- rbind(phoenix_shp, stockton_shp)
 st_write(all_holc_shape_files, "all_holc_shape_files.shp")
 ```
 
+
+```{r}
+
+# get all of the files in the folder
+holc_files_list <- list.files("Shapefiles/Richmond HOLC Files/")
+```
+
+```{r}
+
+holc_file_path_list <- rep(NA,length(holc_files_list))
+dataset_names <- rep(NA,length(holc_files_list))
+holc_files_list[1]
+
+for (i in 1:length(holc_files_list)){
+  # create file path name 
+  holc_file_path_list[i] <- paste("Shapefiles/Richmond HOLC Files/", holc_files_list[i], "/cartodb-query.shp", sep = "")
+  # load the file
+  # file name list
+  dataset_names[i] <- paste(holc_files_list[i], "_shp", sep = "")
+  #name <- paste(holc_files_list[i], "_shp", sep = "")
+  dataset <- st_read(holc_file_path_list[i])
+}
+
+print(holc_file_path_list)
+print(dataset_names)
+```
+
