@@ -82,7 +82,7 @@ all_holc_shape_files <- phoenix
 
 for (i in 2:length(holc_file_path_list)){
   # read shapefile
-  dataset <- st_read(holc_file_path_list[2])
+  dataset <- st_read(holc_file_path_list[i])
 
   # create var for map_year
   dataset$map_year <- map_year[i]
@@ -104,6 +104,9 @@ for (i in 2:length(holc_file_path_list)){
 st_write(all_holc_shape_files, "all_holc_shape_files.shp", append = FALSE)
 
 #View(all_holc_shape_files)
+
+# for some reason only Stockton and Phoenix geography are showing up
+
 ```
 
 

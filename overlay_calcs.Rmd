@@ -11,6 +11,9 @@ library(tidyverse)
 library(readr)
 ```
 
+
+##### Phoenix Example
+
 ```{r import data, include = FALSE}
 phoenix_overlay <- read_csv("Overlay Files from QGIS/phoenix_overlay.csv")
 
@@ -47,6 +50,67 @@ phoenix_tract_grades <- phoenix_overlay %>%
   summarise(area_accounted_for = sum(intersect_over_tract),
             weighted_tract_holc_grade = sum(weighted_holc_num)/area_accounted_for,
             rounded_tract_holc_grade = round(weighted_tract_holc_grade,0))
+
+```
+
+# ALL HOLC Shape Files
+
+```{r import data, include = FALSE}
+all_cities_overlay <- read_csv("Overlay Files from QGIS/all_cities_overlay.csv")
+
+```
+
+```{r assign HOLC grades a number, include = FALSE}
+
+# create new var and assign holc_grade_num NA value
+all_cities_overlay$holc_grade_num <- NA
+
+all_cities_overlay$holc_grade_num[all_cities_overlay$holc_grade == "A"] <- 1
+all_cities_overlay$holc_grade_num[all_cities_overlay$holc_grade == "B"] <- 2
+all_cities_overlay$holc_grade_num[all_cities_overlay$holc_grade == "C"] <- 3
+all_cities_overlay$holc_grade_num[all_cities_overlay$holc_grade == "D"] <- 4
+
+
+
+```
+
+```{r create weighted grade}
+
+# create weighted_holc_num as the product of the intersect_over_tract (proportion of the tract taken up by the intersect area) and the holc grade number value
+
+all_cities_overlay$weighted_holc_num <- all_cities_overlay$holc_grade_num * all_cities_overlay$intersect_over_tract
+
+```
+
+```{r}
+
+# now, for each census tract, we want to add up all of the weighted holc nums 
+
+all_cities_tract_grades <- all_cities_overlay %>%
+  # for every 1960 tract in the dataset...
+  group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2) %>%
+  # calculate the total area accounted for from the intersect geometries. This gives the   share of the tract's area that received an HOLC grade
+  summarise(area_accounted_for = sum(intersect_over_tract),
+            # calculate the weighted HOLC grade for the tract which is the sum of the   
+            # weighted holc numbers divided by the share of the area accounted for 
+            # (grade num * share / total share accounted for)
+            weighted_tract_holc_grade = sum(weighted_holc_num)/area_accounted_for,
+            # calculate the rounded grade by rounding to the nearest integer
+            rounded_tract_holc_grade = round(weighted_tract_holc_grade,0))
+
+# create an indicator for any tract that is less than half covered by HOLC areas
+all_cities_tract_grades$less_than_half_accounted <- ifelse(all_cities_tract_grades$area_accounted_for < .5, 1, 0)
+
+```
+
+
+
+```{r}
+
+# there are 157 tracts in total that are more than half covered by HOLC grades
+
+nrow(all_cities_tract_grades %>%
+  filter(less_than_half_accounted == 0))
 
 ```
 
