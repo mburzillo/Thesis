@@ -114,3 +114,9 @@ nrow(all_cities_tract_grades %>%
 
 ```
 
+
+```{r}
+all_cities_tract_grades %>%
+  ggplot()
+```
+
