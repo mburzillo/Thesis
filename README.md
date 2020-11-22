@@ -13,5 +13,6 @@ New home for R thesis work
 1) Combine all files with *combining_holc_files.RMD*
 2) Upload resultant shape file *"all_holc_shape_files.shp"* to QGIS
 3) Perform intersection with 1960 Census tract boundaries
-4) Save as csv
-5) Run *overlay_calcs.RMD* to produce the final dataset
+4) Calculate relevant areas for intersection
+5) Save as csv to re-import to r as *"all_cities_overlay.csv"*
+6) Run *overlay_calcs.RMD* to produce the final dataset
