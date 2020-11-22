@@ -13,9 +13,11 @@ library(rstanarm)
 
 ```{r import data, include = FALSE}
 
+# read in the IPUMS file with census tract level data on race and other deomgraphic characteristics
+
 nhgis0019_ds92_1960_tract <- read_csv("Demographic Data/nhgis0019_csv/nhgis0019_ds92_1960_tract.csv")
 
-# rename 
+# rename file
 
 race_1960_demo <- nhgis0019_ds92_1960_tract
 
@@ -23,14 +25,16 @@ race_1960_demo <- nhgis0019_ds92_1960_tract
 
 ```{r merge data, include = FALSE}
 
+# join with the final data set with the tracts and HOLC grades
 phoenix_tract_grade_demo <- left_join(phoenix_tract_grades, race_1960_demo, by = "GISJOIN")
-
-phoenix_tract_grade_demo$tot_persons <- phoenix_tract_grade_demo$CA4001
+all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by = "GISJOIN")
 
 ```
 
 
 ```{r calculating proportions, include = FALSE}
+
+## Excerpt from Codebook
 
 #Table 2:     Total Nonwhite Population
 #Universe:    Nonwhite Persons
@@ -46,21 +50,54 @@ phoenix_tract_grade_demo$tot_persons <- phoenix_tract_grade_demo$CA4001
 #    B7B002:      Negro
 #    B7B003:      Other races
 
-phoenix_tract_grade_demo$prop_non_white <- phoenix_tract_grade_demo$B9T001 / phoenix_tract_grade_demo$tot_persons
+# create new variables with names that will make analysis easy, but keep original vars for future reference
 
+# total persons
+phoenix_tract_grade_demo$tot_persons <- phoenix_tract_grade_demo$CA4001
+
+all_cities_grade_demo$tot_persons <- all_cities_grade_demo$CA4001
+
+
+# proportion non-white
+phoenix_tract_grade_demo$prop_non_white <- phoenix_tract_grade_demo$B9T001 /
+  phoenix_tract_grade_demo$tot_persons
+
+all_cities_grade_demo$prop_non_white <- all_cities_grade_demo$B9T001 /
+  all_cities_grade_demo$tot_persons
+
+
+# proportion white
 phoenix_tract_grade_demo$prop_white <- phoenix_tract_grade_demo$B7B001/phoenix_tract_grade_demo$tot_persons
 
+all_cities_grade_demo$prop_white <- all_cities_grade_demo$B7B001/all_cities_grade_demo$tot_persons
+
+
+# prop black
 phoenix_tract_grade_demo$prop_black <- phoenix_tract_grade_demo$B7B002/phoenix_tract_grade_demo$tot_persons
 
+all_cities_grade_demo$prop_black <- all_cities_grade_demo$B7B002/all_cities_grade_demo$tot_persons
+
+
+# prop other
 phoenix_tract_grade_demo$prop_other <- phoenix_tract_grade_demo$B7B003/phoenix_tract_grade_demo$tot_persons
+
+all_cities_grade_demo$prop_other <- all_cities_grade_demo$B7B003/all_cities_grade_demo$tot_persons
  
+
+# add in vars for percentages rather than proportions
 phoenix_tract_grade_demo <- phoenix_tract_grade_demo %>%
   mutate(pct_white = 100 * prop_white,
          pct_black = 100 * prop_black,
          pct_other = 100 * prop_other,
          pct_non_white = 100 * prop_non_white)
 
+all_cities_grade_demo <- all_cities_grade_demo %>%
+  mutate(pct_white = 100 * prop_white,
+         pct_black = 100 * prop_black,
+         pct_other = 100 * prop_other,
+         pct_non_white = 100 * prop_non_white)
 
+# checking variable compatability from different methods
 phoenix_tract_grade_demo %>%
   mutate(prop_non_white_calc = prop_other + prop_black) %>%
   select(prop_non_white, prop_non_white_calc)
@@ -68,15 +105,36 @@ phoenix_tract_grade_demo %>%
 ```
 
 ```{r}
-phoenix_tract_grade_demo %>%
+all_cities_grade_demo  %>%
   ggplot(aes(x = pct_black, y= rounded_tract_holc_grade)) +
   geom_point() +
-  geom_smooth()
+  geom_smooth(se = FALSE)
+
+all_cities_grade_demo  %>%
+  ggplot(aes(x = pct_black, y= rounded_tract_holc_grade)) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  facet_wrap(~city)
   
 ```
 
+
+
 ```{r}
-m1 <- stan_glm(phoenix_tract_grade_demo$rounded_tract_holc_grade ~ phoenix_tract_grade_demo$pct_black)
+all_cities_grade_demo  %>%
+  ggplot(aes(x = pct_white, y= rounded_tract_holc_grade)) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+```{r}
+write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
+```
+
+
+```{r}
+m1 <- stan_glm(all_cities_grade_demo$rounded_tract_holc_grade ~ all_cities_grade_demo$pct_black)
 print(m1,3)
 ```
+
 
