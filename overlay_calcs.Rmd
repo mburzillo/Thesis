@@ -88,7 +88,7 @@ all_cities_overlay$weighted_holc_num <- all_cities_overlay$holc_grade_num * all_
 
 all_cities_tract_grades <- all_cities_overlay %>%
   # for every 1960 tract in the dataset...
-  group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2) %>%
+  group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2, city) %>%
   # calculate the total area accounted for from the intersect geometries. This gives the   share of the tract's area that received an HOLC grade
   summarise(area_accounted_for = sum(intersect_over_tract),
             # calculate the weighted HOLC grade for the tract which is the sum of the   
@@ -96,10 +96,20 @@ all_cities_tract_grades <- all_cities_overlay %>%
             # (grade num * share / total share accounted for)
             weighted_tract_holc_grade = sum(weighted_holc_num)/area_accounted_for,
             # calculate the rounded grade by rounding to the nearest integer
-            rounded_tract_holc_grade = round(weighted_tract_holc_grade,0))
+            rounded_tract_holc_grade = round(weighted_tract_holc_grade,0),
+            # calculate the proportion beloning to each grade (sum all proportions belonging to each grade)
+            prop_grade_A = sum(ifelse(holc_grade == "A", intersect_over_tract, 0)),
+            prop_grade_B = sum(ifelse(holc_grade == "B", intersect_over_tract, 0)),
+            prop_grade_C = sum(ifelse(holc_grade == "C", intersect_over_tract, 0)),
+            prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract, 0)),
+            # calculate the max proportion belonging to a grade
+            max_prop = max(prop_grade_A, prop_grade_B, prop_grade_C, prop_grade_D))
 
 # create an indicator for any tract that is less than half covered by HOLC areas
 all_cities_tract_grades$less_than_half_accounted <- ifelse(all_cities_tract_grades$area_accounted_for < .5, 1, 0)
+
+# create an indicator for any tract where the grade assigned is less than half of the total graded area
+all_cities_tract_grades$winning_grade_less_than_half <- ifelse(all_cities_tract_grades$max_prop/all_cities_tract_grades$area_accounted_for < .5, 1, 0)
 
 ```
 
@@ -107,16 +117,40 @@ all_cities_tract_grades$less_than_half_accounted <- ifelse(all_cities_tract_grad
 
 ```{r}
 
-# there are 157 tracts in total that are more than half covered by HOLC grades
+# There are 157 tracts in total that are more than half covered by HOLC grades
 
 nrow(all_cities_tract_grades %>%
   filter(less_than_half_accounted == 0))
+
+# There are 17 tracts where the winning grade is less than 50% of the overall graded area
+
+nrow(all_cities_tract_grades %>%
+  filter(winning_grade_less_than_half == 1))
+
+mean(all_cities_tract_grades$max_prop/all_cities_tract_grades$area_accounted_for, na.rm = T)
+
 
 ```
 
 
 ```{r}
 all_cities_tract_grades %>%
-  ggplot()
+  ggplot() +
+  geom_bar(aes(x = rounded_tract_holc_grade))
+```
+
+
+```{r}
+all_cities_tract_grades %>%
+  filter(GISJOIN == "G0400130PH0070")
+
+all_cities_overlay %>%
+  filter(GISJOIN == "G0400130PH0059")
+```
+
+```{r}
+nrow(all_cities_tract_grades)
+
+
 ```
 
