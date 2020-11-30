@@ -141,7 +141,7 @@ all_cities_tract_grades %>%
 
 
 ```{r}
-all_cities_tract_grades %>%
+all_cities_overlay %>%
   filter(GISJOIN == "G0400130PH0070")
 
 all_cities_overlay %>%

@@ -15,94 +15,209 @@ library(rstanarm)
 
 # read in the IPUMS file with census tract level data on race and other deomgraphic characteristics
 
-nhgis0019_ds92_1960_tract <- read_csv("Demographic Data/nhgis0019_csv/nhgis0019_ds92_1960_tract.csv")
+# initial data: sub-data
+# nhgis0019_ds92_1960_tract <- read_csv("Demographic Data/nhgis0019_csv/nhgis0019_ds92_1960_tract.csv")
+
+# load demographic data that contains all potential variables
+nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
+
 
 # rename file
 
-race_1960_demo <- nhgis0019_ds92_1960_tract
+race_1960_demo <- nhgis0023_ds92_1960_tract
 
 ```
 
 ```{r merge data, include = FALSE}
 
 # join with the final data set with the tracts and HOLC grades
-phoenix_tract_grade_demo <- left_join(phoenix_tract_grades, race_1960_demo, by = "GISJOIN")
+
 all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by = "GISJOIN")
 
 ```
 
 
-```{r calculating proportions, include = FALSE}
+```{r renaming relevant vars based on codebook to work with, include = FALSE}
 
-## Excerpt from Codebook
+# initialize data for analysis, and we will add on columns from the joined data for the variables we need 
+data_for_analysis <- all_cities_tract_grades
 
-#Table 2:     Total Nonwhite Population
-#Universe:    Nonwhite Persons
-#Source code: NT62
-#NHGIS code:  B9T
-#    B9T001:      Total
- 
-#Table 3:     Population by Race [from printed report]
-#Universe:    Persons
-#Source code: NBT5
-#NHGIS code:  B7B
-#    B7B001:      White
-#    B7B002:      Negro
-#    B7B003:      Other races
+# variable encodings in format: description (universe)
 
-# create new variables with names that will make analysis easy, but keep original vars for future reference
+# Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
 
-# total persons
-phoenix_tract_grade_demo$tot_persons <- phoenix_tract_grade_demo$CA4001
-
-all_cities_grade_demo$tot_persons <- all_cities_grade_demo$CA4001
+data_for_analysis$tot_persons <- all_cities_grade_demo$B53001
 
 
-# proportion non-white
-phoenix_tract_grade_demo$prop_non_white <- phoenix_tract_grade_demo$B9T001 /
-  phoenix_tract_grade_demo$tot_persons
+# RACE from printed report (Persons)
 
-all_cities_grade_demo$prop_non_white <- all_cities_grade_demo$B9T001 /
-  all_cities_grade_demo$tot_persons
+data_for_analysis$white <- all_cities_grade_demo$B7B001
+data_for_analysis$black <- all_cities_grade_demo$B7B002
+data_for_analysis$other <- all_cities_grade_demo$B7B003
 
+# total foreign stock from printed report (foreign stock persons)
 
-# proportion white
-phoenix_tract_grade_demo$prop_white <- phoenix_tract_grade_demo$B7B001/phoenix_tract_grade_demo$tot_persons
+data_for_analysis$foreign_stock <- all_cities_grade_demo$B7M001
 
-all_cities_grade_demo$prop_white <- all_cities_grade_demo$B7B001/all_cities_grade_demo$tot_persons
+# foreign born (foreign stock persons)
 
-
-# prop black
-phoenix_tract_grade_demo$prop_black <- phoenix_tract_grade_demo$B7B002/phoenix_tract_grade_demo$tot_persons
-
-all_cities_grade_demo$prop_black <- all_cities_grade_demo$B7B002/all_cities_grade_demo$tot_persons
+data_for_analysis$foreign_born <- all_cities_grade_demo$B8J001
 
 
-# prop other
-phoenix_tract_grade_demo$prop_other <- phoenix_tract_grade_demo$B7B003/phoenix_tract_grade_demo$tot_persons
+# School completed (persons 25 yr and over)
 
-all_cities_grade_demo$prop_other <- all_cities_grade_demo$B7B003/all_cities_grade_demo$tot_persons
- 
+data_for_analysis$no_school <- all_cities_grade_demo$B8R001
+data_for_analysis$school_yr_1_4 <- all_cities_grade_demo$B8R002
+data_for_analysis$school_yr_5_7 <- all_cities_grade_demo$B8R003
+data_for_analysis$school_yr_8 <- all_cities_grade_demo$B8R004
+data_for_analysis$school_yr_hs_1_3 <- all_cities_grade_demo$B8R005
+data_for_analysis$school_yr_hs_4 <- all_cities_grade_demo$B8R006
+data_for_analysis$school_yr_college_1_3 <- all_cities_grade_demo$B8R007
+data_for_analysis$school_yr_college_p <- all_cities_grade_demo$B8R008
 
-# add in vars for percentages rather than proportions
-phoenix_tract_grade_demo <- phoenix_tract_grade_demo %>%
-  mutate(pct_white = 100 * prop_white,
-         pct_black = 100 * prop_black,
-         pct_other = 100 * prop_other,
-         pct_non_white = 100 * prop_non_white)
 
-all_cities_grade_demo <- all_cities_grade_demo %>%
-  mutate(pct_white = 100 * prop_white,
-         pct_black = 100 * prop_black,
-         pct_other = 100 * prop_other,
-         pct_non_white = 100 * prop_non_white)
+# family income in 1959 (families)
 
-# checking variable compatability from different methods
-phoenix_tract_grade_demo %>%
-  mutate(prop_non_white_calc = prop_other + prop_black) %>%
-  select(prop_non_white, prop_non_white_calc)
+data_for_analysis$fam_income_less_1k <- all_cities_grade_demo$B8W001
+data_for_analysis$fam_income_1_2k <- all_cities_grade_demo$B8W002
+data_for_analysis$fam_income_2_3k <- all_cities_grade_demo$B8W003
+data_for_analysis$fam_income_3_4k <- all_cities_grade_demo$B8W004
+data_for_analysis$fam_income_4_5k <- all_cities_grade_demo$B8W005
+data_for_analysis$fam_income_5_6k <- all_cities_grade_demo$B8W006
+data_for_analysis$fam_income_6_7k <- all_cities_grade_demo$B8W007
+data_for_analysis$fam_income_7_8k <- all_cities_grade_demo$B8W008
+data_for_analysis$fam_income_8_9k <- all_cities_grade_demo$B8W009
+data_for_analysis$fam_income_9_10k <- all_cities_grade_demo$B8W010
+data_for_analysis$fam_income_10_15k <- all_cities_grade_demo$B8W011
+data_for_analysis$fam_income_15_25k <- all_cities_grade_demo$B8W012
+data_for_analysis$fam_income_25k_p <- all_cities_grade_demo$B8W013
+
+
+# Total Housing Units (h units)
+data_for_analysis$tot_hunits <- all_cities_grade_demo$CA5001
+
+
+# N owner occupied (occupied year round h units)
+data_for_analysis$owner_occupied <- all_cities_grade_demo$B8F001
+
+# N renter occupied (occupied year round h units)
+data_for_analysis$renter_occupied <- all_cities_grade_demo$B8F002
+
+
+# N vacant for rent (vacant year-round housing units)
+data_for_analysis$vacant_for_rent<- all_cities_grade_demo$B8Q001
+# N vacant for sale (vacant year-round housing units)
+data_for_analysis$vacant_for_sale <- all_cities_grade_demo$B8Q002
+
+
+# Occupied Units by Persons per Room (occupied units)
+data_for_analysis$persons_per_room_half_or_less <- all_cities_grade_demo$B76001
+data_for_analysis$persons_per_room_point51_point75 <- all_cities_grade_demo$B76002
+data_for_analysis$persons_per_room_point76_one<- all_cities_grade_demo$B76003
+data_for_analysis$persons_per_room_onepone_or_more <- all_cities_grade_demo$B76004
+
+
+# renter occupied unit aggregate monthly contract rent
+
+data_for_analysis$agg_monthly_contract_rent <- all_cities_grade_demo$B8B001
+
+# value of property from printed report (housing units)
+
+
+data_for_analysis$property_value_u5k <- all_cities_grade_demo$B7O001
+data_for_analysis$property_value_5000_7400 <- all_cities_grade_demo$B7O002
+data_for_analysis$property_value_7500_9900 <- all_cities_grade_demo$B7O003
+data_for_analysis$property_value_10000_12400 <- all_cities_grade_demo$B7O004
+data_for_analysis$property_value_12500_14900 <- all_cities_grade_demo$B7O005
+data_for_analysis$property_value_15000_17400 <- all_cities_grade_demo$B7O006
+data_for_analysis$property_value_17500_19900 <- all_cities_grade_demo$B7O007
+data_for_analysis$property_value_20000_24900 <- all_cities_grade_demo$B7O008
+data_for_analysis$property_value_25000_34900 <- all_cities_grade_demo$B7O009
+data_for_analysis$property_value_35000_plus <- all_cities_grade_demo$B7O0010
+
+
+# units in structure (housing units)
+
+data_for_analysis$units_1 <- all_cities_grade_demo$B92001
+data_for_analysis$units_2 <- all_cities_grade_demo$B92002
+data_for_analysis$units_3_4 <- all_cities_grade_demo$B92003
+data_for_analysis$units_5_9 <- all_cities_grade_demo$B92004
+data_for_analysis$units_10_P <- all_cities_grade_demo$B92005
+
+
+# year structure built (all housing units)
+
+data_for_analysis$built_1950_1960 <- all_cities_grade_demo$B98001
+data_for_analysis$built_1940_1949 <- all_cities_grade_demo$B98002
+data_for_analysis$built_pre_1940 <- all_cities_grade_demo$B98003
+
+
+# year head moved into household (occupied housing units)
+
+data_for_analysis$moved_1958_1960 <- all_cities_grade_demo$CAJ001
+data_for_analysis$moved_in_1954_1957 <- all_cities_grade_demo$CAJ002
+data_for_analysis$moved_in_1940_1953 <- all_cities_grade_demo$CAJ003
+data_for_analysis$moved_in_pre_1940 <- all_cities_grade_demo$CAJ004
+
+# persons in group quarters from printed report (persons in hhs)
+
+data_for_analysis$persons_group_quarters<- all_cities_grade_demo$B54001
+
+
+# housing by condition
+
+data_for_analysis$condition_sound <- all_cities_grade_demo$B67001
+data_for_analysis$condition_deteriorated <- all_cities_grade_demo$B67002
+data_for_analysis$condition_dilapidated <- all_cities_grade_demo$B67003
+
+
+# % African American
+# % non-white
+# % immigrants
+
+# age of structure
+
+# housing value
 
 ```
+
+
+```{r creating additional variables relevant for analysis, include = FALSE}
+
+# pct non-white
+data_for_analysis$pct_non_white <- (data_for_analysis$black +
+                                      data_for_analysis$other)/data_for_analysis$tot_persons * 100
+
+# pct black
+data_for_analysis$pct_black <- (data_for_analysis$black)/data_for_analysis$tot_persons * 100
+
+
+# % foreign stock
+data_for_analysis$pct_foreign_stock<- (data_for_analysis$foreign_stock)/data_for_analysis$tot_persons * 100
+
+
+
+# pct hs grads
+
+# calculate total persons who have school data
+data_for_analysis$tot_school_persons <- data_for_analysis$no_school + data_for_analysis$school_yr_1_4  +
+  data_for_analysis$school_yr_5_7 + data_for_analysis$school_yr_8 + data_for_analysis$school_yr_hs_1_3 +
+  data_for_analysis$school_yr_hs_4 + data_for_analysis$school_yr_college_1_3 +
+  data_for_analysis$school_yr_college_p
+
+# calculate total persons whose highest edu attainment is hs completion or greater
+data_for_analysis$tot_hs_grads <- data_for_analysis$school_yr_hs_4 +
+  data_for_analysis$school_yr_college_1_3 +
+  data_for_analysis$school_yr_college_p
+
+# calculate hs grads
+data_for_analysis$pct_hs_grad <- data_for_analysis$tot_hs_grads/data_for_analysis$tot_school_persons * 100
+
+
+# need to calculate income next -> how to choose something for this??
+```
+
+
 
 ```{r}
 all_cities_grade_demo  %>%

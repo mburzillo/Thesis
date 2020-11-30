@@ -15,7 +15,7 @@ library(ipumsr)
 
 if (!require("ipumsr")) stop("Reading IPUMS data into R requires the ipumsr package. It can be installed using the following command: install.packages('ipumsr')")
 
-ddi <- read_ipums_ddi("usa_00001.dat")
+ddi <- read_ipums_ddi("usa_00006.dat")
 data <- read_ipums_micro(ddi)
 
 
