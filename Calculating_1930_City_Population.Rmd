@@ -1,0 +1,66 @@
+---
+title: "Calculating 1930 City Populations"
+author: "Maria Burzillo"
+date: "12/13/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+library(readxl)
+```
+
+```{r import ipums data containing city and citypop for 1930 census, include = FALSE}
+
+ipums_for_city_pop_1930 <- read_csv("1930 City Population Data/ipums_for_city_pop_1930.csv")
+
+city_codebook <- read_excel("1930 City Population Data/1930_city_codebook.xlsx")
+
+```
+
+```{r reshaping data to get 1 obs per city}
+
+# Definition of CITY: CITY identifies the city of residence for households located in identifiable cities. The Comparability section provides a discussion of factors affecting which cities are identified and how well they are represented in each sample. The cities identified by CITY are generally consistent with U.S. Census "place" definitions. For an explanation and history of the concept, see Chapter 9 in the Census Bureau's Geographic Areas Reference Manual.
+
+# Definition of CITYPOP: CITYPOP reports the population, in hundreds, for all identifiable cities. For Decennial Census samples, CITYPOP reports the counts collected in that Decennial Census. For the 2005 ACS sample, CITYPOP reports populations estimates derived for the 2005 ACS. For ACS samples from 2006-2011, CITYPOP reports population estimates derived from the 2006 ACS. For the 2012-onward ACS, CITYPOP reports population estimates derived from the ACS of that year. CITYPOP is a 5-digit numeric variable that reports the population, in hundreds, for all identifiable cities. For instance, a city having a population of 1,234,500 will have a CITYPOP value of 12345. For all samples prior to 1940 and the 1940 100% dataset, CITYPOP reports the population for all incorporated municipalities
+
+
+# exclude city = 0 because this corresponds to : Not in identifiable city (or size group)
+ipums_for_city_pop_1930 %>%
+  filter(CITY != 0) %>%
+  group_by(CITY, CITYPOP) %>%
+  summarise(tot_perwt = sum(PERWT)) %>%
+  rename(CITYPOP_hundreds = CITYPOP) %>%
+  mutate(CITYPOP_total = 100 * CITYPOP_hundreds)
+
+```
+
+```{r}
+city_codebook[398,]
+```
+
+
+```{r edit city codebook to merge with names}
+
+city_codebook %>%
+  separate(CITY, c("CITY", "cityname"), sep = 4) %>%
+  # drop 1860 because no info in codebook and 0 because city could not be identified. Dorp 4611 because for Brooklyn which is only for Census before 1900
+  filter(CITY != "0000", CITY != "Spri", CITY != "1860", CITY != "4611") %>%
+  separate(cityname, c("cityname", "state"), ",") %>%
+  # drop space before the state name
+  separate(state, c("empty", "state"), sep = 1) %>%
+  # drop anything after the state name
+  separate(state, c("state", "drop"), sep = 2) %>%
+  # drop excess rows/rows that have been separated
+  select(-name, -empty, -drop) %>%
+  rename(CITY_old = CITY) %>%
+  # remove leading zeros from city identifier name
+  mutate(CITY = str_remove(CITY_old, "^0+"))
+
+
+  
+
+```
+
