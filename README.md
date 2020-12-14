@@ -10,7 +10,9 @@ New home for R thesis work
 
 **demo_tract_merge.RMD** takes in the all_cities_tract_grades dataset created by the overlay_calcs.RMD and joins it with the demographic data at the tract level from 1960 for analysis. Produces the all_cities_grade_demo.csv file which will be the final dataset to export to Stata for regression analysis. 
 
-## To Generate Data
+**Calculating_1930_City_Population.RMD** contains all calculations/data reshaping to take IPUMS files and find city populations for 1930. Final dataset includes city code, name, state, and population for all cities and all cities with Richmond HOLC maps (city_pop_name_1930_in_richmond).
+
+## To Generate Data for Initial Model Explaining Tract Grades
 
 1) Combine all files with *combining_holc_files.RMD*
 2) Upload resultant shape file *"all_holc_shape_files.shp"* to QGIS

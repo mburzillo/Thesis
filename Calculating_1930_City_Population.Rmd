@@ -14,11 +14,29 @@ library(readxl)
 
 ```{r import ipums data containing city and citypop for 1930 census, include = FALSE}
 
+# import data containing city codes and populations for 1930
 ipums_for_city_pop_1930 <- read_csv("1930 City Population Data/ipums_for_city_pop_1930.csv")
 
+# import city codebooks with city names and codes to join with ipums data
 city_codebook <- read_excel("1930 City Population Data/1930_city_codebook.xlsx")
 
+# import list of all cities that have HOLC maps
+
+all_cities_in_richmond <- read_excel("all_cities_in_richmond.xlsx")
+
 ```
+
+```{r look at ipums 5% sample to see if it has any of the missing cities, eval = FALSE}
+
+# I also looked at the 5pct sample to see if any of the non-matched cities were here, but they don't seem to be based on some spot checks. Missing cities do seem to be in the online fiels, though, e.g.: https://www2.census.gov/library/publications/decennial/1930/population-volume-3/10612963v3p1ch08.pdf
+
+# ipums_1930_5_pct <- read_csv("1930 City Population Data/ipums_1930_5_pct.csv")
+
+
+# ipums_1930_5_pct %>% filter(CITY != 0, CITYPOP != 0) %>% group_by(CITY, CITYPOP) %>% summarise(tot_perwt = sum(PERWT)) %>% filter(CITY == 1210)
+
+```
+
 
 ```{r reshaping data to get 1 obs per city}
 
@@ -28,26 +46,24 @@ city_codebook <- read_excel("1930 City Population Data/1930_city_codebook.xlsx")
 
 
 # exclude city = 0 because this corresponds to : Not in identifiable city (or size group)
-ipums_for_city_pop_1930 %>%
-  filter(CITY != 0) %>%
+ipums_collapsed <- ipums_for_city_pop_1930 %>%
+  filter(CITY != 0, CITYPOP != 0) %>%
   group_by(CITY, CITYPOP) %>%
   summarise(tot_perwt = sum(PERWT)) %>%
   rename(CITYPOP_hundreds = CITYPOP) %>%
   mutate(CITYPOP_total = 100 * CITYPOP_hundreds)
 
-```
+# ipums_collapsed %>% filter(CITY == 1670)
 
-```{r}
-city_codebook[398,]
 ```
 
 
 ```{r edit city codebook to merge with names}
 
-city_codebook %>%
+city_codebook_edited <- city_codebook %>%
   separate(CITY, c("CITY", "cityname"), sep = 4) %>%
-  # drop 1860 because no info in codebook and 0 because city could not be identified. Dorp 4611 because for Brooklyn which is only for Census before 1900
-  filter(CITY != "0000", CITY != "Spri", CITY != "1860", CITY != "4611") %>%
+  # drop 1860 because no info in codebook and 0 because city could not be identified. Dorp 4611 because for Brooklyn which is only for Census before 1900 , CITY != "4611"
+  filter(CITY != "0000", CITY != "Spri", CITY != "1860") %>%
   separate(cityname, c("cityname", "state"), ",") %>%
   # drop space before the state name
   separate(state, c("empty", "state"), sep = 1) %>%
@@ -57,10 +73,140 @@ city_codebook %>%
   select(-name, -empty, -drop) %>%
   rename(CITY_old = CITY) %>%
   # remove leading zeros from city identifier name
-  mutate(CITY = str_remove(CITY_old, "^0+"))
+  mutate(CITY = as.numeric(str_remove(CITY_old, "^0+")),
+         cityname = trimws(cityname))
 
 
-  
+write.csv(city_codebook_edited, "city_codebook_edited.csv")  
 
 ```
+
+```{r join ipums data with city codebook, include = FALSE}
+
+ipums_1930_cities_by_pop <- left_join(ipums_collapsed, city_codebook_edited) %>%
+  mutate(City = trimws(cityname)) %>%
+  select(-cityname) %>%
+  rename(city_code = CITY)
+
+```
+
+
+```{r join all cities in richmond to ipums data}
+
+# joining correctly length-wise
+city_pop_name_1930_in_richmond <- left_join(all_cities_in_richmond, ipums_1930_cities_by_pop, by = c("City" = "City", "state_ab" = "state"))
+
+# I checked the 5% sample for cities that are missing and say that the citypop variable is available, but there don't appear to be any...but... does seem like you can get them from the written-in published documents..
+
+############  fixing any non-joins ###########
+
+##### Potential Name Errors/True-Mis-matches
+# Stamford, Darien, and New Canaan (have data for Stamford but not Darien or New Canaan)
+# Indiana	Lake Co. Gary: Have data for Gary
+# Massachusetts	Holyoke Chicopee (Holyoke and Chicopee available separately in 1930 5%)
+# Missouri	Greater Kansas City (available as Kansas City)
+# New Jersey	Bergen Co. (available as Bergen county, but not available any years)
+# New Jersey	Essex Co. (not available)
+# New Jersey	Hudson Co. (not available)
+# New Jersey	Union Co. (union city is available, union also listed but no data)
+# New York	Binghamton-Johnson City	NY (Binghamton available, Johnson city available)
+# New York	Bronx	NY (no data)
+# New York	Brooklyn (not available separate from NYC)
+# New York	Lower Westchester Co.	(not available)
+# New York	Manhattan (not available)
+# New York	Queens (not available)
+# New York	Staten Island (not available)
+# Rhode Island	Pawtucket and Central Falls (Pawtucket and Central Falls available separately)
+
+
+
+
+#### Seem to be missing overall, potentially go find in documents ####
+# Massachusetts	Arlington (available in 1930 5%)
+# Massachusetts	Belmont (available in 1930 5%)
+# Massachusetts	Braintree (available in 1930 5%)
+# Massachusetts	Brookline (available in 1930 5%)
+# Massachusetts	Dedham (available in 1930 5%)
+# Massachusetts	Lexington (Not available/defined by Citypop in any year)
+# Massachusetts	Milton (available in 1930 5%)
+# Massachusetts	Needham (available in 1930 5%)
+# Massachusetts	Saugus (available in 1930 5%)
+# Massachusetts	Watertown (available in 1930 5%)
+# Massachusetts	Winchester (available in 1930 5%)
+# Massachusetts	Winthrop (available in 1930 5%)
+# Tennessee	Memphis (may be in 5% sample)
+# Texas	Amarillo (may be in 5% sample)
+# Texas	Austin (may be in 5% sample)
+# Texas	Beaumont (may be in 5% sample)
+# Texas	Dallas (available in 1930 5%)
+# Texas	El Paso	 (available in 1930 5%)
+# Texas	Fort Worth (available in 1930 5%)
+# Texas	Galveston (available in 1930 5%)
+# Texas	Houston	 (available in 1930 5%)
+# Texas	Port Arthur (available in 1930 5%)
+# Texas	San Antonio (available in 1930 5%)
+# Texas	Waco (available in 1930 5%)
+# Utah Ogden	UT (available in 1930 5%)
+# Utah Salt Lake City (available in 1930 5%)
+# Virginia	Lynchburg (available in 1930 5%)
+# Virginia	Newport News (available in 1930 5%)
+# Virginia	Norfolk (available in 1930 5%)
+# Virginia	Richmond (available in 1930 5%)
+# Virginia	Roanoke (available in 1930 5%)
+# Washington	Seattle	 (available in 1930 5%)
+# Washington	Spokane (available in 1930 5%)
+# Washington	Tacoma	 (available in 1930 5%)
+# West Virginia	Charleston	 (available in 1930 5%)
+# West Virginia	Huntington (available in 1930 5%)
+# West Virginia	Wheeling (available in 1930 5%)
+# Wisconsin	Kenosha (available in 1930 5%)
+# Wisconsin	Madison (available in 1930 5%)
+# Wisconsin	Milwaukee Co. (available in 1930 5%)
+# Wisconsin	Oshkosh (available in 1930 5%)
+# Wisconsin	Racine (available in 1930 5%)
+
+
+
+
+city_pop_name_1930 %>%
+  filter(is.na(city_code))
+
+
+```
+
+
+
+```{r look at stats for the successful matches}
+
+# 143 successful matches
+city_pop_name_1930_in_richmond %>%
+  filter(!(is.na(city_code)))
+
+
+# 2 towns with HOLC maps with populations between 30-40k
+city_pop_name_1930_in_richmond %>%
+  filter(!(is.na(city_code)), CITYPOP_total > 30000, CITYPOP_total < 40000)
+
+# 26 towns with HOLC maps with populations between 40-50k
+city_pop_name_1930_in_richmond %>%
+  filter(!(is.na(city_code)), CITYPOP_total >= 40000, CITYPOP_total < 50000)
+
+# 112 towns with HOLC maps with populations between above 50k
+city_pop_name_1930_in_richmond %>%
+  filter(!(is.na(city_code)), CITYPOP_total > 50000)
+
+# 80 towns with HOLC maps with populations greater than 70k
+city_pop_name_1930_in_richmond %>%
+  filter(!(is.na(city_code)), CITYPOP_total > 70000)
+  #ggplot(aes(x = CITYPOP_total)) +
+  #geom_histogram()
+  
+# 44 towns with HOLC maps with populations between 70k and 150k
+city_pop_name_1930_in_richmond %>%
+  filter(!(is.na(city_code)), CITYPOP_total > 70000, CITYPOP_total < 150000)
+  #ggplot(aes(x = CITYPOP_total)) +
+  #geom_histogram()
+
+```
+
 
