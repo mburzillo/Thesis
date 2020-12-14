@@ -88,6 +88,9 @@ ipums_1930_cities_by_pop <- left_join(ipums_collapsed, city_codebook_edited) %>%
   select(-cityname) %>%
   rename(city_code = CITY)
 
+ipums_1930_cities_by_pop %>%
+  filter(CITYPOP_total > 30000, CITYPOP_total < 50000)
+
 ```
 
 
