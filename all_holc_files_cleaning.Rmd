@@ -1,0 +1,50 @@
+---
+title: "Combining HOLC Files"
+author: "Maria Burzillo"
+date: "11/14/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(readr)
+```
+
+```{r import QGIS data from ALL HOLC shapefiles, include = FALSE}
+
+# import intersect file from QGIS
+all_holc_overlay <- read_csv("Overlay Files from QGIS/all_holc_overlay.csv")
+
+```
+
+
+
+```{r create indicator for D grade, include = FALSE}
+
+# create new indicator of whether or not intersect area was red and initialize with NA value
+all_holc_overlay$holc_red_indicator <- NA
+
+all_holc_overlay$holc_red_indicator <- ifelse(all_holc_overlay$holc_grade == "D", 1, 0)
+
+```
+
+
+```{r summarize by tract, include = FALSE}
+
+# create a dataset that summarizes by tract the proportion covered by graded HOLC areas and the proportion of the tract with a graded area that is "D"/Red
+
+all_holc_tract_grades <- all_holc_overlay %>%
+  # for every 1960 tract in the dataset...
+  group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2, city) %>%
+  # summarise
+  summarise(
+    # total area accounted for out of area of entire tract
+    area_accounted_for = sum(intersect_over_tract),
+    prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract, 0))
+    )
+
+
+```
+
+
