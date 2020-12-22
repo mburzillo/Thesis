@@ -47,4 +47,56 @@ all_holc_tract_grades <- all_holc_overlay %>%
 
 ```
 
+```{r exploring data, include = FALSE}
+
+# number of tracts graded over 50%: 8489
+
+nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5))
+
+
+# number of tracts graded over 75%: 6387
+
+nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .75))
+
+
+# number of tracts graded over 90%: 4823
+
+nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .9))
+
+
+
+
+# number of tracts graded "D"/red over 50%: 2511
+
+nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5, prop_grade_D >= .5))
+
+
+# number of tracts graded "D"/red over 75%: 1693
+
+nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5, prop_grade_D >= .75))
+
+
+# number of tracts graded "D"/red over 90%: 1244
+
+nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5, prop_grade_D >= .9))
+
+```
+
+
+```{r}
+all_holc_tract_grades %>%
+  filter(GISJOIN == "G3400030EN0066")
+
+all_holc_tract_grades %>%
+    filter(GISJOIN == "G3400030EN0068")
+```
+
+```{r}
+all_holc_overlay  %>%
+  filter(GISJOIN == "G3400030EN0066")
+
+all_holc_overlay  %>%
+  filter(GISJOIN == "G3400030EN0068")
+
+```
 

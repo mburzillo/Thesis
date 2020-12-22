@@ -4,7 +4,7 @@ New home for R thesis work
 
 ## File Descriptions
 
-**all_holc_files_cleaning.RMD:** this takes in the shapefile from the Richmond webiste with all HOLC shapefiles and cleans it. 
+**all_holc_files_cleaning.RMD:** this takes in the shapefile from the Richmond webiste with all HOLC shapefiles and cleans it. **combining_holc_files.RMD:** only does this for the treatment cities. This file also joins this data with city populations from 1930 (forthcoming).
 
 **combining_holc_files.RMD:** creates on shapefile containing all of the relevant HOLC city files for the treatment group (40-50k pop) by combining all the files in the "Shapefiles/Richmond HOLC Files" folder. Adds in variables for city name, state, and map year based on the the HOLC fodler names for each city downloaded from the Richmond Mapping Inequality website.
 

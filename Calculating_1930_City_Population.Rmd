@@ -32,8 +32,7 @@ all_cities_in_richmond <- read_excel("all_cities_in_richmond.xlsx")
 
 # ipums_1930_5_pct <- read_csv("1930 City Population Data/ipums_1930_5_pct.csv")
 
-
-# ipums_1930_5_pct %>% filter(CITY != 0, CITYPOP != 0) %>% group_by(CITY, CITYPOP) %>% summarise(tot_perwt = sum(PERWT)) %>% filter(CITY == 1210)
+# ipums_1930_5_pct %>% filter(CITY != 0, CITYPOP != 0) %>% group_by(CITY, CITYPOP) %>% summarise(tot_perwt = sum(PERWT))
 
 ```
 
@@ -89,7 +88,8 @@ ipums_1930_cities_by_pop <- left_join(ipums_collapsed, city_codebook_edited) %>%
   rename(city_code = CITY)
 
 ipums_1930_cities_by_pop %>%
-  filter(CITYPOP_total > 30000, CITYPOP_total < 50000)
+  filter(CITYPOP_total > 30000, CITYPOP_total < 50000) %>%
+  view()
 
 ```
 
