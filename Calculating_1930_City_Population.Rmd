@@ -15,12 +15,6 @@ library(sjmisc)
 
 ```{r import ipums data containing city and citypop for 1930 census, include = FALSE}
 
-# import data containing city codes and populations for 1930
-ipums_for_city_pop_1930 <- read_csv("1930 City Population Data/ipums_for_city_pop_1930.csv")
-
-# import city codebooks with city names and codes to join with ipums data
-city_codebook <- read_excel("1930 City Population Data/1930_city_codebook.xlsx")
-
 city_codebook_1930_full_sample <- read_excel("1930 City Population Data/city_codebook_1930_full_sample.xlsx") %>%
   select(-city_name)
 
@@ -33,16 +27,6 @@ ipums_full_sample_collapsed_1930 <- read_csv("1930 City Population Data/1930_dat
 
 ```
 
-```{r look at ipums 5% sample to see if it has any of the missing cities, eval = FALSE}
-
-# I also looked at the 5pct sample to see if any of the non-matched cities were here, but they don't seem to be based on some spot checks. Missing cities do seem to be in the online fiels, though, e.g.: https://www2.census.gov/library/publications/decennial/1930/population-volume-3/10612963v3p1ch08.pdf
-
-# ipums_1930_5_pct <- read_csv("1930 City Population Data/ipums_1930_5_pct.csv")
-
-# ipums_1930_5_pct %>% filter(CITY != 0, CITYPOP != 0) %>% group_by(CITY, CITYPOP) %>% summarise(tot_perwt = sum(PERWT))
-
-```
-
 
 ```{r reshaping data to get 1 obs per city}
 
@@ -50,14 +34,6 @@ ipums_full_sample_collapsed_1930 <- read_csv("1930 City Population Data/1930_dat
 
 # Definition of CITYPOP: CITYPOP reports the population, in hundreds, for all identifiable cities. For Decennial Census samples, CITYPOP reports the counts collected in that Decennial Census. For the 2005 ACS sample, CITYPOP reports populations estimates derived for the 2005 ACS. For ACS samples from 2006-2011, CITYPOP reports population estimates derived from the 2006 ACS. For the 2012-onward ACS, CITYPOP reports population estimates derived from the ACS of that year. CITYPOP is a 5-digit numeric variable that reports the population, in hundreds, for all identifiable cities. For instance, a city having a population of 1,234,500 will have a CITYPOP value of 12345. For all samples prior to 1940 and the 1940 100% dataset, CITYPOP reports the population for all incorporated municipalities
 
-
-# exclude city = 0 because this corresponds to : Not in identifiable city (or size group)
-ipums_collapsed <- ipums_for_city_pop_1930 %>%
-  filter(CITY != 0, CITYPOP != 0) %>%
-  group_by(CITY, CITYPOP) %>%
-  summarise(tot_perwt = sum(PERWT)) %>%
-  rename(CITYPOP_hundreds = CITYPOP) %>%
-  mutate(CITYPOP_total = 100 * CITYPOP_hundreds)
 
 # ipums_collapsed %>% filter(CITY == 1670)
 # Q: what does it mean when citypop is given 0 for a city when perwt is non-zero?: seems like 0 corresponds to a city not identified or unincorporated place response. 
@@ -77,27 +53,7 @@ ipums_full_sample_collapsed_1930 %>%
 ```
 
 
-```{r edit city codebook to merge with names}
-
-city_codebook_edited <- city_codebook %>%
-  separate(CITY, c("CITY", "cityname"), sep = 4) %>%
-  # drop 1860 because no info in codebook and 0 because city could not be identified. Dorp 4611 because for Brooklyn which is only for Census before 1900 , CITY != "4611"
-  filter(CITY != "0000", CITY != "Spri", CITY != "1860") %>%
-  separate(cityname, c("cityname", "state"), ",") %>%
-  # drop space before the state name
-  separate(state, c("empty", "state"), sep = 1) %>%
-  # drop anything after the state name
-  separate(state, c("state", "drop"), sep = 2) %>%
-  # drop excess rows/rows that have been separated
-  select(-name, -empty, -drop) %>%
-  rename(CITY_old = CITY) %>%
-  # remove leading zeros from city identifier name
-  mutate(CITY = as.numeric(str_remove(CITY_old, "^0+")),
-         cityname = trimws(cityname))
-
-
-write.csv(city_codebook_edited, "city_codebook_edited.csv")  
-
+```{r edit city codebook to merge with names, include = FALSE}
 
 ############### WITH FULL SAMPLE ##############
 
@@ -137,22 +93,12 @@ city_codebook_1930_full_sample_edited <- city_codebook_1930_full_sample %>%
 city_codebook_1930_full_sample_edited$cityname[city_codebook_1930_full_sample_edited$city == 2683] <- "Hanover township, Luzerne county"
 city_codebook_1930_full_sample_edited$state[city_codebook_1930_full_sample_edited$city == 2683] <- "PA"
 
-
+write.csv(city_codebook_1930_full_sample_edited , "city_codebook_1930_full_sample_edited")  
 ```
 
 
 
 ```{r join ipums data with city codebook, include = FALSE}
-
-ipums_1930_cities_by_pop <- left_join(ipums_collapsed, city_codebook_edited) %>%
-  mutate(City = trimws(cityname)) %>%
-  select(-cityname) %>%
-  rename(city_code = CITY)
-
-ipums_1930_cities_by_pop %>%
-  filter(CITYPOP_total > 30000, CITYPOP_total < 50000) %>%
-  view()
-
 
 ####### WITH FULL SAMPLE ###########
 
@@ -168,6 +114,7 @@ ipums_1930_cities_by_pop_full_sample %>%
 
 ```
 
+###############################################################
 
 ```{r join all cities in richmond to ipums data}
 
