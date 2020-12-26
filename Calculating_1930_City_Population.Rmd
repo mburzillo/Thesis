@@ -10,6 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(readr)
 library(readxl)
+library(sjmisc)
 ```
 
 ```{r import ipums data containing city and citypop for 1930 census, include = FALSE}
@@ -20,9 +21,15 @@ ipums_for_city_pop_1930 <- read_csv("1930 City Population Data/ipums_for_city_po
 # import city codebooks with city names and codes to join with ipums data
 city_codebook <- read_excel("1930 City Population Data/1930_city_codebook.xlsx")
 
+city_codebook_1930_full_sample <- read_excel("1930 City Population Data/city_codebook_1930_full_sample.xlsx") %>%
+  select(-city_name)
+
 # import list of all cities that have HOLC maps
 
 all_cities_in_richmond <- read_excel("all_cities_in_richmond.xlsx")
+
+# import data from 1930 full sample that I collapsed on Suz'z computer: hopefully this will be the final dataset...
+ipums_full_sample_collapsed_1930 <- read_csv("1930 City Population Data/1930_data_ipums_full_sample_collapsed.csv")
 
 ```
 
@@ -53,6 +60,19 @@ ipums_collapsed <- ipums_for_city_pop_1930 %>%
   mutate(CITYPOP_total = 100 * CITYPOP_hundreds)
 
 # ipums_collapsed %>% filter(CITY == 1670)
+# Q: what does it mean when citypop is given 0 for a city when perwt is non-zero?: seems like 0 corresponds to a city not identified or unincorporated place response. 
+ipums_full_sample_collapsed_1930 <- ipums_full_sample_collapsed_1930  %>%
+  rename(citypop_hundreds = citypop) %>%
+  mutate(citypop_total = 100 * citypop_hundreds) 
+
+# there are 8 cities which appear to have populations greater than 30,000 and yet do not have a citypop encoded. Should check later if any cities graded by HOLC are missing and see if they are one of these
+ipums_full_sample_collapsed_1930 %>%
+  filter(citypop_hundreds == 0, perwt > 30000)
+
+# Brooklyn is not in sample (expected because codebook says it is only in sample before 1900)
+ipums_full_sample_collapsed_1930 %>%
+  filter(city == "4611")
+
 
 ```
 
@@ -78,7 +98,49 @@ city_codebook_edited <- city_codebook %>%
 
 write.csv(city_codebook_edited, "city_codebook_edited.csv")  
 
+
+############### WITH FULL SAMPLE ##############
+
+# these are the entries that do not have states/are irregular. 2 cities dropped below. Rest of cities just kept with NA for state
+city_codebook_1930_full_sample_edited <- city_codebook_1930_full_sample %>%
+  separate(city, c("city", "cityname"), sep = 4)  %>%
+  # drop 1860 because no info in codebook and 0 because city could not be identified.
+  filter(city != "0000") %>%
+  filter(!(str_detect(cityname, ",")))
+  
+
+
+# Cleaning the full sample codebook (unclear if this is actually different from the 1%/5% one but want to be safe)  
+city_codebook_1930_full_sample_edited <- city_codebook_1930_full_sample %>%
+  # drop cities without city codes
+  filter(city != "Georgetown, DC (See Washington, DC)", city != "Brooklyn, NY (See NYC)", 
+         city != "Northern Liberties, PA (See Philadelphia)",
+         city != "Southwark, PA (See Philadelphia)",
+         city != "Spring Garden, PA (See Philadelphia)") %>%
+  # separate city code from city name
+  separate(city, c("city", "cityname"), sep = 4)  %>%
+  # drop 1860 because no info in codebook and 0 because city could not be identified. Exclude city 1860 because city name is blank in codebook. Exclude Brooklyn (4611) because only in censuses before 1900 and so not relevant
+  filter(city != "0000", city != "1860", city != "4611") %>%
+  #separate city name from state name
+  separate(cityname, c("cityname", "state"), ",") %>%
+  # drop space before the state name
+  separate(state, c("empty", "state"), sep = 1) %>%
+  # drop anything after the state name
+  separate(state, c("state", "drop"), sep = 2) %>%
+  # drop excess rows/rows that have been separated
+  select(-empty, -drop) %>%
+  rename(CITY_old = city) %>%
+  # remove leading zeros from city identifier name
+  mutate(city = as.numeric(str_remove(CITY_old, "^0+")),
+         cityname = trimws(cityname))
+
+city_codebook_1930_full_sample_edited$cityname[city_codebook_1930_full_sample_edited$city == 2683] <- "Hanover township, Luzerne county"
+city_codebook_1930_full_sample_edited$state[city_codebook_1930_full_sample_edited$city == 2683] <- "PA"
+
+
 ```
+
+
 
 ```{r join ipums data with city codebook, include = FALSE}
 
@@ -90,6 +152,19 @@ ipums_1930_cities_by_pop <- left_join(ipums_collapsed, city_codebook_edited) %>%
 ipums_1930_cities_by_pop %>%
   filter(CITYPOP_total > 30000, CITYPOP_total < 50000) %>%
   view()
+
+
+####### WITH FULL SAMPLE ###########
+
+# joining codebook with full sample gives 984 cities/same number as in full collapsed sample -> looks good
+ipums_1930_cities_by_pop_full_sample <- left_join(ipums_full_sample_collapsed_1930, city_codebook_1930_full_sample_edited)
+
+# these cities correspond exactly to the cities between 30k and 40k that I had originally identified 
+ipums_1930_cities_by_pop_full_sample %>%
+  filter(citypop_total > 40000, citypop_total < 50000)
+
+ipums_1930_cities_by_pop_full_sample %>%
+  filter(citypop_total > 60000)
 
 ```
 
@@ -212,4 +287,7 @@ city_pop_name_1930_in_richmond %>%
 
 ```
 
+```{r}
+
+```
 
