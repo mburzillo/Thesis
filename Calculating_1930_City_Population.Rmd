@@ -112,15 +112,71 @@ ipums_1930_cities_by_pop_full_sample %>%
 ipums_1930_cities_by_pop_full_sample %>%
   filter(citypop_total > 60000)
 
+
 ```
 
 ###############################################################
 
 ```{r join all cities in richmond to ipums data}
 
-# joining correctly length-wise
-city_pop_name_1930_in_richmond <- left_join(all_cities_in_richmond, ipums_1930_cities_by_pop, by = c("City" = "City", "state_ab" = "state"))
+# join all cities with HOLC maps in Richmond with city population data from 1930. This will allow us to filter cities by various population cutoffs. First task will be to make sure that the cities that did not automcatically join correctly are corrected.
 
+# create a new names variable to reflect any changes made to how they were originally in Richmond
+all_cities_in_richmond$city_name_edited <- all_cities_in_richmond$City
+
+# corrections based on spelling
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "East Saint Louis"] <- "East St. Louis"
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Lake Co. Gary"] <- "Gary"
+
+# joining correctly length-wise
+city_pop_name_1930_in_richmond <- left_join(all_cities_in_richmond, ipums_1930_cities_by_pop_full_sample, by = c("city_name_edited" = "cityname", "state_ab" = "state")) %>%
+  rename(city_code = city)
+
+
+# with the initial join, it seems that only 20 cities did not join correctly -> likey a city designaiton or spelling mismatch error
+
+city_pop_name_1930_in_richmond %>%
+  filter(is.na(city_code))
+
+
+
+# dropping some cities for now based on inability to match
+
+cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee")
+
+city_pop_name_1930_in_richmond <- city_pop_name_1930_in_richmond %>%
+  filter(!(City %in% cities_to_exclude))
+
+# need to drop Lexington differently because also Lexington Kentucky here
+
+city_pop_name_1930_in_richmond <- city_pop_name_1930_in_richmond[!(city_pop_name_1930_in_richmond$City == "Lexington" & city_pop_name_1930_in_richmond$state_ab == "MA"),]
+
+city_pop_name_1930_in_richmond %>%
+  filter(City == "Lexington")
+
+
+city_pop_name_1930_in_richmond %>%
+  filter(is.na(city_code))
+
+
+######################## Notes on mismatches ##################################3
+# East Saint Louis v. East St. Louis -> spelling uniformized 
+# Stamford, Darien, and New Canaan (have data for Stamford but not Darien or New Canaan) -> exclude for now
+# Lake Co. Gary Indiana seems a definitely match to Gary Indiana in IPUMS. Lake County is the county name that Gary is in. Not sure why the put that in the name but changing to just Gary
+# Massachusetts	Holyoke Chicopee (Holyoke and Chicopee available separately. Pop of Chicopee IS 43,900. Population of Holyoke is 56500). Based on the maps, they seem to make up 1 larger urban area. Exclude for now but could be added back in later as part of the larger cities
+# Lexington, MA is not in the city codebook. May not have been incorporated at the time according to census sheet, only population of 9k at the time. Exclude for now. Could be included later since part of the area mapped for Boston but...
+
+ipums_1930_cities_by_pop_full_sample %>%
+  filter(city == 2850)
+
+```
+
+
+```{r}
+ipums_1930_cities_by_pop_full_sample
+```
+
+```{r left over from previous tries, include = FALSE}
 # I checked the 5% sample for cities that are missing and say that the citypop variable is available, but there don't appear to be any...but... does seem like you can get them from the written-in published documents..
 
 ############  fixing any non-joins ###########
@@ -143,62 +199,12 @@ city_pop_name_1930_in_richmond <- left_join(all_cities_in_richmond, ipums_1930_c
 # New York	Staten Island (not available)
 # Rhode Island	Pawtucket and Central Falls (Pawtucket and Central Falls available separately)
 
-
-
-
 #### Seem to be missing overall, potentially go find in documents ####
-# Massachusetts	Arlington (available in 1930 5%)
-# Massachusetts	Belmont (available in 1930 5%)
-# Massachusetts	Braintree (available in 1930 5%)
-# Massachusetts	Brookline (available in 1930 5%)
-# Massachusetts	Dedham (available in 1930 5%)
 # Massachusetts	Lexington (Not available/defined by Citypop in any year)
-# Massachusetts	Milton (available in 1930 5%)
-# Massachusetts	Needham (available in 1930 5%)
-# Massachusetts	Saugus (available in 1930 5%)
-# Massachusetts	Watertown (available in 1930 5%)
-# Massachusetts	Winchester (available in 1930 5%)
-# Massachusetts	Winthrop (available in 1930 5%)
-# Tennessee	Memphis (may be in 5% sample)
-# Texas	Amarillo (may be in 5% sample)
-# Texas	Austin (may be in 5% sample)
-# Texas	Beaumont (may be in 5% sample)
-# Texas	Dallas (available in 1930 5%)
-# Texas	El Paso	 (available in 1930 5%)
-# Texas	Fort Worth (available in 1930 5%)
-# Texas	Galveston (available in 1930 5%)
-# Texas	Houston	 (available in 1930 5%)
-# Texas	Port Arthur (available in 1930 5%)
-# Texas	San Antonio (available in 1930 5%)
-# Texas	Waco (available in 1930 5%)
-# Utah Ogden	UT (available in 1930 5%)
-# Utah Salt Lake City (available in 1930 5%)
-# Virginia	Lynchburg (available in 1930 5%)
-# Virginia	Newport News (available in 1930 5%)
-# Virginia	Norfolk (available in 1930 5%)
-# Virginia	Richmond (available in 1930 5%)
-# Virginia	Roanoke (available in 1930 5%)
-# Washington	Seattle	 (available in 1930 5%)
-# Washington	Spokane (available in 1930 5%)
-# Washington	Tacoma	 (available in 1930 5%)
-# West Virginia	Charleston	 (available in 1930 5%)
-# West Virginia	Huntington (available in 1930 5%)
-# West Virginia	Wheeling (available in 1930 5%)
-# Wisconsin	Kenosha (available in 1930 5%)
-# Wisconsin	Madison (available in 1930 5%)
-# Wisconsin	Milwaukee Co. (available in 1930 5%)
-# Wisconsin	Oshkosh (available in 1930 5%)
-# Wisconsin	Racine (available in 1930 5%)
 
-
-
-
-city_pop_name_1930 %>%
-  filter(is.na(city_code))
 
 
 ```
-
 
 
 ```{r look at stats for the successful matches}
