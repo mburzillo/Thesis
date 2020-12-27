@@ -127,6 +127,9 @@ all_cities_in_richmond$city_name_edited <- all_cities_in_richmond$City
 # corrections based on spelling
 all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "East Saint Louis"] <- "East St. Louis"
 all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Lake Co. Gary"] <- "Gary"
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Greater Kansas City"] <- "Kansas City"
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Schenectady"] <- "Schenectedy"
+
 
 # joining correctly length-wise
 city_pop_name_1930_in_richmond <- left_join(all_cities_in_richmond, ipums_1930_cities_by_pop_full_sample, by = c("city_name_edited" = "cityname", "state_ab" = "state")) %>%
@@ -142,7 +145,9 @@ city_pop_name_1930_in_richmond %>%
 
 # dropping some cities for now based on inability to match
 
-cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee")
+cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
+                      "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
+                      "Pawtucket and Central Falls", "Milwaukee Co." )
 
 city_pop_name_1930_in_richmond <- city_pop_name_1930_in_richmond %>%
   filter(!(City %in% cities_to_exclude))
@@ -161,19 +166,57 @@ city_pop_name_1930_in_richmond %>%
 
 ######################## Notes on mismatches ##################################3
 # East Saint Louis v. East St. Louis -> spelling uniformized 
-# Stamford, Darien, and New Canaan (have data for Stamford but not Darien or New Canaan) -> exclude for now
+# Stamford, Darien, and New Canaan (have data for Stamford but not Darien or New Canaan. Stamford has citypop of 46,300 so could be in treatment group, especially if these 3 cities make up 1 urban area. It is included in Aaronson) -> exclude for now
 # Lake Co. Gary Indiana seems a definitely match to Gary Indiana in IPUMS. Lake County is the county name that Gary is in. Not sure why the put that in the name but changing to just Gary
-# Massachusetts	Holyoke Chicopee (Holyoke and Chicopee available separately. Pop of Chicopee IS 43,900. Population of Holyoke is 56500). Based on the maps, they seem to make up 1 larger urban area. Exclude for now but could be added back in later as part of the larger cities
+# Massachusetts	Holyoke Chicopee (Holyoke and Chicopee available separately. Pop of Chicopee IS 43,900. Population of Holyoke is 56500. Chicopee and Holyoke are included in Aaronson). Based on the maps, they seem to make up 1 larger urban area. Exclude for now but could be added back in later as part of the larger cities
 # Lexington, MA is not in the city codebook. May not have been incorporated at the time according to census sheet, only population of 9k at the time. Exclude for now. Could be included later since part of the area mapped for Boston but...
+# Greater Kansas city includes city over the Kansas border. Should be fine to include. If anything, Kansas City match would be an underestimate, which would not be a problem because the population is 399,700 and thus already way above the threshold
+
+# Issue of NJ: most maps around NYC seem to be made corresponding to counties rather than cities. All seem to be part of the larger NYC area
+  # Bergen Co. seems to be a part of the larger NYC area. No direct match in census, but there is a North Bergen. However this is part of      # Hudson county, not Bergen county. Doesn't seem to have any cities large enough to be inclued in analysis
+  # Essex Co. same situation. No direct match, but Essex county contains Newark, which had a population of 442300 ->> should this be 
+  # included?
+  # Hudson Co. same deal. No direct match, but contains Jersey City (pop 316700) and North Bergen (North Bergen has a        
+  # population only of 40,715. If anything, this should be included in the treatment group, however, citypop = 0, meaning the place was not 
+  # incorporated.) . --> should this be included?
+  # Union Co. same deal. Contains cities such as Union (too small/citypop 0) and Elizabeth (pop 114,500) -> should we include?
+
+# Binghamton-Johnson City. Both Binghamton (pop 76600) and Johnson (pop 13500) can be found separately in the Census --> should we include?
+
+# Cities around NYC in NY. 
+# Bronx has no match
+# Brooklyn is entered with no city code and a note to see NYC. Seems to be counted within NYC (pop 6,930,400)
+# Lower Westchester Co. seems to be the same situation as with the NJ counties near NYC. No direct match. Contains Yonkers (pop 134,600), New Rochelle (pop 54,000), White Plains (pop 35,800)
+# Manhattan is not in the Census, this seems to be included in NYC
+
+# According to census records (https://www2.census.gov/library/publications/decennial/1930/population-volume-1/03815512v1ch07.pdf), NYC contains the 5 boroughs of Bronx, Brooklyn, Manhattan, Queens, and Richmond (Staten Island). All had 1930 pops well over 60k. Should all be included. Writing in these population numbers from the census doc linked here.
+
+city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Bronx"] <- 1265258
+city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Brooklyn"] <- 2560401
+city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Manhattan"] <- 1867312
+city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Queens"] <- 1079129
+city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Staten Island"] <- 158346
+
+
+# Pawtucket and Central Falls is in census separately as Pawtucket (pop 77,100) and Central Falls (pop 25800) -> exclude for now but clearly 2 cities directly next to eachother with a combiend pop well over 60k
+
+# Milwaukee Co. is not directly in the census but Milwaukee city is with population 578,200. The county seems to be a slightly bigger area than the city, but not by much... excluded for now but seems like this should really be included. If anything, population would be underestimate.
+
+city_pop_name_1930_in_richmond %>%
+  filter(is.na(citypop_total))
+
+
 
 ipums_1930_cities_by_pop_full_sample %>%
-  filter(city == 2850)
+  filter(city == 4610)
+
 
 ```
 
 
 ```{r}
-ipums_1930_cities_by_pop_full_sample
+ipums_1930_cities_by_pop_full_sample %>%
+  filter(city == 4130)
 ```
 
 ```{r left over from previous tries, include = FALSE}
