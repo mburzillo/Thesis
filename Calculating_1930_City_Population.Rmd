@@ -190,6 +190,8 @@ city_pop_name_1930_in_richmond %>%
 # Lower Westchester Co. seems to be the same situation as with the NJ counties near NYC. No direct match. Contains Yonkers (pop 134,600), New Rochelle (pop 54,000), White Plains (pop 35,800)
 # Manhattan is not in the Census, this seems to be included in NYC
 
+#what
+
 # According to census records (https://www2.census.gov/library/publications/decennial/1930/population-volume-1/03815512v1ch07.pdf), NYC contains the 5 boroughs of Bronx, Brooklyn, Manhattan, Queens, and Richmond (Staten Island). All had 1930 pops well over 60k. Should all be included. Writing in these population numbers from the census doc linked here.
 
 city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Bronx"] <- 1265258
@@ -205,11 +207,6 @@ city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City
 
 city_pop_name_1930_in_richmond %>%
   filter(is.na(citypop_total))
-
-<<<<<<< HEAD
-=======
-
->>>>>>> a55dd20bc2932aa5cad4e5f3d4fb7689bd794187
 
 ipums_1930_cities_by_pop_full_sample %>%
   filter(city == 4610)
