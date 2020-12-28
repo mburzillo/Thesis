@@ -11,6 +11,7 @@ library(tidyverse)
 library(readr)
 library(readxl)
 library(sjmisc)
+library(sf)
 ```
 
 ```{r import ipums data containing city and citypop for 1930 census, include = FALSE}
@@ -115,7 +116,6 @@ ipums_1930_cities_by_pop_full_sample %>%
 
 ```
 
-###############################################################
 
 ```{r join all cities in richmond to ipums data}
 
@@ -272,71 +272,22 @@ ipums_1930_cities_by_pop_full_sample %>%
   filter(citypop_total < 20000)
 ```
 
-```{r left over from previous tries, include = FALSE}
-# I checked the 5% sample for cities that are missing and say that the citypop variable is available, but there don't appear to be any...but... does seem like you can get them from the written-in published documents..
 
-############  fixing any non-joins ###########
 
-##### Potential Name Errors/True-Mis-matches
-# Stamford, Darien, and New Canaan (have data for Stamford but not Darien or New Canaan)
-# Indiana	Lake Co. Gary: Have data for Gary
-# Massachusetts	Holyoke Chicopee (Holyoke and Chicopee available separately in 1930 5%)
-# Missouri	Greater Kansas City (available as Kansas City)
-# New Jersey	Bergen Co. (available as Bergen county, but not available any years)
-# New Jersey	Essex Co. (not available)
-# New Jersey	Hudson Co. (not available)
-# New Jersey	Union Co. (union city is available, union also listed but no data)
-# New York	Binghamton-Johnson City	NY (Binghamton available, Johnson city available)
-# New York	Bronx	NY (no data)
-# New York	Brooklyn (not available separate from NYC)
-# New York	Lower Westchester Co.	(not available)
-# New York	Manhattan (not available)
-# New York	Queens (not available)
-# New York	Staten Island (not available)
-# Rhode Island	Pawtucket and Central Falls (Pawtucket and Central Falls available separately)
-
-#### Seem to be missing overall, potentially go find in documents ####
-# Massachusetts	Lexington (Not available/defined by Citypop in any year)
+```{r join HOLC shapefile data with the city population data}
 
 
 
 ```
 
 
-```{r look at stats for the successful matches}
+# subset after the join...
 
-# 143 successful matches
-city_pop_name_1930_in_richmond %>%
-  filter(!(is.na(city_code)))
+```{r create subsets based on city size, include = FALSE}
 
+cities_60k_plus_full_sample <- ipums_1930_cities_by_pop_full_sample %>%
+  filter(citypop_total > 60000)
 
-# 2 towns with HOLC maps with populations between 30-40k
-city_pop_name_1930_in_richmond %>%
-  filter(!(is.na(city_code)), CITYPOP_total > 30000, CITYPOP_total < 40000)
-
-# 26 towns with HOLC maps with populations between 40-50k
-city_pop_name_1930_in_richmond %>%
-  filter(!(is.na(city_code)), CITYPOP_total >= 40000, CITYPOP_total < 50000)
-
-# 112 towns with HOLC maps with populations between above 50k
-city_pop_name_1930_in_richmond %>%
-  filter(!(is.na(city_code)), CITYPOP_total > 50000)
-
-# 80 towns with HOLC maps with populations greater than 70k
-city_pop_name_1930_in_richmond %>%
-  filter(!(is.na(city_code)), CITYPOP_total > 70000)
-  #ggplot(aes(x = CITYPOP_total)) +
-  #geom_histogram()
-  
-# 44 towns with HOLC maps with populations between 70k and 150k
-city_pop_name_1930_in_richmond %>%
-  filter(!(is.na(city_code)), CITYPOP_total > 70000, CITYPOP_total < 150000)
-  #ggplot(aes(x = CITYPOP_total)) +
-  #geom_histogram()
-
-```
-
-```{r}
 
 ```
 

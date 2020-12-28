@@ -16,8 +16,21 @@ library(readr)
 # import intersect file from QGIS
 all_holc_overlay <- read_csv("Overlay Files from QGIS/all_holc_overlay.csv")
 
+# import the shapefile with all HOLC data from Richmond database
+full_shapefile <- st_read("Shapefiles/fullshpfile/holc_ad_data.shp") 
+
+  
 ```
 
+
+
+```{r}
+all_holc_overlay %>%
+  group_by(city) %>%
+  summarise(sum = sum(SHAPE_AREA))
+
+unique(all_holc_overlay$city)
+```
 
 
 ```{r create indicator for D grade, include = FALSE}
@@ -99,4 +112,89 @@ all_holc_overlay  %>%
   filter(GISJOIN == "G3400030EN0068")
 
 ```
+
+```{r}
+all_holc_overlay %>%
+  filter(city == "Winston Salem", state != "NC")
+```
+
+
+```{r joining population data with data from Caclulating 1930_City_Populations RMD, include = FALSE}
+
+# change SouthBend in all_holc_overlay to South Bend (missing a space)
+all_holc_overlay$city[all_holc_overlay$city == "SouthBend"] <- "South Bend"
+
+# change St. to Saint to match HOLC spelling
+all_holc_overlay$city[all_holc_overlay$city == "St.Louis"] <- "Saint Louis"
+all_holc_overlay$city[all_holc_overlay$city == "St.Petersburg"] <- "Saint Petersburg"
+
+# add - between Winston and Salem
+all_holc_overlay$city[all_holc_overlay$city == "Winston Salem"] <- "Winston-Salem"
+
+# change Schenectady spelling back again
+city_pop_name_1930_in_richmond$city_name_edited[city_pop_name_1930_in_richmond$City == "Schenectady"] <- "Schenectady"
+
+all_richmond_with_pop <- left_join(all_holc_overlay, city_pop_name_1930_in_richmond, by = c("city" = "city_name_edited", "state" = "state_ab"))
+
+cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
+                      "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
+                      "Pawtucket and Central Falls", "Milwaukee Co.", "Lake Co. Gary", "Greater Kansas City")
+
+# filter to exclude these cities
+all_richmond_with_pop <- all_richmond_with_pop %>%
+  filter(!(city %in% cities_to_exclude))
+
+
+# need to drop Lexington differently because also Lexington Kentucky here
+all_richmond_with_pop <- all_richmond_with_pop[!(all_richmond_with_pop$city == "Lexington" & all_richmond_with_pop$state == "MA"),]
+
+
+
+# There are 10 areas that didn't match after inital join. Resolved with steps below...
+all_richmond_with_pop %>% 
+  filter(is.na(citypop_total)) %>% 
+  group_by(city, state) %>%
+  summarise(sum(NHGISST))
+
+# at start of chunck, rechanged spelling of Schenectady again to fix merge issue with that city and change SouthBend in all_holc_overlay to South Bend (missing a space) to fix join issue.
+
+# add Binghamton/Johnson City to list, just used a forward slash instead of - here. Add Essex County, Hudson County, and Lake County Gary here instad of abbreviating Co.
+
+cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
+                      "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
+                      "Pawtucket and Central Falls", "Milwaukee Co.", "Lake Co. Gary", "Greater Kansas City",
+                      "Binghamton/Johnson City", "Essex County", "Hudson County", "Lake County Gary")
+
+# filter to exclude these cities
+all_richmond_with_pop <- all_richmond_with_pop %>%
+  filter(!(city %in% cities_to_exclude))
+
+
+# There are now no errors - joined successfully
+all_richmond_with_pop %>% 
+  filter(is.na(citypop_total)) %>% 
+  group_by(city, state) %>%
+  summarise(sum(NHGISST))
+
+# there are now 124 cities with HOLC maps and city populations - why did some disappear?
+all_richmond_with_pop %>% 
+  mutate(count = 1) %>%
+  group_by(city, state, GISJOIN2) %>%
+  summarise(sum(count))
+
+```
+
+```{r}
+city_pop_name_1930_in_richmond %>%
+  arrange(City)
+```
+
+```{r}
+
+all_holc_overlay %>% 
+  filter(city == "Schenectady")
+
+```
+
+
 
