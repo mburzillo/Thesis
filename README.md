@@ -2,7 +2,7 @@
 
 New home for R thesis work
 
-## File Descriptions: Rmds should be run in the order presented to produce final data for analusis
+## File Descriptions: Rmds should be run in the order presented to produce final data for analysis
 
 
 **Calculating_1930_City_Population.RMD** contains all calculations/data reshaping to take IPUMS files and find city populations for 1930. Final dataset includes city code, name, state, and population for all cities and all cities with Richmond HOLC maps (city_pop_name_1930_in_richmond). 
