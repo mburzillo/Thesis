@@ -205,7 +205,7 @@ city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City
 city_pop_name_1930_in_richmond %>%
   filter(is.na(citypop_total))
 
-# ipums_1930_cities_by_pop_full_sample %>% filter(city == 4610)
+ipums_1930_cities_by_pop_full_sample %>% filter(city == 790)
 
 
 ```

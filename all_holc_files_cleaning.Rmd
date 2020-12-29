@@ -179,8 +179,9 @@ all_richmond_with_pop %>%
 # there are now 124 cities with HOLC maps and city populations - why did some disappear?
 all_richmond_with_pop %>% 
   mutate(count = 1) %>%
-  group_by(city, state, GISJOIN2) %>%
-  summarise(sum(count))
+  group_by(city, state) %>%
+  summarise(sum(count)) %>%
+  view()
 
 ```
 
