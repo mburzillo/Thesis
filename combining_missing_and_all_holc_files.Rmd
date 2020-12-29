@@ -11,11 +11,17 @@ library(tidyverse)
 library(sf)
 ```
 
+```{r import full shapefile for later, include = FALSE}
+
+fullshpfile <- st_read("Shapefiles/fullshpfile/holc_ad_data.shp")
+
+```
+
 
 ```{r create lists of files and file paths for the data, include = FALSE}
 
 # get all of the files in the folder
-holc_files_list <- list.files("Shapefiles/Richmond HOLC Files/")
+holc_files_list <- list.files("Shapefiles/Missing from fullshpfile/")
 
 # initialize empty file path list
 holc_file_path_list <- rep(NA,length(holc_files_list))
@@ -23,59 +29,46 @@ holc_file_path_list <- rep(NA,length(holc_files_list))
 # create a lsit with all of the file paths
 for (i in 1:length(holc_files_list)){
   # create file path name 
-  holc_file_path_list[i] <- paste("Shapefiles/Richmond HOLC Files/", holc_files_list[i], "/cartodb-query.shp", sep = "")
+  holc_file_path_list[i] <- paste("Shapefiles/Missing from fullshpfile/", holc_files_list[i], "/cartodb-query.shp", sep = "")
 }
 ```
 
 
 ```{r}
-
-# initialize map year variable
-map_year <- rep(NA, length(holc_files_list))
-
 # extract data from file names
-map_year_test <- substr(holc_files_list, nchar(holc_files_list) - 3, nchar(holc_files_list))
 state <- substr(holc_files_list, 0,2)
 city <- substr(holc_files_list, 3, nchar(holc_files_list) - 4)
-state_city <- substr(holc_files_list, 0, nchar(holc_files_list) - 4)
 
-# Check that it doesn't match any non-number
-numbers_only <- function(x) !grepl("\\D", x)
-
-# if map_year_test is only numberic (i.e. it is a valid year, assign the year to map_year variable. If not, leave it as NA)
-
-for (i in 1:length(map_year_test)){
-  if (numbers_only(map_year_test[i])) {
-  map_year[i] <- map_year_test[i]
-  }
-}
-
-
+# edit any cities that need a space
+city[city == "LittleRock"] <- "Little Rock"
+city[city == "CouncilBluffs"] <- "Council Bluffs"
+city[city == "DesMoines"] <- "Des Moines"  
+city[city == "SiouxCity"] <- "Sioux City" 
+city[city == "Waterloo19XX"] <- "Waterloo" 
+city[city == "StPaul"] <- "Saint Paul"
+city[city == "WilkesBarre"] <- "Wilkes-Barre"
+city[city ==  "ElPaso"] <-  "El Paso"
+city[city == "FortWorth"] <- "FortWorth"
+city[city == "PortArthur"] <- "Port Arthur"
+city[city == "SanAntonio"] <- "San Antonio"
+city[city == "SaltLakeCity"] <- "Salt Lake City"
 ```
 
 
-```{r create initial all_holc_shape_files df with phoenix/1st in list, include = FALSE}
+```{r create initial all_holc_shape_files df with Little Rock/1st in list, include = FALSE}
 
 # read shapefile
-phoenix <- st_read(holc_file_path_list[1])
-
-# create var for map_year
-phoenix$map_year <- map_year[1]
+little_rock <- st_read(holc_file_path_list[1])
 
 # create var for state
-phoenix$state <- state[1]
+little_rock$state <- state[1]
 
 # create var for city
-phoenix$city <- city[1]
-
-# get rid of var for area
-phoenix <- phoenix %>%
-  select(-holc_area)
+little_rock$city <- city[1]
 
 # create all_holc_shape_files, which we will bind the remaining data rows to
-all_holc_shape_files <- phoenix
+master_holc_shape_files <- little_rock
 ```
-
 
 
 ```{r loop throught the file path list to add the rest of the data to dataset, include = FALSE}
@@ -84,9 +77,6 @@ for (i in 2:length(holc_file_path_list)){
   # read shapefile
   dataset <- st_read(holc_file_path_list[i])
 
-  # create var for map_year
-  dataset$map_year <- map_year[i]
-
   # create var for state
   dataset$state <- state[i]
 
@@ -94,14 +84,25 @@ for (i in 2:length(holc_file_path_list)){
   dataset$city <- city[i]
 
   # create all_holc_shape_files, which we will bind the remaining data rows to
-  all_holc_shape_files <- rbind(all_holc_shape_files, dataset)
+  master_holc_shape_files <- rbind(master_holc_shape_files, dataset)
 }
 
 ```
 
+```{r joining these missing to the original fullshpfile, include = FALSE}
+
+# drop area_descr because not in master_holc_shape_files and don't need anyways
+fullshpfile <- fullshpfile  %>%
+  select(-area_descr)
+
+master_holc_shape_file <- rbind(fullshpfile, master_holc_shape_files)
+
+```
+
+
 ```{r export shapefile for use in gis, include = FALSE}
 
-st_write(all_holc_shape_files, "all_holc_shape_files.shp", append = FALSE)
+st_write(master_holc_shape_file, "master_holc_shape_files.shp", append = FALSE)
 
 #View(all_holc_shape_files)
 
