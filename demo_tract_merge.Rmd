@@ -31,11 +31,14 @@ race_1960_demo <- nhgis0023_ds92_1960_tract
 
 ```{r merge data, include = FALSE}
 
-# join with the final data set with the tracts and HOLC grades
+# join with the final data set with the tracts and HOLC grades from all_holc_files_cleaning
 
 # all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by = "GISJOIN")
 
-all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "GISJOIN")
+all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "GISJOIN") %>%
+  select(-State, -City, -STATE) %>%
+  rename(tract_year = year,
+         demo_year = YEAR)
 
 ```
 
@@ -217,7 +220,8 @@ data_for_analysis$pct_black_printed <- (data_for_analysis$black_printed)/data_fo
 # % foreign stock
 data_for_analysis$pct_foreign_stock_printed<- (data_for_analysis$foreign_stock_printed)/data_for_analysis$tot_persons_printed * 100
 
-
+# % foreign born
+data_for_analysis$pct_foreign_born <- (data_for_analysis$foreign_born)/data_for_analysis$tot_persons_printed * 100
 
 # pct hs grads
 
@@ -236,7 +240,27 @@ data_for_analysis$tot_hs_grads <- data_for_analysis$school_yr_hs_4 +
 data_for_analysis$pct_hs_grad <- data_for_analysis$tot_hs_grads/data_for_analysis$tot_school_persons * 100
 
 
-# need to calculate income next -> how to choose something for this??
+# need to calculate income next -> how to choose something for this?? https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-poverty-people.html
+
+# based on the above source, the pverty level for families of 3 in 1959 was 2,324 -> create indicator of below or above 3k income, roughly the poverty line for a family of 3. 
+
+# average household size according to the census in 1960 was 3.29 https://www.census.gov/library/publications/1962/dec/pc-s1-23.html#:~:text=The%20number%20of%20households%20in,of%20household%20was%203.29%20persons.
+
+# sum families with income in 1959 <3k and then divide by total # families
+
+
+data_for_analysis$all_families_with_income_data <- data_for_analysis$fam_income_less_1k + data_for_analysis$fam_income_1_2k + data_for_analysis$fam_income_2_3k +
+data_for_analysis$fam_income_3_4k + data_for_analysis$fam_income_4_5k + data_for_analysis$fam_income_5_6k +
+data_for_analysis$fam_income_6_7k + data_for_analysis$fam_income_7_8k + data_for_analysis$fam_income_8_9k +
+data_for_analysis$fam_income_9_10k + data_for_analysis$fam_income_10_15k + data_for_analysis$fam_income_15_25k +
+data_for_analysis$fam_income_25k_p
+
+data_for_analysis$all_families_with_income_lt_3k <- data_for_analysis$fam_income_less_1k + data_for_analysis$fam_income_1_2k + data_for_analysis$fam_income_2_3k 
+
+data_for_analysis$pct_families_below_3k_income <- (data_for_analysis$all_families_with_income_lt_3k/
+                                                     data_for_analysis$all_families_with_income_data) * 100
+
+
 ```
 
 
@@ -247,11 +271,10 @@ all_cities_grade_demo  %>%
   geom_point() +
   geom_smooth(se = FALSE)
 
-all_cities_grade_demo  %>%
-  ggplot(aes(x = pct_black, y= rounded_tract_holc_grade)) +
+data_for_analysis  %>%
+  ggplot(aes(x = pct_black_printed, y= prop_grade_D)) +
   geom_point() +
-  geom_smooth(se = FALSE) +
-  facet_wrap(~city)
+  geom_smooth(se = FALSE)
   
 ```
 
@@ -264,8 +287,9 @@ all_cities_grade_demo  %>%
   geom_smooth(se = FALSE)
 ```
 
-```{r}
-write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
+```{r export data, include = FALSE}
+#write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
+write.csv(data_for_analysis, "data_for_analysis.csv")
 ```
 
 
