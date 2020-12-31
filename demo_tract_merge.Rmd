@@ -33,7 +33,9 @@ race_1960_demo <- nhgis0023_ds92_1960_tract
 
 # join with the final data set with the tracts and HOLC grades
 
-all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by = "GISJOIN")
+# all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by = "GISJOIN")
+
+all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "GISJOIN")
 
 ```
 
@@ -41,24 +43,24 @@ all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by =
 ```{r renaming relevant vars based on codebook to work with, include = FALSE}
 
 # initialize data for analysis, and we will add on columns from the joined data for the variables we need 
-data_for_analysis <- all_cities_tract_grades
+data_for_analysis <- all_cities_grade_demo
 
 # variable encodings in format: description (universe)
 
 # Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
 
-data_for_analysis$tot_persons <- all_cities_grade_demo$B53001
+data_for_analysis$tot_persons_printed <- all_cities_grade_demo$B53001
 
 
 # RACE from printed report (Persons)
 
-data_for_analysis$white <- all_cities_grade_demo$B7B001
-data_for_analysis$black <- all_cities_grade_demo$B7B002
-data_for_analysis$other <- all_cities_grade_demo$B7B003
+data_for_analysis$white_printed <- all_cities_grade_demo$B7B001
+data_for_analysis$black_printed <- all_cities_grade_demo$B7B002
+data_for_analysis$other_printed <- all_cities_grade_demo$B7B003
 
 # total foreign stock from printed report (foreign stock persons)
 
-data_for_analysis$foreign_stock <- all_cities_grade_demo$B7M001
+data_for_analysis$foreign_stock_printed <- all_cities_grade_demo$B7M001
 
 # foreign born (foreign stock persons)
 
@@ -153,6 +155,7 @@ data_for_analysis$built_1940_1949 <- all_cities_grade_demo$B98002
 data_for_analysis$built_pre_1940 <- all_cities_grade_demo$B98003
 
 
+
 # year head moved into household (occupied housing units)
 
 data_for_analysis$moved_1958_1960 <- all_cities_grade_demo$CAJ001
@@ -180,21 +183,39 @@ data_for_analysis$condition_dilapidated <- all_cities_grade_demo$B67003
 
 # housing value
 
+defined = c("B53001", "B7B001", "B7B002", "B7B003", "B7M001", "B8J001", "B8R001", 
+            "B8R002", "B8R003", "B8R004", "B8R005", "B8R006", "B8R007", "B8R008",
+            "B8W001", "B8W002", "B8W003", "B8W004", "B8W005", "B8W006", "B8W007",
+            "B8W008", "B8W009", "B8W010", "B8W011", "B8W012", "B8W013", "CA5001",
+            "B8F001", "B8F002", "B8Q001", "B8Q002", "B76001", "B76002", "B76003", 
+            "B76004", "B8B001", "B7O001", "B7O002", "B7O003", "B7O004", "B7O005",
+            "B7O006", "B7O007", "B7O008", "B7O009", "B7O010", "B92001", "B92002",
+            "B92003", "B92004", "B92005", "B98001", "B98002", "B98003", "CAJ001",
+            "CAJ002", "CAJ003", "CAJ004", "B54001", "B67001", "B67002", "B67003")
+
+
+filtered <- data_for_analysis %>%
+  select(!(defined)) %>%
+  view()
+
+colnames(filtered)
+
+
 ```
 
 
 ```{r creating additional variables relevant for analysis, include = FALSE}
 
 # pct non-white
-data_for_analysis$pct_non_white <- (data_for_analysis$black +
-                                      data_for_analysis$other)/data_for_analysis$tot_persons * 100
+data_for_analysis$pct_non_white_printed <- (data_for_analysis$black_printed +
+                                      data_for_analysis$other_printed)/data_for_analysis$tot_persons_printed * 100
 
 # pct black
-data_for_analysis$pct_black <- (data_for_analysis$black)/data_for_analysis$tot_persons * 100
+data_for_analysis$pct_black_printed <- (data_for_analysis$black_printed)/data_for_analysis$tot_persons_printed * 100
 
 
 # % foreign stock
-data_for_analysis$pct_foreign_stock<- (data_for_analysis$foreign_stock)/data_for_analysis$tot_persons * 100
+data_for_analysis$pct_foreign_stock_printed<- (data_for_analysis$foreign_stock_printed)/data_for_analysis$tot_persons_printed * 100
 
 
 
