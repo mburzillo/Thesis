@@ -152,7 +152,7 @@ data_for_analysis$property_value_15000_17400 <- all_cities_grade_demo$B7O006
 data_for_analysis$property_value_17500_19900 <- all_cities_grade_demo$B7O007
 data_for_analysis$property_value_20000_24900 <- all_cities_grade_demo$B7O008
 data_for_analysis$property_value_25000_34900 <- all_cities_grade_demo$B7O009
-data_for_analysis$property_value_35000_plus <- all_cities_grade_demo$B7O0010
+data_for_analysis$property_value_35000_plus <- all_cities_grade_demo$B7O010
 
 
 # units in structure (housing units)
@@ -166,9 +166,9 @@ data_for_analysis$units_10_P <- all_cities_grade_demo$B92005
 
 # year structure built (all housing units)
 
-data_for_analysis$built_1950_1960 <- all_cities_grade_demo$B98001
-data_for_analysis$built_1940_1949 <- all_cities_grade_demo$B98002
-data_for_analysis$built_pre_1940 <- all_cities_grade_demo$B98003
+data_for_analysis$built_1950_1960 <- all_cities_grade_demo$B96001
+data_for_analysis$built_1940_1949 <- all_cities_grade_demo$B96002
+data_for_analysis$built_pre_1940 <- all_cities_grade_demo$B96003
 
 
 
@@ -207,7 +207,7 @@ defined = c("B53001", "B7B001", "B7B002", "B7B003", "B7M001", "B8J001", "B8R001"
             "B8F001", "B8F002", "B8Q001", "B8Q002", "B76001", "B76002", "B76003", 
             "B76004", "B8B001", "B7O001", "B7O002", "B7O003", "B7O004", "B7O005",
             "B7O006", "B7O007", "B7O008", "B7O009", "B7O010", "B92001", "B92002",
-            "B92003", "B92004", "B92005", "B98001", "B98002", "B98003", "CAJ001",
+            "B92003", "B92004", "B92005", "B96001", "B96002", "B96003", "CAJ001",
             "CAJ002", "CAJ003", "CAJ004", "B54001", "B67001", "B67002", "B67003",
             "B9R001", "B9R002", "B9R003", "B8A001")
 
@@ -222,6 +222,7 @@ colnames(filtered)
 
 ```{r}
 data_for_analysis
+
 ```
 
 ```{r creating additional variables relevant for analysis, include = FALSE}
@@ -285,7 +286,7 @@ data_for_analysis$pct_families_below_3k_income <- (data_for_analysis$all_familie
 data_for_analysis$vacant_all <- data_for_analysis$vacant_for_rent_2 + data_for_analysis$vacant_for_sale_2 + 
   data_for_analysis$vacant_other_2
 
-data_for_analysis$pct_vacant_all <- data_for_analysis$vacant_all/data_for_analysis$tot_hunits
+data_for_analysis$pct_vacant_all <- 100 * data_for_analysis$vacant_all/data_for_analysis$tot_hunits
 
 
 # create var for occupied units which is all units minus vacant
@@ -294,29 +295,78 @@ data_for_analysis$occupied_units <- data_for_analysis$tot_hunits - data_for_anal
 
 
 # pct_owner_occupied out of all units
-data_for_analysis$pct_owner_occupied <- data_for_analysis$owner_occupied/data_for_analysis$occupied_units
+data_for_analysis$pct_owner_occupied <- 100 * data_for_analysis$owner_occupied/data_for_analysis$occupied_units
 
 
 # pct renter occupied (occupied year round h units)
-data_for_analysis$pct_renter_occupied <- data_for_analysis$renter_occupied/data_for_analysis$occupied_units
+data_for_analysis$pct_renter_occupied <- 100 * data_for_analysis$renter_occupied/data_for_analysis$occupied_units
 
 
 # pct units 1.01 or more people per room (highest category)
-data_for_analysis$pct_one_point_0_one_people_per_room_or_more <- data_for_analysis$persons_per_room_onepone_or_more/data_for_analysis$occupied_units
+data_for_analysis$pct_one_point_0_one_people_per_room_or_more <- 100 *  data_for_analysis$persons_per_room_onepone_or_more/data_for_analysis$occupied_units
 
 
 # average rent of owner occupied units
-
-# Renter occupied units reporting rent
 data_for_analysis$avg_monthly_contract_rent <- data_for_analysis$agg_monthly_contract_rent/ data_for_analysis$renter_occupied_units_reporting_rent
 
+# log average rent of owner occupied units
+data_for_analysis$log_avg_monthly_contract_rent <- log(data_for_analysis$avg_monthly_contract_rent)
+
+
+
+# https://archive.curbed.com/2018/4/10/17219786/buying-a-house-mortgage-government-gi-bill says median home value was 11,900 in 1960
+
+data_for_analysis$houses_w_property_value_data <- data_for_analysis$property_value_u5k +
+  data_for_analysis$property_value_5000_7400 + data_for_analysis$property_value_7500_9900 +
+  data_for_analysis$property_value_10000_12400 + data_for_analysis$property_value_12500_14900 +
+  data_for_analysis$property_value_15000_17400 + data_for_analysis$property_value_17500_19900 +
+  data_for_analysis$property_value_20000_24900 + data_for_analysis$property_value_25000_34900 +
+  data_for_analysis$property_value_35000_plus
+
+
+# percent of houses of value under 5k
+
+data_for_analysis$pct_houses_w_property_value_u5k <- 100* data_for_analysis$property_value_u5k/data_for_analysis$houses_w_property_value_data
+
+# pct 1 unit houses
+data_for_analysis$units_with_unit_data <- data_for_analysis$units_1 + data_for_analysis$units_2 + data_for_analysis$units_3_4 + data_for_analysis$units_5_9 + data_for_analysis$units_10_P
+data_for_analysis$pct_single_unit <- data_for_analysis$units_1/data_for_analysis$units_with_unit_data * 100
+
+# pct built pre 1940
+
+data_for_analysis$pct_built_pre_1940 <- data_for_analysis$built_pre_1940/(data_for_analysis$built_1950_1960 + data_for_analysis$built_1940_1949 + data_for_analysis$built_pre_1940) * 100
+
+
+
+# year head moved into household (occupied housing units)
+
+data_for_analysis$pct_moved_pre_1940 <- data_for_analysis$moved_in_pre_1940/(data_for_analysis$moved_1958_1960 + data_for_analysis$moved_in_1954_1957 + data_for_analysis$moved_in_1940_1953 + data_for_analysis$moved_in_pre_1940) * 100
+
+data_for_analysis$pct_moved_1958_1960 <- data_for_analysis$moved_1958_1960/(data_for_analysis$moved_1958_1960 + data_for_analysis$moved_in_1954_1957 + data_for_analysis$moved_in_1940_1953 + data_for_analysis$moved_in_pre_1940) * 100
+
+# pct_pop group quarters
+
+data_for_analysis$pct_persons_group_quarters <- 100 * data_for_analysis$persons_group_quarters/data_for_analysis$tot_persons_printed
+
+# CONDITION
+
+# housing by condition: pct deteriorated or dilapidated
+
+data_for_analysis$pct_housing_deteriorated_dilap <- (data_for_analysis$condition_deteriorated + data_for_analysis$condition_dilapidated)/ (data_for_analysis$condition_sound + data_for_analysis$condition_deteriorated + data_for_analysis$condition_dilapidated) * 100
+
+
+data_for_analysis %>%
+  ggplot(aes(x = pct_housing_deteriorated_dilap, y = prop_grade_D)) +
+  geom_point() +
+  geom_smooth()
+  
 
 
 ```
 
 
 
-```{r}
+```{r, eval = FALSE}
 all_cities_grade_demo  %>%
   ggplot(aes(x = pct_black, y= rounded_tract_holc_grade)) +
   geom_point() +
@@ -331,7 +381,7 @@ data_for_analysis  %>%
 
 
 
-```{r}
+```{r eval = FALSE}
 all_cities_grade_demo  %>%
   ggplot(aes(x = pct_white, y= rounded_tract_holc_grade)) +
   geom_point() +
