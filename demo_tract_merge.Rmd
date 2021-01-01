@@ -104,10 +104,10 @@ data_for_analysis$tot_hunits <- all_cities_grade_demo$CA5001
 
 
 # N owner occupied (occupied year round h units)
-data_for_analysis$owner_occupied <- all_cities_grade_demo$B8F001
+data_for_analysis$owner_occupied <- all_cities_grade_demo$B9O001
 
 # N renter occupied (occupied year round h units)
-data_for_analysis$renter_occupied <- all_cities_grade_demo$B8F002
+data_for_analysis$renter_occupied <- all_cities_grade_demo$B9O002
 
 
 # N vacant for rent (vacant year-round housing units)
@@ -116,12 +116,25 @@ data_for_analysis$vacant_for_rent<- all_cities_grade_demo$B8Q001
 data_for_analysis$vacant_for_sale <- all_cities_grade_demo$B8Q002
 
 
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+data_for_analysis$vacant_for_rent_2<- all_cities_grade_demo$B9R001
+# N vacant for sale (vacant year-round housing units)
+data_for_analysis$vacant_for_sale_2 <- all_cities_grade_demo$B9R002
+# N vacant for sale (vacant year-round housing units)
+data_for_analysis$vacant_other_2 <- all_cities_grade_demo$B9R003
+
+
 # Occupied Units by Persons per Room (occupied units)
 data_for_analysis$persons_per_room_half_or_less <- all_cities_grade_demo$B76001
 data_for_analysis$persons_per_room_point51_point75 <- all_cities_grade_demo$B76002
 data_for_analysis$persons_per_room_point76_one<- all_cities_grade_demo$B76003
 data_for_analysis$persons_per_room_onepone_or_more <- all_cities_grade_demo$B76004
 
+
+# Renter occupied units reporting rent
+data_for_analysis$renter_occupied_units_reporting_rent <- all_cities_grade_demo$B8A001
 
 # renter occupied unit aggregate monthly contract rent
 
@@ -178,6 +191,7 @@ data_for_analysis$condition_deteriorated <- all_cities_grade_demo$B67002
 data_for_analysis$condition_dilapidated <- all_cities_grade_demo$B67003
 
 
+
 # % African American
 # % non-white
 # % immigrants
@@ -194,18 +208,21 @@ defined = c("B53001", "B7B001", "B7B002", "B7B003", "B7M001", "B8J001", "B8R001"
             "B76004", "B8B001", "B7O001", "B7O002", "B7O003", "B7O004", "B7O005",
             "B7O006", "B7O007", "B7O008", "B7O009", "B7O010", "B92001", "B92002",
             "B92003", "B92004", "B92005", "B98001", "B98002", "B98003", "CAJ001",
-            "CAJ002", "CAJ003", "CAJ004", "B54001", "B67001", "B67002", "B67003")
+            "CAJ002", "CAJ003", "CAJ004", "B54001", "B67001", "B67002", "B67003",
+            "B9R001", "B9R002", "B9R003", "B8A001")
 
 
 filtered <- data_for_analysis %>%
-  select(!(defined)) %>%
-  view()
+  select(!(defined))
 
 colnames(filtered)
 
 
 ```
 
+```{r}
+data_for_analysis
+```
 
 ```{r creating additional variables relevant for analysis, include = FALSE}
 
@@ -261,6 +278,40 @@ data_for_analysis$pct_families_below_3k_income <- (data_for_analysis$all_familie
                                                      data_for_analysis$all_families_with_income_data) * 100
 
 
+# hhunits
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+data_for_analysis$vacant_all <- data_for_analysis$vacant_for_rent_2 + data_for_analysis$vacant_for_sale_2 + 
+  data_for_analysis$vacant_other_2
+
+data_for_analysis$pct_vacant_all <- data_for_analysis$vacant_all/data_for_analysis$tot_hunits
+
+
+# create var for occupied units which is all units minus vacant
+
+data_for_analysis$occupied_units <- data_for_analysis$tot_hunits - data_for_analysis$vacant_all
+
+
+# pct_owner_occupied out of all units
+data_for_analysis$pct_owner_occupied <- data_for_analysis$owner_occupied/data_for_analysis$occupied_units
+
+
+# pct renter occupied (occupied year round h units)
+data_for_analysis$pct_renter_occupied <- data_for_analysis$renter_occupied/data_for_analysis$occupied_units
+
+
+# pct units 1.01 or more people per room (highest category)
+data_for_analysis$pct_one_point_0_one_people_per_room_or_more <- data_for_analysis$persons_per_room_onepone_or_more/data_for_analysis$occupied_units
+
+
+# average rent of owner occupied units
+
+# Renter occupied units reporting rent
+data_for_analysis$avg_monthly_contract_rent <- data_for_analysis$agg_monthly_contract_rent/ data_for_analysis$renter_occupied_units_reporting_rent
+
+
+
 ```
 
 
@@ -289,6 +340,14 @@ all_cities_grade_demo  %>%
 
 ```{r export data, include = FALSE}
 #write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
+
+# remove variables that have been duplicated and renamed
+data_for_analysis <- data_for_analysis %>%
+  select(!(defined))
+
+colnames(data_for_analysis)
+
+
 write.csv(data_for_analysis, "data_for_analysis.csv")
 ```
 
