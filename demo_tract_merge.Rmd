@@ -190,7 +190,29 @@ data_for_analysis$condition_sound <- all_cities_grade_demo$B67001
 data_for_analysis$condition_deteriorated <- all_cities_grade_demo$B67002
 data_for_analysis$condition_dilapidated <- all_cities_grade_demo$B67003
 
+# employment status
+data_for_analysis$employed_males <- data_for_analysis$B82001
+data_for_analysis$unemployed_males <- data_for_analysis$B82002
+data_for_analysis$armed_forces_males <- data_for_analysis$B82003
+data_for_analysis$not_in_lf_males <- data_for_analysis$B82004
+data_for_analysis$employed_females <- data_for_analysis$B82005
+data_for_analysis$unemployed_females <- data_for_analysis$B82006
+data_for_analysis$armed_forces_females <- data_for_analysis$B82007
+data_for_analysis$not_in_lf_females<- data_for_analysis$B82008
 
+
+# plumbing: DID NOT CODE ALL OPTIONS
+data_for_analysis$plumbing_sound_w_all_facilities <- data_for_analysis$B9V001
+
+data_for_analysis$plumbing_deteriorating_w_all_facilities <- data_for_analysis$B9V004
+data_for_analysis$plumbing_deteriorating_lackorshare_hwater <- data_for_analysis$B9V005
+data_for_analysis$plumbing_deteriorating_lackorshare_privatetoilet <- data_for_analysis$B9V006
+data_for_analysis$plumbing_delapidated <- data_for_analysis$B9V007
+
+# bathrooms
+data_for_analysis$one_bathroom <- data_for_analysis$B9Y001
+data_for_analysis$more_than_one_bathroom <- data_for_analysis$B9Y002
+data_for_analysis$shared_or_no_inside_bathroom <- data_for_analysis$B9Y003
 
 # % African American
 # % non-white
@@ -209,7 +231,9 @@ defined = c("B53001", "B7B001", "B7B002", "B7B003", "B7M001", "B8J001", "B8R001"
             "B7O006", "B7O007", "B7O008", "B7O009", "B7O010", "B92001", "B92002",
             "B92003", "B92004", "B92005", "B96001", "B96002", "B96003", "CAJ001",
             "CAJ002", "CAJ003", "CAJ004", "B54001", "B67001", "B67002", "B67003",
-            "B9R001", "B9R002", "B9R003", "B8A001")
+            "B9R001", "B9R002", "B9R003", "B8A001", "B82002", "B82003", "B82004",
+            "B82005", "B82006", "B82007", "B82008", "B9V001", "B9V004", "B9V005",
+            "B9V006", "B9V007", "B9Y001", "B9Y002", "B9Y003")
 
 
 filtered <- data_for_analysis %>%
@@ -359,8 +383,27 @@ data_for_analysis %>%
   ggplot(aes(x = pct_housing_deteriorated_dilap, y = prop_grade_D)) +
   geom_point() +
   geom_smooth()
-  
 
+# pct males unemployed
+
+data_for_analysis$pct_unemployed_males <- 100 * data_for_analysis$unemployed_males/
+  (data_for_analysis$unemployed_males + data_for_analysis$employed_males
+   + data_for_analysis$armed_forces_males + data_for_analysis$not_in_lf_males)  
+
+
+# plumbing: pct deteriorating or dilapidated
+data_for_analysis$pct_plumbing_detdilap <- 100 * (data_for_analysis$plumbing_deteriorating_w_all_facilities  +
+  data_for_analysis$plumbing_deteriorating_lackorshare_hwater +
+  data_for_analysis$plumbing_deteriorating_lackorshare_privatetoilet +
+  data_for_analysis$plumbing_delapidated )/data_for_analysis$tot_hunits
+
+# bathrooms
+
+data_for_analysis$pct_shared_or_bath_outside <- data_for_analysis$shared_or_no_inside_bathroom/ data_for_analysis$tot_hunits * 100
+data_for_analysis$pct_more_than_one_bathroom <- data_for_analysis$more_than_one_bathroom/data_for_analysis$tot_hunits * 100
+
+
+colnames(data_for_analysis)
 
 ```
 
@@ -373,7 +416,7 @@ all_cities_grade_demo  %>%
   geom_smooth(se = FALSE)
 
 data_for_analysis  %>%
-  ggplot(aes(x = pct_black_printed, y= prop_grade_D)) +
+  ggplot(aes(x = pct_unemployed_males, y= prop_grade_D)) +
   geom_point() +
   geom_smooth(se = FALSE)
   
@@ -396,6 +439,9 @@ data_for_analysis <- data_for_analysis %>%
   select(!(defined))
 
 colnames(data_for_analysis)
+
+data_for_analysis <- data_for_analysis %>%
+  select(NHGISST:AREANAME, tot_persons_printed:pct_more_than_one_bathroom)
 
 
 write.csv(data_for_analysis, "data_for_analysis.csv")
