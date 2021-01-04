@@ -214,6 +214,22 @@ data_for_analysis$one_bathroom <- data_for_analysis$B9Y001
 data_for_analysis$more_than_one_bathroom <- data_for_analysis$B9Y002
 data_for_analysis$shared_or_no_inside_bathroom <- data_for_analysis$B9Y003
 
+
+# rent buckets
+data_for_analysis$contract_rent_lt_20 <- data_for_analysis$CAV001
+data_for_analysis$contract_rent_20_29 <- data_for_analysis$CAV002
+data_for_analysis$contract_rent_30_39 <- data_for_analysis$CAV003
+data_for_analysis$contract_rent_40_49 <- data_for_analysis$CAV004
+data_for_analysis$contract_rent_50_59 <- data_for_analysis$CAV005
+data_for_analysis$contract_rent_60_69 <- data_for_analysis$CAV006
+data_for_analysis$contract_rent_70_79 <- data_for_analysis$CAV007
+data_for_analysis$contract_rent_80_89 <- data_for_analysis$CAV008
+data_for_analysis$contract_rent_90_99 <- data_for_analysis$CAV009
+data_for_analysis$contract_rent_l00_119 <- data_for_analysis$CAV010
+data_for_analysis$contract_rent_120_149 <- data_for_analysis$CAV011
+data_for_analysis$contract_rent_150p <- data_for_analysis$CAV012
+data_for_analysis$contract_rent_no_cash_rent <- data_for_analysis$CAV013
+
 # % African American
 # % non-white
 # % immigrants
@@ -233,7 +249,9 @@ defined = c("B53001", "B7B001", "B7B002", "B7B003", "B7M001", "B8J001", "B8R001"
             "CAJ002", "CAJ003", "CAJ004", "B54001", "B67001", "B67002", "B67003",
             "B9R001", "B9R002", "B9R003", "B8A001", "B82002", "B82003", "B82004",
             "B82005", "B82006", "B82007", "B82008", "B9V001", "B9V004", "B9V005",
-            "B9V006", "B9V007", "B9Y001", "B9Y002", "B9Y003")
+            "B9V006", "B9V007", "B9Y001", "B9Y002", "B9Y003", "CAV001",
+            "CAV002", "CAV003", "CAV004", "CAV005", "CAV006", "CAV007", "CAV008",
+            "CAV009", "CAV010", "CAV011", "CAV012", "CAV013")
 
 
 filtered <- data_for_analysis %>%
@@ -302,7 +320,11 @@ data_for_analysis$all_families_with_income_lt_3k <- data_for_analysis$fam_income
 data_for_analysis$pct_families_below_3k_income <- (data_for_analysis$all_families_with_income_lt_3k/
                                                      data_for_analysis$all_families_with_income_data) * 100
 
+data_for_analysis$all_families_with_income_lt_4k <- data_for_analysis$fam_income_less_1k + data_for_analysis$fam_income_1_2k + data_for_analysis$fam_income_2_3k +
+  data_for_analysis$fam_income_3_4k 
 
+data_for_analysis$pct_families_below_4k_income <-   (data_for_analysis$all_families_with_income_lt_4k/
+                                                     data_for_analysis$all_families_with_income_data) * 100 
 # hhunits
 
 # other type of vacancy status with other option
@@ -332,6 +354,17 @@ data_for_analysis$pct_one_point_0_one_people_per_room_or_more <- 100 *  data_for
 
 # average rent of owner occupied units
 data_for_analysis$avg_monthly_contract_rent <- data_for_analysis$agg_monthly_contract_rent/ data_for_analysis$renter_occupied_units_reporting_rent
+
+# data_for_analysis %>%  select(agg_monthly_contract_rent, renter_occupied_units_reporting_rent, avg_monthly_contract_rent, log_avg_monthly_contract_rent) %>% filter(avg_monthly_contract_rent > 300)
+
+# data_for_analysis$avg_monthly_contract_rent[data_for_analysis$renter_occupied_units_reporting_rent == 0] <- NA
+# data_for_analysis$avg_monthly_contract_rent[data_for_analysis$GISJOIN == 	"G08000100079" ] <- NA
+
+data_for_analysis %>%
+  filter(GISJOIN == 	"G08000100079" )
+
+
+
 
 # log average rent of owner occupied units
 data_for_analysis$log_avg_monthly_contract_rent <- log(data_for_analysis$avg_monthly_contract_rent)
@@ -403,22 +436,101 @@ data_for_analysis$pct_shared_or_bath_outside <- data_for_analysis$shared_or_no_i
 data_for_analysis$pct_more_than_one_bathroom <- data_for_analysis$more_than_one_bathroom/data_for_analysis$tot_hunits * 100
 
 
+# rent buckets
+data_for_analysis$contract_rent_lt_20 <- data_for_analysis$CAV001
+data_for_analysis$contract_rent_20_29 <- data_for_analysis$CAV002
+data_for_analysis$contract_rent_30_39 <- data_for_analysis$CAV003
+data_for_analysis$contract_rent_40_49 <- data_for_analysis$CAV004
+data_for_analysis$contract_rent_50_59 <- data_for_analysis$CAV005
+data_for_analysis$contract_rent_60_69 <- data_for_analysis$CAV006
+data_for_analysis$contract_rent_70_79 <- data_for_analysis$CAV007
+data_for_analysis$contract_rent_80_89 <- data_for_analysis$CAV008
+data_for_analysis$contract_rent_90_99 <- data_for_analysis$CAV009
+data_for_analysis$contract_rent_l00_119 <- data_for_analysis$CAV010
+data_for_analysis$contract_rent_120_149 <- data_for_analysis$CAV011
+data_for_analysis$contract_rent_150p <- data_for_analysis$CAV012
+data_for_analysis$contract_rent_no_cash_rent <- data_for_analysis$CAV013
+
+all_houses_reporting_contract_rent <- sum(data_for_analysis$contract_rent_lt_20, na.rm = T) + sum(data_for_analysis$contract_rent_20_29, na.rm = T) +
+  sum(data_for_analysis$contract_rent_30_39, na.rm = T) + sum(data_for_analysis$contract_rent_40_49 , na.rm = T) + 
+  sum(data_for_analysis$contract_rent_50_59, na.rm = T) + sum(data_for_analysis$contract_rent_60_69, na.rm = T) +
+  sum(data_for_analysis$contract_rent_70_79, na.rm = T) + sum(data_for_analysis$contract_rent_80_89 , na.rm = T) + 
+  sum(data_for_analysis$contract_rent_90_99, na.rm = T) + sum(data_for_analysis$contract_rent_l00_119, na.rm = T) + 
+  sum(data_for_analysis$contract_rent_120_149, na.rm = T) + sum(data_for_analysis$contract_rent_150p, na.rm = T) +
+  sum(data_for_analysis$contract_rent_no_cash_rent, na.rm = T)
+  
+
+.25 * all_houses_reporting_contract_rent 
+
+sum(data_for_analysis$contract_rent_lt_20, na.rm = T) + sum(data_for_analysis$contract_rent_20_29, na.rm = T) + sum(data_for_analysis$contract_rent_30_39, na.rm = T) + sum(data_for_analysis$contract_rent_40_49 , na.rm = T)
+
+# pct with rent < $50 (approximately 25 percentile of rent)
+
+data_for_analysis$pct_contract_rent_lt_50 <- 100 * (data_for_analysis$contract_rent_lt_20 + data_for_analysis$contract_rent_20_29 + data_for_analysis$contract_rent_30_39
+                                              + data_for_analysis$contract_rent_40_49)/(data_for_analysis$contract_rent_lt_20 + data_for_analysis$contract_rent_20_29 +
+                                                                                          data_for_analysis$contract_rent_30_39 + data_for_analysis$contract_rent_40_49 +
+                                                                                          data_for_analysis$contract_rent_50_59 + data_for_analysis$contract_rent_60_69 +
+                                                                                          data_for_analysis$contract_rent_70_79 + data_for_analysis$contract_rent_80_89 +
+                                                                                          data_for_analysis$contract_rent_90_99 + data_for_analysis$contract_rent_l00_119 +
+                                                                                          data_for_analysis$contract_rent_120_149 + data_for_analysis$contract_rent_150p + 
+                                                                                          data_for_analysis$contract_rent_no_cash_rent)
 colnames(data_for_analysis)
 
+data_for_analysis <- data_for_analysis %>%
+  select(NHGISST:AREANAME, tot_persons_printed:pct_contract_rent_lt_50)
+
+colnames(data_for_analysis)
+```
+
+
+```{r}
+
+data_for_analysis  %>%
+  ggplot(aes(x = pct_families_below_4k_income)) +
+  geom_histogram(bins = 100) 
+
+
+data_for_analysis  %>%
+  ggplot(aes(x = pct_families_below_4k_income , y= prop_grade_D)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm")
+
+
+data_for_analysis %>%
+  filter(pct_contract_rent_lt_50 < 1, prop_grade_D > .2) %>%
+  select(1:10, tot_hunits, avg_monthly_contract_rent, pct_families_below_3k_income, pct_contract_rent_lt_50, contract_rent_lt_20, contract_rent_20_29, contract_rent_30_39, contract_rent_40_49, contract_rent_50_59, contract_rent_60_69, contract_rent_70_79, contract_rent_80_89, contract_rent_90_99, contract_rent_l00_119, contract_rent_120_149, 
+         contract_rent_no_cash_rent) %>%
+  view()
+
+```
+
+```{r}
+data_for_analysis  %>%
+  ggplot(aes(x = pct_contract_rent_lt_50 , y= prop_grade_D)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm")
 ```
 
 
 
 ```{r, eval = FALSE}
-all_cities_grade_demo  %>%
-  ggplot(aes(x = pct_black, y= rounded_tract_holc_grade)) +
-  geom_point() +
-  geom_smooth(se = FALSE)
+
 
 data_for_analysis  %>%
-  ggplot(aes(x = pct_unemployed_males, y= prop_grade_D)) +
-  geom_point() +
+  ggplot(aes(x = pct_families_below_3k_income, y= prop_grade_D)) +
+  geom_jitter() +
+  geom_smooth(se = FALSE, method = "lm")
+
+data_for_analysis  %>%
+  ggplot(aes(x = pct_families_below_3k_income)) +
+  geom_histogram(bins = 100)
+
+data_for_analysis  %>%
+  filter(avg_monthly_contract_rent > 5) %>%
+  ggplot(aes(x = avg_monthly_contract_rent, y= prop_grade_D)) +
+  geom_jitter() +
   geom_smooth(se = FALSE)
+  
   
 ```
 
@@ -426,7 +538,7 @@ data_for_analysis  %>%
 
 ```{r eval = FALSE}
 all_cities_grade_demo  %>%
-  ggplot(aes(x = pct_white, y= rounded_tract_holc_grade)) +
+  ggplot(aes(x = pct_, y= rounded_tract_holc_grade)) +
   geom_point() +
   geom_smooth(se = FALSE)
 ```
@@ -440,17 +552,38 @@ data_for_analysis <- data_for_analysis %>%
 
 colnames(data_for_analysis)
 
-data_for_analysis <- data_for_analysis %>%
-  select(NHGISST:AREANAME, tot_persons_printed:pct_more_than_one_bathroom)
-
+data_for_analysis$pct_grade_d <- data_for_analysis$prop_grade_D * 100
 
 write.csv(data_for_analysis, "data_for_analysis.csv")
+
+colnames(data_for_analysis)
 ```
 
 
 ```{r}
-m1 <- stan_glm(all_cities_grade_demo$rounded_tract_holc_grade ~ all_cities_grade_demo$pct_black)
-print(m1,3)
+summary <- data_for_analysis %>%
+  filter(area_accounted_for > .5 ) %>%
+  mutate(over_50p_red = ifelse(pct_grade_d > 50, 1, 0),
+         over_75p_red = ifelse(pct_grade_d > 75, 1, 0),
+         over_90p_red = ifelse(pct_grade_d > 90, 1, 0))
+
+
+mean(summary$over_50p_red)
+mean(summary$over_75p_red)
+mean(summary$over_90p_red)
+
+
+
+data_for_analysis  %>%
+  ggplot(aes(x = area_accounted_for, y= prop_grade_D)) +
+  geom_jitter() +
+  geom_smooth(se = FALSE, method = "lm")
+
+summary  %>%
+  filter(area_accounted_for > .50) %>%
+  ggplot(aes(x = pct_grade_d)) +
+  geom_histogram(bins = 100)
+
 ```
 
 
