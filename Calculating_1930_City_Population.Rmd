@@ -273,14 +273,6 @@ ipums_1930_cities_by_pop_full_sample %>%
 ```
 
 
-
-```{r join HOLC shapefile data with the city population data}
-
-
-
-```
-
-
 # subset after the join...
 
 ```{r create subsets based on city size, include = FALSE}
