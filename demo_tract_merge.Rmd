@@ -546,17 +546,14 @@ all_cities_grade_demo  %>%
 ```{r export data, include = FALSE}
 #write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
 
-# remove variables that have been duplicated and renamed
-data_for_analysis <- data_for_analysis %>%
-  select(!(defined))
-
-colnames(data_for_analysis)
-
 data_for_analysis$pct_grade_d <- data_for_analysis$prop_grade_D * 100
 
 write.csv(data_for_analysis, "data_for_analysis.csv")
 
 colnames(data_for_analysis)
+
+data_for_analysis %>%
+  filter(city == "Fort Worth")
 ```
 
 
@@ -583,6 +580,56 @@ summary  %>%
   filter(area_accounted_for > .50) %>%
   ggplot(aes(x = pct_grade_d)) +
   geom_histogram(bins = 100)
+
+# histogram of citypop for all data
+data_for_analysis %>%
+  group_by(city, state, citypop_total) %>%
+  summarise(mean_city_pop = mean(citypop_total)) %>%
+  ggplot(aes(mean_city_pop)) +
+  geom_histogram(bins = 100) +
+  geom_vline(xintercept = 30000, color = "red") +
+  geom_vline(xintercept = 50000, color = "red") +
+  ggtitle("Distribution of City Populations Represented in the Data") +
+  labs(caption = "Red lines at 30,000 and 50,000 enclose the cities in the treatment and control groups, a small proportion of the data.") +
+  theme(plot.caption = element_text(hjust = 0))
+
+# histogram of area covered for all data
+data_for_analysis %>%
+  ggplot(aes(area_accounted_for)) +
+  geom_histogram(bins = 100) +
+  geom_vline(xintercept = .5, color = "red") +
+  geom_vline(xintercept = .75, color = "red") +
+  geom_vline(xintercept = .9, color = "red") +
+  coord_cartesian(xlim = c(0,1)) +
+  ggtitle("Distribution Census Tract Area Accounted for by HOLC Graded Areas in the Data") +
+  #labs(caption = "Red lines at 30,000 and 50,000 enclose the cities in the treatment and control groups, a small proportion of the data.") +
+  theme(plot.caption = element_text(hjust = 0))
+
+# histogram of area covered for all data
+data_for_analysis %>%
+  ggplot(aes(pct_grade_d)) +
+  geom_histogram(bins = 100) +
+  geom_vline(xintercept = 50, color = "red") +
+  geom_vline(xintercept = 75, color = "red") +
+  geom_vline(xintercept = 90, color = "red") +
+  coord_cartesian(xlim = c(0,100)) +
+  ggtitle("Distribution of Pct. Census Tract Area Covered by HOLC D/Red Graded Areas") +
+  #labs(caption = "Red lines at 30,000 and 50,000 enclose the cities in the treatment and control groups, a small proportion of the data.") +
+  theme(plot.caption = element_text(hjust = 0))
+
+summaries <- data_for_analysis %>%
+  mutate(count = 1) %>%
+  group_by(city, state) %>%
+  summarise(sum_n = sum(count))
+
+mean(summaries$sum_n)
+
+data_for_analysis %>%
+  mutate(count = 1) %>%
+  group_by(state) %>%
+  summarise(sum_n = sum(count))
+
+
 
 ```
 

@@ -118,6 +118,9 @@ all_holc_overlay  %>%
 
 ```{r joining population data with data from Caclulating 1930_City_Populations RMD, include = FALSE}
 
+all_holc_tract_grades %>%
+  filter(city == "FortWorth")
+
 # change SouthBend in all_holc_overlay to South Bend (missing a space)
 all_holc_tract_grades$city[all_holc_tract_grades$city == "SouthBend"] <- "South Bend"
 
@@ -127,6 +130,9 @@ all_holc_tract_grades$city[all_holc_tract_grades$city == "St.Petersburg"] <- "Sa
 
 # add - between Winston and Salem
 all_holc_tract_grades$city[all_holc_tract_grades$city == "Winston Salem"] <- "Winston-Salem"
+
+# add space between Fort Worth because accidentally didn't earlier
+all_holc_tract_grades$city[all_holc_tract_grades$city == "FortWorth"] <- "Fort Worth"
 
 # change Schenectady spelling back again
 city_pop_name_1930_in_richmond$city_name_edited[city_pop_name_1930_in_richmond$City == "Schenectady"] <- "Schenectady"
