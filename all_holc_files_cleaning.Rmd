@@ -53,6 +53,7 @@ all_holc_tract_grades <- all_holc_overlay %>%
   group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2, city, state) %>%
   # summarise
   summarise(
+    tract_area = mean(SHAPE_AREA),
     # total area accounted for out of area of entire tract
     area_accounted_for = sum(intersect_over_tract),
     prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract, 0))
@@ -183,8 +184,7 @@ all_richmond_with_pop %>%
 all_richmond_with_pop %>% 
   mutate(count = 1) %>%
   group_by(city, state) %>%
-  summarise(sum(count)) %>%
-  view()
+  summarise(sum(count)) 
 
 all_richmond_with_pop %>%
   filter(citypop_total == 0) %>%

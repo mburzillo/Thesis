@@ -269,6 +269,8 @@ data_for_analysis
 
 ```{r creating additional variables relevant for analysis, include = FALSE}
 
+data_for_analysis$pop_density <- data_for_analysis$tot_persons_printed/data_for_analysis$tract_area * 1000000
+
 # pct non-white
 data_for_analysis$pct_non_white_printed <- (data_for_analysis$black_printed +
                                       data_for_analysis$other_printed)/data_for_analysis$tot_persons_printed * 100
@@ -499,8 +501,7 @@ data_for_analysis  %>%
 data_for_analysis %>%
   filter(pct_contract_rent_lt_50 < 1, prop_grade_D > .2) %>%
   select(1:10, tot_hunits, avg_monthly_contract_rent, pct_families_below_3k_income, pct_contract_rent_lt_50, contract_rent_lt_20, contract_rent_20_29, contract_rent_30_39, contract_rent_40_49, contract_rent_50_59, contract_rent_60_69, contract_rent_70_79, contract_rent_80_89, contract_rent_90_99, contract_rent_l00_119, contract_rent_120_149, 
-         contract_rent_no_cash_rent) %>%
-  view()
+         contract_rent_no_cash_rent)
 
 ```
 
@@ -547,6 +548,13 @@ all_cities_grade_demo  %>%
 #write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
 
 data_for_analysis$pct_grade_d <- data_for_analysis$prop_grade_D * 100
+
+# drop 	GISJOIN = G2500250SC0003 in treatment group because major denominator, tot_hunits missing/0 and others where 0
+data_for_analysis <- data_for_analysis %>%
+  #filter(GISJOIN != "G2500250SC0003")
+  filter(tot_hunits != 0)
+
+# data_for_analysis %>% filter(tot_persons_printed == 0)
 
 write.csv(data_for_analysis, "data_for_analysis.csv")
 
@@ -625,10 +633,21 @@ summaries <- data_for_analysis %>%
 mean(summaries$sum_n)
 
 data_for_analysis %>%
+  filter(citypop_total < 60000, citypop_total > 40000) %>%
   mutate(count = 1) %>%
-  group_by(state) %>%
+  group_by(state, city) %>%
   summarise(sum_n = sum(count))
 
+data_for_analysis %>%
+  filter(citypop_total <= 50000, citypop_total >= 40000, area_accounted_for >= .5,
+         tot_hunits == 0)
+
+
+treatment_group <- data_for_analysis %>%
+  filter(citypop_total <= 50000, citypop_total >= 40000, area_accounted_for >= .5) %>%
+  select(NHGISST:citypop_total, pct_non_white_printed: pct_grade_d)
+
+colnames(treatment_group)
 
 
 ```
