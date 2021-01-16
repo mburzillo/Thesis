@@ -56,7 +56,8 @@ all_holc_tract_grades <- all_holc_overlay %>%
     tract_area = mean(SHAPE_AREA),
     # total area accounted for out of area of entire tract
     area_accounted_for = sum(intersect_over_tract),
-    prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract, 0))
+    prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract, 0)),
+    prop_D_of_accounted_for = prop_grade_D/area_accounted_for
     )
 
 

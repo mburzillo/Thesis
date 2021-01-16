@@ -119,9 +119,9 @@ data_for_analysis$vacant_for_sale <- all_cities_grade_demo$B8Q002
 
 # other type of vacancy status with other option
 # N vacant for rent (vacant year-round housing units)
-data_for_analysis$vacant_for_rent_2<- all_cities_grade_demo$B9R001
+data_for_analysis$vacant_for_sale_2<- all_cities_grade_demo$B9R001
 # N vacant for sale (vacant year-round housing units)
-data_for_analysis$vacant_for_sale_2 <- all_cities_grade_demo$B9R002
+data_for_analysis$vacant_for_rent_2 <- all_cities_grade_demo$B9R002
 # N vacant for sale (vacant year-round housing units)
 data_for_analysis$vacant_other_2 <- all_cities_grade_demo$B9R003
 
@@ -547,7 +547,9 @@ all_cities_grade_demo  %>%
 ```{r export data, include = FALSE}
 #write.csv(all_cities_grade_demo, "all_cities_grade_demo.csv")
 
+data_for_analysis$pct_d_of_accounted_for<- data_for_analysis$prop_D_of_accounted_for * 100
 data_for_analysis$pct_grade_d <- data_for_analysis$prop_grade_D * 100
+
 
 # drop 	GISJOIN = G2500250SC0003 in treatment group because major denominator, tot_hunits missing/0 and others where 0
 data_for_analysis <- data_for_analysis %>%
@@ -567,7 +569,7 @@ data_for_analysis %>%
 
 ```{r}
 summary <- data_for_analysis %>%
-  filter(area_accounted_for > .5 ) %>%
+  filter(area_accounted_for >= .5 ) %>%
   mutate(over_50p_red = ifelse(pct_grade_d > 50, 1, 0),
          over_75p_red = ifelse(pct_grade_d > 75, 1, 0),
          over_90p_red = ifelse(pct_grade_d > 90, 1, 0))
@@ -648,6 +650,50 @@ treatment_group <- data_for_analysis %>%
   select(NHGISST:citypop_total, pct_non_white_printed: pct_grade_d)
 
 colnames(treatment_group)
+
+
+# histogram of area covered for all data
+data_for_analysis %>%
+  filter(area_accounted_for >= .5, citypop_total > 60000) %>%
+  ggplot(aes(pct_grade_d)) +
+  geom_histogram(bins = 100) +
+  geom_vline(xintercept = 50, color = "red") +
+  geom_vline(xintercept = 75, color = "red") +
+  geom_vline(xintercept = 90, color = "red") +
+  coord_cartesian(xlim = c(0,100)) +
+  ggtitle("Distribution of Pct. Census Tract Area Covered by HOLC D/Red Graded Areas") +
+  #labs(caption = "Red lines at 30,000 and 50,000 enclose the cities in the treatment and control groups, a small proportion of the data.") +
+  theme(plot.caption = element_text(hjust = 0))
+
+data_for_analysis
+
+data_for_analysis %>% 
+  filter(area_accounted_for >= .5, citypop_total > 60000) %>% 
+  summarise(mean_d = mean(pct_grade_d, na.rm = T),
+            var_d = var(pct_grade_d, na.rm = T))
+
+mean1 <- mean(summ$pct_grade_d)
+
+summ <- data_for_analysis %>% 
+  filter(area_accounted_for >= .5, citypop_total > 60000) %>%
+  mutate(sqd_diff_from_mean = (pct_grade_d - mean1)^2)
+
+mean(summ$pct_grade_d)
+var(summ$pct_grade_d)
+
+summ %>%
+  select(pct_grade_d, sqd_diff_from_mean)
+
+mean(summ$sqd_diff_from_mean)
+
+summ %>%
+  ggplot(aes(x = sqd_diff_from_mean)) +
+  geom_histogram()
+
+summ %>%
+  ggplot(aes(x = pct_grade_d)) +
+  geom_histogram()
+
 
 
 ```
