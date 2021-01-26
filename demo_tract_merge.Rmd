@@ -27,6 +27,13 @@ nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_
 
 race_1960_demo <- nhgis0023_ds92_1960_tract
 
+all_richmond_with_pop %>%
+  filter(city == "Atlantic City")
+
+race_1960_demo %>%
+  filter(GISJOIN == "G34000100001") %>%
+  view()
+
 ```
 
 ```{r merge data, include = FALSE}
@@ -40,6 +47,19 @@ all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "
   rename(tract_year = year,
          demo_year = YEAR)
 
+
+all_cities_grade_demo %>%
+  filter(city == "Atlantic City")
+
+# make NHGISST state and city NA for kansas city because this is a combo for KS and MO
+
+#all_cities_grade_demo$NHGISST[all_cities_grade_demo$city == "Kansas City"] <- NA
+#all_cities_grade_demo$NHGISCTY[all_cities_grade_demo$city == "Kansas City"] <- NA
+
+# make state for Kansas City KS/MO
+#all_cities_grade_demo$NHGISCTY[all_cities_grade_demo$city == "Kansas City"] <- NA
+all_cities_grade_demo$citypop_total[all_cities_grade_demo$city == "Kansas City"] <- 521500
+all_cities_grade_demo$state[all_cities_grade_demo$city == "Kansas City"] <- "KS/MO"
 ```
 
 
@@ -47,6 +67,21 @@ all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "
 
 # initialize data for analysis, and we will add on columns from the joined data for the variables we need 
 data_for_analysis <- all_cities_grade_demo
+
+# there are 4 cities being classified as Kansas City... WTF ... jk these codes are different - but still a concern that technically different cities based on census tract/nhgis
+data_for_analysis %>%
+  mutate(count = 1, n_NHGISCTY = as.numeric(NHGISCTY)) %>%
+  group_by(n_NHGISCTY, NHGISST, city, state) %>%
+  summarize(mean_NHGISCTY = mean(n_NHGISCTY)) %>%
+  mutate(problem = ifelse(n_NHGISCTY != mean_NHGISCTY, 1, 0)) %>%
+  filter(city == "Kansas City")
+
+
+data_for_analysis %>%
+  filter(city == "Atlantic City")
+```
+
+```{r}
 
 # variable encodings in format: description (universe)
 
@@ -257,7 +292,6 @@ defined = c("B53001", "B7B001", "B7B002", "B7B003", "B7M001", "B8J001", "B8R001"
 filtered <- data_for_analysis %>%
   select(!(defined))
 
-colnames(filtered)
 
 
 ```
@@ -474,16 +508,43 @@ data_for_analysis$pct_contract_rent_lt_50 <- 100 * (data_for_analysis$contract_r
                                                                                           data_for_analysis$contract_rent_50_59 + data_for_analysis$contract_rent_60_69 +
                                                                                           data_for_analysis$contract_rent_70_79 + data_for_analysis$contract_rent_80_89 +
                                                                                           data_for_analysis$contract_rent_90_99 + data_for_analysis$contract_rent_l00_119 +
-                                                                                          data_for_analysis$contract_rent_120_149 + data_for_analysis$contract_rent_150p + 
-                                                                                          data_for_analysis$contract_rent_no_cash_rent)
+                                                                                          data_for_analysis$contract_rent_120_149 + data_for_analysis$contract_rent_150p)
+# number of units reporting cash rent
+data_for_analysis$reporting_contract_rent_calc <- data_for_analysis$contract_rent_lt_20 + data_for_analysis$contract_rent_20_29 +
+                                                                                          data_for_analysis$contract_rent_30_39 + data_for_analysis$contract_rent_40_49 +
+                                                                                          data_for_analysis$contract_rent_50_59 + data_for_analysis$contract_rent_60_69 +
+                                                                                          data_for_analysis$contract_rent_70_79 + data_for_analysis$contract_rent_80_89 +
+                                                                                          data_for_analysis$contract_rent_90_99 + data_for_analysis$contract_rent_l00_119 +
+                                                                                          data_for_analysis$contract_rent_120_149 + data_for_analysis$contract_rent_150p
+
+# weighted contract rent: 150+ coded as 150
+data_for_analysis$weighted_cash_contract_rent <- (data_for_analysis$contract_rent_lt_20 * 10 + data_for_analysis$contract_rent_20_29  * 24.5 + 
+  data_for_analysis$contract_rent_30_39 * 34.5 + data_for_analysis$contract_rent_40_49 * 44.5 + data_for_analysis$contract_rent_50_59 * 54.5 +
+  data_for_analysis$contract_rent_60_69 * 64.5 + data_for_analysis$contract_rent_70_79 * 74.5 + data_for_analysis$contract_rent_80_89 * 84.5 +
+  data_for_analysis$contract_rent_90_99 * 94.5 + data_for_analysis$contract_rent_l00_119 * 109.5 + data_for_analysis$contract_rent_120_149 * 134.5 +
+  data_for_analysis$contract_rent_150p * 150)/data_for_analysis$reporting_contract_rent_calc
+
+data_for_analysis$weighted_cash_contract_rent_lt_50 <- ifelse(data_for_analysis$weighted_cash_contract_rent < 50, 1, 0)
+
+
 colnames(data_for_analysis)
 
 data_for_analysis <- data_for_analysis %>%
-  select(NHGISST:AREANAME, tot_persons_printed:pct_contract_rent_lt_50)
+  select(NHGISST:AREANAME, tot_persons_printed:weighted_cash_contract_rent_lt_50)
 
 colnames(data_for_analysis)
+
+data_for_analysis %>%
+  ggplot(aes(x = weighted_cash_contract_rent)) +
+  geom_histogram()
+
 ```
 
+```{r}
+data_for_analysis %>%
+  ggplot(aes(x = pct_contract_rent_lt_50)) +
+  geom_histogram()
+```
 
 ```{r}
 
@@ -512,7 +573,22 @@ data_for_analysis  %>%
   geom_smooth(se = FALSE, method = "lm")
 ```
 
+```{r}
+data_for_analysis  %>%
+  ggplot(aes(x = weighted_cash_contract_rent , y= prop_grade_D)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm")
+```
 
+
+```{r}
+
+data_for_analysis  %>%
+  ggplot(aes(x = weighted_cash_contract_rent_lt_50 , y= prop_grade_D)) +
+  geom_point() +
+  geom_smooth(se = FALSE, method = "lm")
+
+```
 
 ```{r, eval = FALSE}
 
@@ -672,30 +748,12 @@ data_for_analysis %>%
   summarise(mean_d = mean(pct_grade_d, na.rm = T),
             var_d = var(pct_grade_d, na.rm = T))
 
-mean1 <- mean(summ$pct_grade_d)
-
-summ <- data_for_analysis %>% 
-  filter(area_accounted_for >= .5, citypop_total > 60000) %>%
-  mutate(sqd_diff_from_mean = (pct_grade_d - mean1)^2)
-
-mean(summ$pct_grade_d)
-var(summ$pct_grade_d)
-
-summ %>%
-  select(pct_grade_d, sqd_diff_from_mean)
-
-mean(summ$sqd_diff_from_mean)
-
-summ %>%
-  ggplot(aes(x = sqd_diff_from_mean)) +
-  geom_histogram()
-
-summ %>%
-  ggplot(aes(x = pct_grade_d)) +
-  geom_histogram()
 
 
 
 ```
 
+```{r}
+data_for_analysis %>% filter(city == "Kansas City")
+```
 

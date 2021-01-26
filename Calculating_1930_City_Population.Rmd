@@ -127,11 +127,15 @@ all_cities_in_richmond$city_name_edited <- all_cities_in_richmond$City
 # corrections based on spelling
 all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "East Saint Louis"] <- "East St. Louis"
 all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Schenectady"] <- "Schenectedy"
-# exclude the following for now
-# all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Lake Co. Gary"] <- "Gary"
-# all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Greater Kansas City"] <- "Kansas City"
 
+# include the following for now
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Lake Co. Gary"] <- "Gary"
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Greater Kansas City"] <- "Kansas City"
+all_cities_in_richmond$city_name_edited[all_cities_in_richmond$City == "Milwaukee Co."] <- "Milwaukee"
 
+# change Kansas City State to MO/KS because it is across state lines
+all_cities_in_richmond$State[all_cities_in_richmond$City == "Greater Kansas City"] <- "Kansas/Missouri"
+all_cities_in_richmond$state_ab[all_cities_in_richmond$City == "Greater Kansas City"] <- "KS/MO"
 
 # joining correctly length-wise
 city_pop_name_1930_in_richmond <- left_join(all_cities_in_richmond, ipums_1930_cities_by_pop_full_sample, by = c("city_name_edited" = "cityname", "state_ab" = "state")) %>%
@@ -149,7 +153,9 @@ city_pop_name_1930_in_richmond %>%
 
 cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
                       "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
-                      "Pawtucket and Central Falls", "Milwaukee Co.", "Lake Co. Gary", "Greater Kansas City" )
+                      "Pawtucket and Central Falls")
+
+# edits: no longer dropping "Milwaukee Co.", "Lake Co. Gary", "Greater Kansas City"
 
 city_pop_name_1930_in_richmond <- city_pop_name_1930_in_richmond %>%
   filter(!(City %in% cities_to_exclude))
@@ -170,6 +176,10 @@ city_pop_name_1930_in_richmond %>%
 # Massachusetts	Holyoke Chicopee (Holyoke and Chicopee available separately. Pop of Chicopee IS 43,900. Population of Holyoke is 56500. Chicopee and Holyoke are included in Aaronson). Based on the maps, they seem to make up 1 larger urban area. Exclude for now but could be added back in later as part of the larger cities
 # Lexington, MA is not in the city codebook. May not have been incorporated at the time according to census sheet, only population of 9k at the time. Exclude for now. Could be included later since part of the area mapped for Boston but...
 # Greater Kansas city includes city over the Kansas border. Should be fine to include. If anything, Kansas City match would be an underestimate, which would not be a problem because the population is 399,700 and thus already way above the threshold. Kansas City Kansas has population 121,800 so both well over threshold
+
+# hardcode pop values of Kansas city as the pop of Kansas City MO and Kansas City KS
+city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Greater Kansas City"] <- ipums_1930_cities_by_pop_full_sample$citypop_total[ipums_1930_cities_by_pop_full_sample$city == 3250] + ipums_1930_cities_by_pop_full_sample$citypop_total[ipums_1930_cities_by_pop_full_sample$city == 3260]
+
 
 # Issue of NJ: most maps around NYC seem to be made corresponding to counties rather than cities. All seem to be part of the larger NYC area
   # Bergen Co. seems to be a part of the larger NYC area. No direct match in census, but there is a North Bergen. However this is part of      # Hudson county, not Bergen county. Doesn't seem to have any cities large enough to be inclued in analysis
@@ -280,6 +290,6 @@ ipums_1930_cities_by_pop_full_sample %>%
 cities_60k_plus_full_sample <- ipums_1930_cities_by_pop_full_sample %>%
   filter(citypop_total > 60000)
 
-
+#view(city_pop_name_1930_in_richmond)
 ```
 
