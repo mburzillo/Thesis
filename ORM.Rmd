@@ -9,24 +9,136 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(rms)
+library(ormPlot)
+library(rstanarm)
+library(bayesplot)
+library(gravity)
+library(MASS)
 ```
 
 ```{r}
 colnames(data_for_analysis)
 ```
 
-```{r}
+```{r basic orm model from training data}
+
 training <- data_for_analysis %>%
-  filter(area_accounted_for >= .5, citypop_total >= 60000)
+  filter(area_accounted_for >= .5, citypop_total >= 60000,
+         !(is.na(pct_black_printed)), !(is.na(pct_foreign_born)), 
+         !(is.na(pct_owner_occupied)), !(is.na(pct_unemployed_males)),
+         !(is.na(pct_contract_rent_lt_50)), !(is.na(pct_grade_d))
+         ) %>%
+  select(pct_grade_d, pct_black_printed, pct_foreign_born,pct_owner_occupied,
+         pct_unemployed_males,pct_contract_rent_lt_50)
 
-dd <- datadist(training); options(datadist = 'dd')
+treatment <- data_for_analysis %>%
+  filter(area_accounted_for >= .5, citypop_total >= 40000,
+         citypop_total < 60000)
 
-model1 <- orm(training$pct_grade_d ~ training.pct_black_printed + training.pct_foreign_born + training.pct_owner_occupied +
-      training.pct_unemployed_males + training.pct_contract_rent_lt_50)
+training$pct_black_printed
+
+dd <- datadist(training)
+options(datadist = 'dd')
+
+model1 <- orm(pct_grade_d ~ pct_black_printed + pct_foreign_born + pct_owner_occupied +
+      pct_unemployed_males + pct_contract_rent_lt_50, family = logistic, data = training)
+
+view(Predict(model1))
+
+predictions <- tibble(preds = unname(predict(model1))
+                      
+            )
+
+unname(predict(model1))
+predictions %>%
+  ggplot(aes(x = preds)) +
+  geom_histogram()
+```
+
+```{r plot preductions}
+treatment$predictions <- Predict(model1, pct_black_printed)
+
+view(Predict(model1))
+
+
+Predict(model1, newdata = treatment)
+```
+
+
+
+```{r stan_glm, include = FALSE}
+model_stan <- stan_glm(pct_grade_d ~ pct_black_printed + pct_foreign_born + pct_owner_occupied +
+      pct_unemployed_males + pct_contract_rent_lt_50, data = training)
+
+summary(model_stan)
+
+yrep <- posterior_predict(model_stan)
+
+n_sims <- nrow(yrep)
+
+subset <- sample(n_sims, 100)
 ```
 
 ```{r}
-Predict(model1, conf.int=FALSE)
+ppc_dens_overlay(training$pct_grade_d, yrep[subset, ])
+
+```
+
+
+```{r}
+yrep <- posterior_predict(model_stan, new = treatment)
+n_sims <- nrow(yrep)
+subset <- sample(n_sims, 100)
+ppc_dens_overlay(treatment$pct_grade_d, yrep[subset, ])
+```
+
+
+
+```{r testing ppml in Stata, include = FALSE}
+
+#ppml("pct_grade_d", x = c("pct_black_printed", "pct_foreign_born", "pct_owner_occupied","pct_unemployed_males", "pct_contract_rent_lt_50"), data = training)
+
+
+
+model_poisson <- stan_glm(round(pct_grade_d) ~ pct_black_printed + pct_foreign_born + pct_owner_occupied +
+      pct_unemployed_males + pct_contract_rent_lt_50, family = poisson(link = "log"),data = training)
+
+summary(model_poisson)
+
+yrep <- posterior_predict(model_poisson)
+
+n_sims <- nrow(yrep)
+
+subset <- sample(n_sims, 100)
+
+ppc_dens_overlay(training$pct_grade_d, yrep[subset, ])
+```
+
+
+
+```{r}
+
+yrep <- posterior_predict(model_poisson, new = treatment)
+n_sims <- nrow(yrep)
+subset <- sample(n_sims, 100)
+ppc_dens_overlay(treatment$pct_grade_d, yrep[subset, ])
+
+```
+
+```{r}
+model_negbin<- stan_glm(round(pct_grade_d) ~ pct_black_printed + pct_foreign_born +pct_owner_occupied + pct_unemployed_males + pct_contract_rent_lt_50, family = neg_binomial_2(link = "log"), data = training)
+
+model_negbin <- glm.nb(round(pct_grade_d) ~ pct_black_printed, data = training)
+
+summary(model_negbin)
+
+yrep <- posterior_predict(model_poisson)
+
+n_sims <- nrow(yrep)
+
+subset <- sample(n_sims, 100)
+
+ppc_dens_overlay(training$pct_grade_d, yrep[subset, ])
 ```
 
 
@@ -181,5 +293,26 @@ print(r)
 #5  0.4  50 0.2950     0.2960        0.2935        0.288 0.3120      0.3120     0.3120
 #6  0.4 300 0.9240     0.9215        0.9205        0.920 0.9230      0.9230     0.9230
 # }
+```
+
+```{r}
+# Compare predicted mean with ols for a continuous x
+set.seed(3)
+n <- 200
+x1 <- rnorm(n)
+y <- x1 + rnorm(n)
+dd <- datadist(x1); options(datadist='dd')
+
+my_Data <- tibble(x1, y)
+f <- lm(y ~ x1, data = my_Data)
+g <- orm(y ~ x1, family=probit)
+h <- orm(y ~ x1, family=logistic)
+w <- orm(y ~ x1, family=cloglog)
+mg <- Mean(g); mh <- Mean(h); mw <- Mean(w)
+r <- rbind(ols      = Predict(f, conf.int=FALSE),
+           probit   = Predict(g, conf.int=FALSE, fun=mg),
+           logistic = Predict(h, conf.int=FALSE, fun=mh),
+           cloglog  = Predict(w, conf.int=FALSE, fun=mw))
+plot(r, groups='.set.')
 ```
 
