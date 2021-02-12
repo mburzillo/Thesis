@@ -31,8 +31,7 @@ all_richmond_with_pop %>%
   filter(city == "Atlantic City")
 
 race_1960_demo %>%
-  filter(GISJOIN == "G34000100001") %>%
-  view()
+  filter(GISJOIN == "G34000100001")
 
 ```
 
@@ -47,7 +46,7 @@ all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "
   rename(tract_year = year,
          demo_year = YEAR)
 
-
+# NO DATA for Atlantic City from Census -> need to drop/drops
 all_cities_grade_demo %>%
   filter(city == "Atlantic City")
 
@@ -759,7 +758,7 @@ data_for_analysis %>%
   view()
   
   
- data_for_analysis %>%
-   filter(state == "Oklahoma")
+data_for_analysis %>%
+   filter(state == "OK")
 ```
 

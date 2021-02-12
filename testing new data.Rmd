@@ -32,9 +32,11 @@ testing_2 <- data_for_analysis_master_shapefile %>%
   filter(citypop_total > 0) %>%
   select(-citypop_total, -sum)
 
+# this shows our new data has added 2 cities - Atlantic city and OK city
 anti_join(testing, testing_2)
 
 anti_join(testing_2, testing)
+
 
 ```
 
