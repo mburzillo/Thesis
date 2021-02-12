@@ -15,8 +15,12 @@ library(readr)
 
 # import intersect file from QGIS
 # all_holc_overlay <- read_csv("Overlay Files from QGIS/all_holc_overlay.csv")
-all_holc_overlay <- read_csv("Overlay Files from QGIS/master_overlay.csv")
+# all_holc_overlay <- read_csv("Overlay Files from QGIS/master_overlay.csv")
 
+#all_holc_overlay_2 <- read_csv("Overlay Files from QGIS/all_holc_overlay_2.csv")
+
+# this file is the latest version with the updated fullshpfile from richmond (Saved on desktop) and with the geometries fixed for both HOLC files and 1960 tracts. This should include the max intersections/tracts possible
+all_holc_overlay <- read_csv("Overlay Files from QGIS/all_holc_overlay_3.csv")
 # import the shapefile with all HOLC data from Richmond database
 # full_shapefile <- st_read("Shapefiles/fullshpfile/holc_ad_data.shp") 
 
@@ -26,6 +30,27 @@ all_holc_overlay %>%
   filter(NHGISCTY == "3250")
 ```
 
+```{r what are the differences in the files?}
+
+all_holc_overlay_test <- all_holc_overlay %>% 
+  mutate(count = 1) %>%
+  group_by(city, state) %>%
+  summarise(sum = sum(count)) %>%
+  select(-sum)
+
+all_holc_overlay_test_3 <- all_holc_overlay_3 %>% 
+  mutate(count = 1) %>%
+  group_by(city, state) %>%
+  summarise(sum = sum(count)) %>%
+  select(-sum)
+
+anti_join(all_holc_overlay_test, all_holc_overlay_test_3)
+
+```
+
+```{r}
+anti_join(all_holc_overlay_test_3, all_holc_overlay_test)
+```
 
 
 ```{r}
@@ -68,7 +93,8 @@ all_holc_tract_grades <- all_holc_overlay %>%
     prop_grade_A_B = prop_grade_A + prop_grade_B
     )
 
-
+all_holc_overlay %>%
+  filter(city == "Greater Kansas City")
 ```
 
 ```{r exploring data, include = FALSE}
@@ -125,37 +151,46 @@ all_holc_overlay  %>%
 ```
 
 ```{r}
+
 all_holc_tract_grades %>%
-  filter(city == "Lake County Gary")
+  filter(state == "KS")
+
+all_holc_tract_grades %>%
+  filter(city == "Greater Kansas City")
 
 city_pop_name_1930_in_richmond %>%
   filter(city_name_edited == "Gary")
+
+all_holc_tract_grades %>%
+  filter(city == "Milwaukee Co.")
+
+city_pop_name_1930_in_richmond %>%
+  filter(city_name_edited == "Winston-Salem")
 ```
 
 
 ```{r joining population data with data from Caclulating 1930_City_Populations RMD, include = FALSE}
 
-all_holc_tract_grades %>%
-  filter(city == "FortWorth")
 
-# change SouthBend in all_holc_overlay to South Bend (missing a space)
-all_holc_tract_grades$city[all_holc_tract_grades$city == "SouthBend"] <- "South Bend"
+# (fixed in new dataset) change SouthBend in all_holc_overlay to South Bend (missing a space)
+# all_holc_tract_grades$city[all_holc_tract_grades$city == "SouthBend"] <- "South Bend"
 
 # change St. to Saint to match HOLC spelling
-all_holc_tract_grades$city[all_holc_tract_grades$city == "St.Louis"] <- "Saint Louis"
-all_holc_tract_grades$city[all_holc_tract_grades$city == "St.Petersburg"] <- "Saint Petersburg"
+all_holc_tract_grades$city[all_holc_tract_grades$city == "St. Louis"] <- "Saint Louis"
+all_holc_tract_grades$city[all_holc_tract_grades$city == "St. Petersburg"] <- "Saint Petersburg"
+all_holc_tract_grades$city[all_holc_tract_grades$city == "St. Paul"] <- "Saint Paul"
 
-# add - between Winston and Salem
-all_holc_tract_grades$city[all_holc_tract_grades$city == "Winston Salem"] <- "Winston-Salem"
+# (fixed in new dataset) add - between Winston and Salem
+# all_holc_tract_grades$city[all_holc_tract_grades$city == "Winston Salem"] <- "Winston-Salem"
 
-# add space between Fort Worth because accidentally didn't earlier
-all_holc_tract_grades$city[all_holc_tract_grades$city == "FortWorth"] <- "Fort Worth"
+# (fixed in new dataset) add space between Fort Worth because accidentally didn't earlier
+# all_holc_tract_grades$city[all_holc_tract_grades$city == "FortWorth"] <- "Fort Worth"
 
 # change Schenectady spelling back again
 city_pop_name_1930_in_richmond$city_name_edited[city_pop_name_1930_in_richmond$City == "Schenectady"] <- "Schenectady"
 
 # change Lake County Gary to Gary
-all_holc_tract_grades$city[all_holc_tract_grades$city == "Lake County Gary"] <- "Gary"
+all_holc_tract_grades$city[all_holc_tract_grades$city == "Lake Co. Gary"] <- "Gary"
 all_holc_tract_grades$city[all_holc_tract_grades$city == "Greater Kansas City"] <- "Kansas City"
 all_holc_tract_grades$city[all_holc_tract_grades$city == "Milwaukee Co."] <- "Milwaukee"
 
@@ -165,7 +200,7 @@ all_richmond_with_pop <- left_join(all_holc_tract_grades, city_pop_name_1930_in_
 
 cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
                       "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
-                      "Pawtucket and Central Falls")
+                      "Pawtucket & Central Falls")
 
 # filter to exclude these cities
 all_richmond_with_pop <- all_richmond_with_pop %>%
@@ -189,7 +224,7 @@ all_richmond_with_pop %>%
 
 cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
                       "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
-                      "Pawtucket and Central Falls", "Binghamton/Johnson City", "Essex County", "Hudson County")
+                      "Pawtucket & Central Falls", "Binghamton/Johnson City", "Essex Co.", "Hudson County")
 
 # filter to exclude these cities
 all_richmond_with_pop <- all_richmond_with_pop %>%
@@ -206,7 +241,8 @@ all_richmond_with_pop %>%
 all_richmond_with_pop %>% 
   mutate(count = 1) %>%
   group_by(city, state) %>%
-  summarise(sum(count)) 
+  summarise(sum(count)) %>%
+  view()
 
 all_richmond_with_pop %>%
   filter(citypop_total == 0) %>%
@@ -214,13 +250,20 @@ all_richmond_with_pop %>%
   group_by(city, state, NHGISCTY) %>%
   summarise(sum(count), mean(perwt))
 
-all_richmond_with_pop  %>%
-  filter(city == "Phoenix")
+```
+
+```{r deal with Kansas City population}
+
+all_richmond_with_pop$citypop_total[all_richmond_with_pop$city == "Kansas City"] <- 521500
+all_richmond_with_pop$state[all_richmond_with_pop$city == "Kansas City"] <- "KS/MO"
+# make NHGISST state and city NA for kansas city because this is a combo for KS and MO but richmond classified it only as MO for some reason
+
 
 ```
 
+
 ```{r}
-all_holc_tract_grades %>%
+all_richmond_with_pop %>%
   filter(city == "Kansas City")
 ```
 
@@ -230,7 +273,16 @@ all_richmond_with_pop %>%
   filter(GISJOIN == "G34002100022")
 
 all_richmond_with_pop %>%
-  filter(city == "Lake County Gary")
+  filter(city == "Kansas City")
+
+#view(all_richmond_with_pop %>% mutate(count = 1) %>% group_by(state, city, citypop_total) %>% summarize(sum = sum(count)))
+
+testing <- all_richmond_with_pop %>% 
+  mutate(count = 1) %>% 
+  group_by(state, city, citypop_total) %>% 
+  summarize(sum = sum(count)) %>%
+  filter(citypop_total > 0) %>%
+  select(-citypop_total, -sum)
 
 ```
 

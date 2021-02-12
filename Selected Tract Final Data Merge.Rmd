@@ -1,0 +1,84 @@
+---
+title: "Selected Tract Census FInal Data Merge"
+author: "Maria Burzillo"
+date: "2/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+
+# load demographic data that contains all potential variables
+nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
+
+treatment <- read_csv("selected_treatment.csv")
+
+```
+
+```{r}
+treatment
+
+treatment_demo <- left_join(treatment, nhgis0023_ds92_1960_tract, by = "GISJOIN") %>%
+  select(-wkt_geom)
+```
+```{r}
+# this actually doesn't do anything because it seems like everything intersected correctly
+treatment_within_r <- treatment_demo %>%
+  group_by(STATE.x, PLACE, GISJOIN) %>%
+  summarise(tot_area_intersecting = sum(area),
+            prop_within_radius = tot_area_intersecting/SHAPE_AREA,
+            within_r = ifelse(prop_within_radius == 1, 1, 0),
+            within_r_75 = ifelse(prop_within_radius >= .75, 1, 0),
+            within_r_50 = ifelse(prop_within_radius >= .50, 1, 0))
+treatment_demo %>%
+  filter()
+
+# 404 tracts completely inside radii
+sum(treatment_within_r$within_r)
+# 588 75% within
+sum(treatment_within_r$within_r_75)
+# 644 50% within
+sum(treatment_within_r$within_r_50)
+```
+
+```{r}
+# Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
+treatment_demo$tot_persons_printed <- treatment_demo$B53001
+
+# calculate population density (originally in meters squared area so scale to km)
+treatment_demo$pop_density <- treatment_demo$tot_persons_printed/treatment_demo$SHAPE_AREA * 1000000
+```
+
+
+```{r}
+# of these selected tracts, what is the range of population density and how does this compare to the tracts selected in the grading prediction process?
+
+mean(treatment_demo$pop_density, na.rm = T)
+median(treatment_demo$pop_density, na.rm = T)
+sd(treatment_demo$pop_density, na.rm = T)
+
+quantile(treatment_demo$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+```
+
+```{r}
+quantile(half_coverage_20_60_range$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+```
+```{r}
+quantile(half_coverage$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+```
+
+```{r}
+
+
+treatment_demo %>%
+  ggplot(aes(x = pop_density)) +
+  geom_histogram()
+
+
+
+```
+

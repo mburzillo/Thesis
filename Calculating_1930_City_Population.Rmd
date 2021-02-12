@@ -107,12 +107,7 @@ write.csv(city_codebook_1930_full_sample_edited , "city_codebook_1930_full_sampl
 ipums_1930_cities_by_pop_full_sample <- left_join(ipums_full_sample_collapsed_1930, city_codebook_1930_full_sample_edited)
 
 # these cities correspond exactly to the cities between 30k and 40k that I had originally identified 
-ipums_1930_cities_by_pop_full_sample %>%
-  filter(citypop_total > 40000, citypop_total < 50000)
-
-ipums_1930_cities_by_pop_full_sample %>%
-  filter(citypop_total > 60000)
-
+# ipums_1930_cities_by_pop_full_sample %>% filter(citypop_total > 40000, citypop_total < 50000)
 
 ```
 
@@ -256,8 +251,8 @@ city_pop_name_1930_in_richmond %>%
 # ALL: 984
 ipums_1930_cities_by_pop_full_sample 
 
-# cities 30-40k: 217
-ipums_1930_cities_by_pop_full_sample %>%
+# cities 20-40k: 217
+potential_control <- ipums_1930_cities_by_pop_full_sample %>%
   filter(citypop_total > 20000 & citypop_total < 40000)
 
 # cities 30-40k: 71
@@ -291,5 +286,8 @@ cities_60k_plus_full_sample <- ipums_1930_cities_by_pop_full_sample %>%
   filter(citypop_total > 60000)
 
 #view(city_pop_name_1930_in_richmond)
+
+ipums_1930_cities_by_pop_full_sample  %>%
+  filter(state == "OK")
 ```
 

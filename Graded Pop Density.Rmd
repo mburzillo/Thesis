@@ -1,0 +1,62 @@
+---
+title: "Pop Density"
+author: "Maria Burzillo"
+date: "2/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r loading data}
+
+colnames(data_for_analysis)
+
+half_coverage <- data_for_analysis %>%
+  filter(area_accounted_for >= .5)
+
+  
+  
+mean(half_coverage$pop_density, na.rm = T)
+median(half_coverage$pop_density, na.rm = T)
+sd(half_coverage$pop_density, na.rm = T)
+
+quantile(half_coverage$pop_density, probs = c(.1, .9), na.rm = T)
+```
+```{r}
+half_coverage %>%
+  ggplot(aes(x = pop_density)) +
+  geom_histogram(bins = 100)
+```
+
+```{r}
+half_coverage_20_60_range <- half_coverage %>%
+  filter(citypop_total <=60000, citypop_total >= 20000)
+
+mean(half_coverage_20_60_range$pop_density, na.rm = T)
+median(half_coverage_20_60_range$pop_density, na.rm = T)
+sd(half_coverage$pop_density, na.rm = T)
+
+quantile(half_coverage_20_60_range$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+
+half_coverage_20_60_range %>%
+  ggplot(aes(x = pop_density)) +
+  geom_histogram(bins = 100)
+
+
+ggplot() +
+  geom_histogram(aes(x = half_coverage_20_60_range$pop_density, fill = "Red", alpha =.5)) +
+  geom_histogram(aes(x = half_coverage$pop_density, fill = "Blue", alpha = .5)) 
+
+# cut off 
+
+```
+

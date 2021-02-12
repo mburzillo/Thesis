@@ -51,15 +51,6 @@ all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "
 all_cities_grade_demo %>%
   filter(city == "Atlantic City")
 
-# make NHGISST state and city NA for kansas city because this is a combo for KS and MO
-
-#all_cities_grade_demo$NHGISST[all_cities_grade_demo$city == "Kansas City"] <- NA
-#all_cities_grade_demo$NHGISCTY[all_cities_grade_demo$city == "Kansas City"] <- NA
-
-# make state for Kansas City KS/MO
-#all_cities_grade_demo$NHGISCTY[all_cities_grade_demo$city == "Kansas City"] <- NA
-all_cities_grade_demo$citypop_total[all_cities_grade_demo$city == "Kansas City"] <- 521500
-all_cities_grade_demo$state[all_cities_grade_demo$city == "Kansas City"] <- "KS/MO"
 ```
 
 
@@ -303,6 +294,7 @@ data_for_analysis
 
 ```{r creating additional variables relevant for analysis, include = FALSE}
 
+# calculate population density (originally in meters squared area so scale to km)
 data_for_analysis$pop_density <- data_for_analysis$tot_persons_printed/data_for_analysis$tract_area * 1000000
 
 # pct non-white
@@ -755,5 +747,19 @@ data_for_analysis %>%
 
 ```{r}
 data_for_analysis %>% filter(city == "Kansas City")
+```
+
+
+```{r}
+data_for_analysis %>%
+  filter(citypop_total <= 60000, citypop_total >= 40000)  %>%
+  mutate(count = 1) %>%
+  group_by(city, state, citypop_total) %>%
+  summarise(tracts = sum(count)) %>%
+  view()
+  
+  
+ data_for_analysis %>%
+   filter(state == "Oklahoma")
 ```
 
