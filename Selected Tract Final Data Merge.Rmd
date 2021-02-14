@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 ```
 
-```{r}
+```{r load data}
 
 # load demographic data that contains all potential variables
 nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
@@ -19,9 +19,11 @@ potential_treatment <- read_csv("selected_treatment.csv")
 
 potential_control <- read_csv("potential_control.csv")
 
+state_abs <- read_csv("50_us_states_all_data.csv")
+
 ```
 
-```{r}
+```{r joining tract data, demo data, and city population data}
 
 # drop geometry and add a treatment indicator for both datasets
 potential_treatment <- potential_treatment %>%
@@ -38,9 +40,30 @@ potential_tracts <- rbind(potential_control, potential_treatment)
 # join with the demographic data
 potential_tracts_demo <- left_join(potential_tracts, nhgis0023_ds92_1960_tract, by = "GISJOIN") 
 
+# take relevant columns from city pop data
+city_names_pops_1930 <- ipums_1930_cities_by_pop_full_sample %>%
+  select(cityname, state, citypop_total_1930 = citypop_total)
+
+city_names_pops_1930 <- left_join(city_names_pops_1930, state_abs, by = c("state" = "state_ab"))
+
+
+potential_tracts_demo <- left_join(potential_tracts_demo, city_names_pops_1930, by = c("NAME" = "cityname", "STATE.x" = "state.y"))
+
 ```
 
 
+```{r sanity checks on joins}
+
+# checking joins
+potential_tracts_demo %>%
+  group_by(STATE.x, NAME, citypop_total_1930) %>%
+  summarise(mean(citypop_total_1930), median(citypop_total_1930))
+
+potential_tracts_demo %>%
+  filter(is.na(citypop_total_1930))
+
+
+```
 
 
 ```{r OLD - use if restricting within radius}
@@ -52,8 +75,7 @@ treatment_within_r <- treatment_demo %>%
             within_r = ifelse(prop_within_radius == 1, 1, 0),
             within_r_75 = ifelse(prop_within_radius >= .75, 1, 0),
             within_r_50 = ifelse(prop_within_radius >= .50, 1, 0))
-treatment_demo %>%
-  filter()
+
 
 # 404 tracts completely inside radii
 sum(treatment_within_r$within_r)
@@ -109,33 +131,18 @@ tracts_selected %>%
 
 ```
 
-
-
 ```{r}
-# of these selected tracts, what is the range of population density and how does this compare to the tracts selected in the grading prediction process?
-
-mean(treatment_demo$pop_density, na.rm = T)
-median(treatment_demo$pop_density, na.rm = T)
-sd(treatment_demo$pop_density, na.rm = T)
-
-quantile(treatment_demo$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+tracts_selected %>%
+  group_by(NAME, treatment) %>%
+  summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
+  ggplot(aes(x = citypop_1930_, color = treatment)) +
+  geom_density()
 ```
 
 ```{r}
-quantile(half_coverage_20_60_range$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+tracts_selected %>%
+  group_by(NAME, treatment) %>%
+  summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
+  ggplot(aes(x = citypop_1930_, fill = treatment)) +
+  geom_histogram(bins = 100)
 ```
-```{r}
-quantile(half_coverage$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
-```
-
-```{r}
-
-
-treatment_demo %>%
-  ggplot(aes(x = pop_density)) +
-  geom_histogram()
-
-
-
-```
-

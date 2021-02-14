@@ -60,3 +60,34 @@ ggplot() +
 
 ```
 
+
+
+```{r}
+# of these selected tracts, what is the range of population density and how does this compare to the tracts selected in the grading prediction process?
+
+mean(treatment_demo$pop_density, na.rm = T)
+median(treatment_demo$pop_density, na.rm = T)
+sd(treatment_demo$pop_density, na.rm = T)
+
+quantile(treatment_demo$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+```
+
+```{r}
+quantile(half_coverage_20_60_range$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+```
+```{r}
+quantile(half_coverage$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+```
+
+```{r}
+
+
+treatment_demo %>%
+  ggplot(aes(x = pop_density)) +
+  geom_histogram()
+
+
+
+```
+
+
