@@ -37,17 +37,18 @@ potential_control <- potential_control %>%
 # join treatment and control to get one dataset
 potential_tracts <- rbind(potential_control, potential_treatment) 
 
-# join with the demographic data
-potential_tracts_demo <- left_join(potential_tracts, nhgis0023_ds92_1960_tract, by = "GISJOIN") 
-
 # take relevant columns from city pop data
 city_names_pops_1930 <- ipums_1930_cities_by_pop_full_sample %>%
   select(cityname, state, citypop_total_1930 = citypop_total)
 
 city_names_pops_1930 <- left_join(city_names_pops_1930, state_abs, by = c("state" = "state_ab"))
 
+potential_tracts_demo <- left_join(potential_tracts, city_names_pops_1930, by = c("NAME" = "cityname", "STATE" = "state.y"))
 
-potential_tracts_demo <- left_join(potential_tracts_demo, city_names_pops_1930, by = c("NAME" = "cityname", "STATE.x" = "state.y"))
+# join with the demographic data
+potential_tracts_demo <- left_join(potential_tracts_demo, nhgis0023_ds92_1960_tract, by = "GISJOIN") 
+
+
 
 ```
 
@@ -66,7 +67,7 @@ potential_tracts_demo %>%
 ```
 
 
-```{r OLD - use if restricting within radius}
+```{r OLD - use if restricting within radius, eval = FALSE}
 # this actually doesn't do anything because it seems like everything intersected correctly
 treatment_within_r <- treatment_demo %>%
   group_by(STATE.x, PLACE, GISJOIN) %>%
@@ -85,12 +86,421 @@ sum(treatment_within_r$within_r_75)
 sum(treatment_within_r$within_r_50)
 ```
 
-```{r calculate statistics and rename relevant rows}
+```{r renaming relevant census variables, include = FALSE}
+# variable encodings in format: description (universe)
+
 # Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
+
 potential_tracts_demo$tot_persons_printed <- potential_tracts_demo$B53001
+
+
+# RACE from printed report (Persons)
+
+potential_tracts_demo$white_printed <- potential_tracts_demo$B7B001
+potential_tracts_demo$black_printed <- potential_tracts_demo$B7B002
+potential_tracts_demo$other_printed <- potential_tracts_demo$B7B003
+
+# total foreign stock from printed report (foreign stock persons)
+
+potential_tracts_demo$foreign_stock_printed <- potential_tracts_demo$B7M001
+
+# foreign born (foreign stock persons)
+
+potential_tracts_demo$foreign_born <- potential_tracts_demo$B8J001
+
+
+# School completed (persons 25 yr and over)
+
+potential_tracts_demo$no_school <- potential_tracts_demo$B8R001
+potential_tracts_demo$school_yr_1_4 <- potential_tracts_demo$B8R002
+potential_tracts_demo$school_yr_5_7 <- potential_tracts_demo$B8R003
+potential_tracts_demo$school_yr_8 <- potential_tracts_demo$B8R004
+potential_tracts_demo$school_yr_hs_1_3 <- potential_tracts_demo$B8R005
+potential_tracts_demo$school_yr_hs_4 <- potential_tracts_demo$B8R006
+potential_tracts_demo$school_yr_college_1_3 <- potential_tracts_demo$B8R007
+potential_tracts_demo$school_yr_college_p <- potential_tracts_demo$B8R008
+
+
+# family income in 1959 (families)
+
+potential_tracts_demo$fam_income_less_1k <- potential_tracts_demo$B8W001
+potential_tracts_demo$fam_income_1_2k <- potential_tracts_demo$B8W002
+potential_tracts_demo$fam_income_2_3k <- potential_tracts_demo$B8W003
+potential_tracts_demo$fam_income_3_4k <- potential_tracts_demo$B8W004
+potential_tracts_demo$fam_income_4_5k <- potential_tracts_demo$B8W005
+potential_tracts_demo$fam_income_5_6k <- potential_tracts_demo$B8W006
+potential_tracts_demo$fam_income_6_7k <- potential_tracts_demo$B8W007
+potential_tracts_demo$fam_income_7_8k <- potential_tracts_demo$B8W008
+potential_tracts_demo$fam_income_8_9k <- potential_tracts_demo$B8W009
+potential_tracts_demo$fam_income_9_10k <- potential_tracts_demo$B8W010
+potential_tracts_demo$fam_income_10_15k <- potential_tracts_demo$B8W011
+potential_tracts_demo$fam_income_15_25k <- potential_tracts_demo$B8W012
+potential_tracts_demo$fam_income_25k_p <- potential_tracts_demo$B8W013
+
+
+# Total Housing Units (h units)
+potential_tracts_demo$tot_hunits <- potential_tracts_demo$CA5001
+
+
+# N owner occupied (occupied year round h units)
+potential_tracts_demo$owner_occupied <- potential_tracts_demo$B9O001
+
+# N renter occupied (occupied year round h units)
+potential_tracts_demo$renter_occupied <- potential_tracts_demo$B9O002
+
+
+# N vacant for rent (vacant year-round housing units)
+potential_tracts_demo$vacant_for_rent<- potential_tracts_demo$B8Q001
+# N vacant for sale (vacant year-round housing units)
+potential_tracts_demo$vacant_for_sale <- potential_tracts_demo$B8Q002
+
+
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+potential_tracts_demo$vacant_for_sale_2<- potential_tracts_demo$B9R001
+# N vacant for sale (vacant year-round housing units)
+potential_tracts_demo$vacant_for_rent_2 <- potential_tracts_demo$B9R002
+# N vacant for sale (vacant year-round housing units)
+potential_tracts_demo$vacant_other_2 <- potential_tracts_demo$B9R003
+
+
+# Occupied Units by Persons per Room (occupied units)
+potential_tracts_demo$persons_per_room_half_or_less <- potential_tracts_demo$B76001
+potential_tracts_demo$persons_per_room_point51_point75 <- potential_tracts_demo$B76002
+potential_tracts_demo$persons_per_room_point76_one<- potential_tracts_demo$B76003
+potential_tracts_demo$persons_per_room_onepone_or_more <- potential_tracts_demo$B76004
+
+
+# Renter occupied units reporting rent
+potential_tracts_demo$renter_occupied_units_reporting_rent <- potential_tracts_demo$B8A001
+
+# renter occupied unit aggregate monthly contract rent
+
+potential_tracts_demo$agg_monthly_contract_rent <- potential_tracts_demo$B8B001
+
+# value of property from printed report (housing units)
+
+
+potential_tracts_demo$property_value_u5k <- potential_tracts_demo$B7O001
+potential_tracts_demo$property_value_5000_7400 <- potential_tracts_demo$B7O002
+potential_tracts_demo$property_value_7500_9900 <- potential_tracts_demo$B7O003
+potential_tracts_demo$property_value_10000_12400 <- potential_tracts_demo$B7O004
+potential_tracts_demo$property_value_12500_14900 <- potential_tracts_demo$B7O005
+potential_tracts_demo$property_value_15000_17400 <- potential_tracts_demo$B7O006
+potential_tracts_demo$property_value_17500_19900 <- potential_tracts_demo$B7O007
+potential_tracts_demo$property_value_20000_24900 <- potential_tracts_demo$B7O008
+potential_tracts_demo$property_value_25000_34900 <- potential_tracts_demo$B7O009
+potential_tracts_demo$property_value_35000_plus <- potential_tracts_demo$B7O010
+
+
+# units in structure (housing units)
+
+potential_tracts_demo$units_1 <- potential_tracts_demo$B92001
+potential_tracts_demo$units_2 <- potential_tracts_demo$B92002
+potential_tracts_demo$units_3_4 <- potential_tracts_demo$B92003
+potential_tracts_demo$units_5_9 <- potential_tracts_demo$B92004
+potential_tracts_demo$units_10_P <- potential_tracts_demo$B92005
+
+
+# year structure built (all housing units)
+
+potential_tracts_demo$built_1950_1960 <- potential_tracts_demo$B96001
+potential_tracts_demo$built_1940_1949 <- potential_tracts_demo$B96002
+potential_tracts_demo$built_pre_1940 <- potential_tracts_demo$B96003
+
+
+
+# year head moved into household (occupied housing units)
+
+potential_tracts_demo$moved_1958_1960 <- potential_tracts_demo$CAJ001
+potential_tracts_demo$moved_in_1954_1957 <- potential_tracts_demo$CAJ002
+potential_tracts_demo$moved_in_1940_1953 <- potential_tracts_demo$CAJ003
+potential_tracts_demo$moved_in_pre_1940 <- potential_tracts_demo$CAJ004
+
+# persons in group quarters from printed report (persons in hhs)
+
+potential_tracts_demo$persons_group_quarters<- potential_tracts_demo$B54001
+
+
+# housing by condition
+
+potential_tracts_demo$condition_sound <- potential_tracts_demo$B67001
+potential_tracts_demo$condition_deteriorated <- potential_tracts_demo$B67002
+potential_tracts_demo$condition_dilapidated <- potential_tracts_demo$B67003
+
+# employment status
+potential_tracts_demo$employed_males <- potential_tracts_demo$B82001
+potential_tracts_demo$unemployed_males <- potential_tracts_demo$B82002
+potential_tracts_demo$armed_forces_males <- potential_tracts_demo$B82003
+potential_tracts_demo$not_in_lf_males <- potential_tracts_demo$B82004
+potential_tracts_demo$employed_females <- potential_tracts_demo$B82005
+potential_tracts_demo$unemployed_females <- potential_tracts_demo$B82006
+potential_tracts_demo$armed_forces_females <- potential_tracts_demo$B82007
+potential_tracts_demo$not_in_lf_females<- potential_tracts_demo$B82008
+
+
+# plumbing: DID NOT CODE ALL OPTIONS
+potential_tracts_demo$plumbing_sound_w_all_facilities <- potential_tracts_demo$B9V001
+
+potential_tracts_demo$plumbing_deteriorating_w_all_facilities <- potential_tracts_demo$B9V004
+potential_tracts_demo$plumbing_deteriorating_lackorshare_hwater <- potential_tracts_demo$B9V005
+potential_tracts_demo$plumbing_deteriorating_lackorshare_privatetoilet <- potential_tracts_demo$B9V006
+potential_tracts_demo$plumbing_delapidated <- potential_tracts_demo$B9V007
+
+# bathrooms
+potential_tracts_demo$one_bathroom <- potential_tracts_demo$B9Y001
+potential_tracts_demo$more_than_one_bathroom <- potential_tracts_demo$B9Y002
+potential_tracts_demo$shared_or_no_inside_bathroom <- potential_tracts_demo$B9Y003
+
+
+# rent buckets
+potential_tracts_demo$contract_rent_lt_20 <- potential_tracts_demo$CAV001
+potential_tracts_demo$contract_rent_20_29 <- potential_tracts_demo$CAV002
+potential_tracts_demo$contract_rent_30_39 <- potential_tracts_demo$CAV003
+potential_tracts_demo$contract_rent_40_49 <- potential_tracts_demo$CAV004
+potential_tracts_demo$contract_rent_50_59 <- potential_tracts_demo$CAV005
+potential_tracts_demo$contract_rent_60_69 <- potential_tracts_demo$CAV006
+potential_tracts_demo$contract_rent_70_79 <- potential_tracts_demo$CAV007
+potential_tracts_demo$contract_rent_80_89 <- potential_tracts_demo$CAV008
+potential_tracts_demo$contract_rent_90_99 <- potential_tracts_demo$CAV009
+potential_tracts_demo$contract_rent_l00_119 <- potential_tracts_demo$CAV010
+potential_tracts_demo$contract_rent_120_149 <- potential_tracts_demo$CAV011
+potential_tracts_demo$contract_rent_150p <- potential_tracts_demo$CAV012
+potential_tracts_demo$contract_rent_no_cash_rent <- potential_tracts_demo$CAV013
+
+
+```
+
+
+```{r creating additional variables relevant for analysis, include = FALSE}
 
 # calculate population density (originally in meters squared area so scale to km)
 potential_tracts_demo$pop_density <- potential_tracts_demo$tot_persons_printed/potential_tracts_demo$SHAPE_AREA * 1000000
+
+# pct non-white
+potential_tracts_demo$pct_non_white_printed <- (potential_tracts_demo$black_printed +
+                                      potential_tracts_demo$other_printed)/potential_tracts_demo$tot_persons_printed * 100
+
+# pct black
+potential_tracts_demo$pct_black_printed <- (potential_tracts_demo$black_printed)/potential_tracts_demo$tot_persons_printed * 100
+
+
+# % foreign stock
+potential_tracts_demo$pct_foreign_stock_printed<- (potential_tracts_demo$foreign_stock_printed)/potential_tracts_demo$tot_persons_printed * 100
+
+# % foreign born
+potential_tracts_demo$pct_foreign_born <- (potential_tracts_demo$foreign_born)/potential_tracts_demo$tot_persons_printed * 100
+
+# pct hs grads
+
+# calculate total persons who have school data
+potential_tracts_demo$tot_school_persons <- potential_tracts_demo$no_school + potential_tracts_demo$school_yr_1_4  +
+  potential_tracts_demo$school_yr_5_7 + potential_tracts_demo$school_yr_8 + potential_tracts_demo$school_yr_hs_1_3 +
+  potential_tracts_demo$school_yr_hs_4 + potential_tracts_demo$school_yr_college_1_3 +
+  potential_tracts_demo$school_yr_college_p
+
+# calculate total persons whose highest edu attainment is hs completion or greater
+potential_tracts_demo$tot_hs_grads <- potential_tracts_demo$school_yr_hs_4 +
+  potential_tracts_demo$school_yr_college_1_3 +
+  potential_tracts_demo$school_yr_college_p
+
+# calculate hs grads
+potential_tracts_demo$pct_hs_grad <- potential_tracts_demo$tot_hs_grads/potential_tracts_demo$tot_school_persons * 100
+
+
+# need to calculate income next -> how to choose something for this?? https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-poverty-people.html
+
+# based on the above source, the pverty level for families of 3 in 1959 was 2,324 -> create indicator of below or above 3k income, roughly the poverty line for a family of 3. 
+
+# average household size according to the census in 1960 was 3.29 https://www.census.gov/library/publications/1962/dec/pc-s1-23.html#:~:text=The%20number%20of%20households%20in,of%20household%20was%203.29%20persons.
+
+# sum families with income in 1959 <3k and then divide by total # families
+
+
+potential_tracts_demo$all_families_with_income_data <- potential_tracts_demo$fam_income_less_1k + potential_tracts_demo$fam_income_1_2k + potential_tracts_demo$fam_income_2_3k +
+potential_tracts_demo$fam_income_3_4k + potential_tracts_demo$fam_income_4_5k + potential_tracts_demo$fam_income_5_6k +
+potential_tracts_demo$fam_income_6_7k + potential_tracts_demo$fam_income_7_8k + potential_tracts_demo$fam_income_8_9k +
+potential_tracts_demo$fam_income_9_10k + potential_tracts_demo$fam_income_10_15k + potential_tracts_demo$fam_income_15_25k +
+potential_tracts_demo$fam_income_25k_p
+
+potential_tracts_demo$all_families_with_income_lt_3k <- potential_tracts_demo$fam_income_less_1k + potential_tracts_demo$fam_income_1_2k + potential_tracts_demo$fam_income_2_3k 
+
+potential_tracts_demo$pct_families_below_3k_income <- (potential_tracts_demo$all_families_with_income_lt_3k/
+                                                     potential_tracts_demo$all_families_with_income_data) * 100
+
+potential_tracts_demo$all_families_with_income_lt_4k <- potential_tracts_demo$fam_income_less_1k + potential_tracts_demo$fam_income_1_2k + potential_tracts_demo$fam_income_2_3k +
+  potential_tracts_demo$fam_income_3_4k 
+
+potential_tracts_demo$pct_families_below_4k_income <-   (potential_tracts_demo$all_families_with_income_lt_4k/
+                                                     potential_tracts_demo$all_families_with_income_data) * 100 
+# hhunits
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+potential_tracts_demo$vacant_all <- potential_tracts_demo$vacant_for_rent_2 + potential_tracts_demo$vacant_for_sale_2 + 
+  potential_tracts_demo$vacant_other_2
+
+potential_tracts_demo$pct_vacant_all <- 100 * potential_tracts_demo$vacant_all/potential_tracts_demo$tot_hunits
+
+
+# create var for occupied units which is all units minus vacant
+
+potential_tracts_demo$occupied_units <- potential_tracts_demo$tot_hunits - potential_tracts_demo$vacant_all
+
+
+# pct_owner_occupied out of all units
+potential_tracts_demo$pct_owner_occupied <- 100 * potential_tracts_demo$owner_occupied/potential_tracts_demo$occupied_units
+
+
+# pct renter occupied (occupied year round h units)
+potential_tracts_demo$pct_renter_occupied <- 100 * potential_tracts_demo$renter_occupied/potential_tracts_demo$occupied_units
+
+
+# pct units 1.01 or more people per room (highest category)
+potential_tracts_demo$pct_one_point_0_one_people_per_room_or_more <- 100 *  potential_tracts_demo$persons_per_room_onepone_or_more/potential_tracts_demo$occupied_units
+
+
+# average rent of owner occupied units
+potential_tracts_demo$avg_monthly_contract_rent <- potential_tracts_demo$agg_monthly_contract_rent/ potential_tracts_demo$renter_occupied_units_reporting_rent
+
+# potential_tracts_demo %>%  select(agg_monthly_contract_rent, renter_occupied_units_reporting_rent, avg_monthly_contract_rent, log_avg_monthly_contract_rent) %>% filter(avg_monthly_contract_rent > 300)
+
+# potential_tracts_demo$avg_monthly_contract_rent[potential_tracts_demo$renter_occupied_units_reporting_rent == 0] <- NA
+# potential_tracts_demo$avg_monthly_contract_rent[potential_tracts_demo$GISJOIN == 	"G08000100079" ] <- NA
+
+
+
+# log average rent of owner occupied units
+potential_tracts_demo$log_avg_monthly_contract_rent <- log(potential_tracts_demo$avg_monthly_contract_rent)
+
+
+
+# https://archive.curbed.com/2018/4/10/17219786/buying-a-house-mortgage-government-gi-bill says median home value was 11,900 in 1960
+
+potential_tracts_demo$houses_w_property_value_data <- potential_tracts_demo$property_value_u5k +
+  potential_tracts_demo$property_value_5000_7400 + potential_tracts_demo$property_value_7500_9900 +
+  potential_tracts_demo$property_value_10000_12400 + potential_tracts_demo$property_value_12500_14900 +
+  potential_tracts_demo$property_value_15000_17400 + potential_tracts_demo$property_value_17500_19900 +
+  potential_tracts_demo$property_value_20000_24900 + potential_tracts_demo$property_value_25000_34900 +
+  potential_tracts_demo$property_value_35000_plus
+
+
+# percent of houses of value under 5k
+
+potential_tracts_demo$pct_houses_w_property_value_u5k <- 100* potential_tracts_demo$property_value_u5k/potential_tracts_demo$houses_w_property_value_data
+
+# pct 1 unit houses
+potential_tracts_demo$units_with_unit_data <- potential_tracts_demo$units_1 + potential_tracts_demo$units_2 + potential_tracts_demo$units_3_4 + potential_tracts_demo$units_5_9 + potential_tracts_demo$units_10_P
+potential_tracts_demo$pct_single_unit <- potential_tracts_demo$units_1/potential_tracts_demo$units_with_unit_data * 100
+
+# pct built pre 1940
+
+potential_tracts_demo$pct_built_pre_1940 <- potential_tracts_demo$built_pre_1940/(potential_tracts_demo$built_1950_1960 + potential_tracts_demo$built_1940_1949 + potential_tracts_demo$built_pre_1940) * 100
+
+
+
+# year head moved into household (occupied housing units)
+
+potential_tracts_demo$pct_moved_pre_1940 <- potential_tracts_demo$moved_in_pre_1940/(potential_tracts_demo$moved_1958_1960 + potential_tracts_demo$moved_in_1954_1957 + potential_tracts_demo$moved_in_1940_1953 + potential_tracts_demo$moved_in_pre_1940) * 100
+
+potential_tracts_demo$pct_moved_1958_1960 <- potential_tracts_demo$moved_1958_1960/(potential_tracts_demo$moved_1958_1960 + potential_tracts_demo$moved_in_1954_1957 + potential_tracts_demo$moved_in_1940_1953 + potential_tracts_demo$moved_in_pre_1940) * 100
+
+# pct_pop group quarters
+
+potential_tracts_demo$pct_persons_group_quarters <- 100 * potential_tracts_demo$persons_group_quarters/potential_tracts_demo$tot_persons_printed
+
+# CONDITION
+
+# housing by condition: pct deteriorated or dilapidated
+
+potential_tracts_demo$pct_housing_deteriorated_dilap <- (potential_tracts_demo$condition_deteriorated + potential_tracts_demo$condition_dilapidated)/ (potential_tracts_demo$condition_sound + potential_tracts_demo$condition_deteriorated + potential_tracts_demo$condition_dilapidated) * 100
+
+# pct males unemployed
+
+potential_tracts_demo$pct_unemployed_males <- 100 * potential_tracts_demo$unemployed_males/
+  (potential_tracts_demo$unemployed_males + potential_tracts_demo$employed_males
+   + potential_tracts_demo$armed_forces_males + potential_tracts_demo$not_in_lf_males)  
+
+
+# plumbing: pct deteriorating or dilapidated
+potential_tracts_demo$pct_plumbing_detdilap <- 100 * (potential_tracts_demo$plumbing_deteriorating_w_all_facilities  +
+  potential_tracts_demo$plumbing_deteriorating_lackorshare_hwater +
+  potential_tracts_demo$plumbing_deteriorating_lackorshare_privatetoilet +
+  potential_tracts_demo$plumbing_delapidated )/potential_tracts_demo$tot_hunits
+
+# bathrooms
+
+potential_tracts_demo$pct_shared_or_bath_outside <- potential_tracts_demo$shared_or_no_inside_bathroom/ potential_tracts_demo$tot_hunits * 100
+potential_tracts_demo$pct_more_than_one_bathroom <- potential_tracts_demo$more_than_one_bathroom/potential_tracts_demo$tot_hunits * 100
+
+
+# rent buckets
+potential_tracts_demo$contract_rent_lt_20 <- potential_tracts_demo$CAV001
+potential_tracts_demo$contract_rent_20_29 <- potential_tracts_demo$CAV002
+potential_tracts_demo$contract_rent_30_39 <- potential_tracts_demo$CAV003
+potential_tracts_demo$contract_rent_40_49 <- potential_tracts_demo$CAV004
+potential_tracts_demo$contract_rent_50_59 <- potential_tracts_demo$CAV005
+potential_tracts_demo$contract_rent_60_69 <- potential_tracts_demo$CAV006
+potential_tracts_demo$contract_rent_70_79 <- potential_tracts_demo$CAV007
+potential_tracts_demo$contract_rent_80_89 <- potential_tracts_demo$CAV008
+potential_tracts_demo$contract_rent_90_99 <- potential_tracts_demo$CAV009
+potential_tracts_demo$contract_rent_l00_119 <- potential_tracts_demo$CAV010
+potential_tracts_demo$contract_rent_120_149 <- potential_tracts_demo$CAV011
+potential_tracts_demo$contract_rent_150p <- potential_tracts_demo$CAV012
+potential_tracts_demo$contract_rent_no_cash_rent <- potential_tracts_demo$CAV013
+
+all_houses_reporting_contract_rent <- sum(potential_tracts_demo$contract_rent_lt_20, na.rm = T) + sum(potential_tracts_demo$contract_rent_20_29, na.rm = T) +
+  sum(potential_tracts_demo$contract_rent_30_39, na.rm = T) + sum(potential_tracts_demo$contract_rent_40_49 , na.rm = T) + 
+  sum(potential_tracts_demo$contract_rent_50_59, na.rm = T) + sum(potential_tracts_demo$contract_rent_60_69, na.rm = T) +
+  sum(potential_tracts_demo$contract_rent_70_79, na.rm = T) + sum(potential_tracts_demo$contract_rent_80_89 , na.rm = T) + 
+  sum(potential_tracts_demo$contract_rent_90_99, na.rm = T) + sum(potential_tracts_demo$contract_rent_l00_119, na.rm = T) + 
+  sum(potential_tracts_demo$contract_rent_120_149, na.rm = T) + sum(potential_tracts_demo$contract_rent_150p, na.rm = T) +
+  sum(potential_tracts_demo$contract_rent_no_cash_rent, na.rm = T)
+  
+
+.25 * all_houses_reporting_contract_rent 
+
+sum(potential_tracts_demo$contract_rent_lt_20, na.rm = T) + sum(potential_tracts_demo$contract_rent_20_29, na.rm = T) + sum(potential_tracts_demo$contract_rent_30_39, na.rm = T) + sum(potential_tracts_demo$contract_rent_40_49 , na.rm = T)
+
+# pct with rent < $50 (approximately 25 percentile of rent)
+
+potential_tracts_demo$pct_contract_rent_lt_50 <- 100 * (potential_tracts_demo$contract_rent_lt_20 + potential_tracts_demo$contract_rent_20_29 + potential_tracts_demo$contract_rent_30_39
+                                              + potential_tracts_demo$contract_rent_40_49)/(potential_tracts_demo$contract_rent_lt_20 + potential_tracts_demo$contract_rent_20_29 +
+                                                                                          potential_tracts_demo$contract_rent_30_39 + potential_tracts_demo$contract_rent_40_49 +
+                                                                                          potential_tracts_demo$contract_rent_50_59 + potential_tracts_demo$contract_rent_60_69 +
+                                                                                          potential_tracts_demo$contract_rent_70_79 + potential_tracts_demo$contract_rent_80_89 +
+                                                                                          potential_tracts_demo$contract_rent_90_99 + potential_tracts_demo$contract_rent_l00_119 +
+                                                                                          potential_tracts_demo$contract_rent_120_149 + potential_tracts_demo$contract_rent_150p)
+# number of units reporting cash rent
+potential_tracts_demo$reporting_contract_rent_calc <- potential_tracts_demo$contract_rent_lt_20 + potential_tracts_demo$contract_rent_20_29 +
+                                                                                          potential_tracts_demo$contract_rent_30_39 + potential_tracts_demo$contract_rent_40_49 +
+                                                                                          potential_tracts_demo$contract_rent_50_59 + potential_tracts_demo$contract_rent_60_69 +
+                                                                                          potential_tracts_demo$contract_rent_70_79 + potential_tracts_demo$contract_rent_80_89 +
+                                                                                          potential_tracts_demo$contract_rent_90_99 + potential_tracts_demo$contract_rent_l00_119 +
+                                                                                          potential_tracts_demo$contract_rent_120_149 + potential_tracts_demo$contract_rent_150p
+
+# weighted contract rent: 150+ coded as 150
+potential_tracts_demo$weighted_cash_contract_rent <- (potential_tracts_demo$contract_rent_lt_20 * 10 + potential_tracts_demo$contract_rent_20_29  * 24.5 + 
+  potential_tracts_demo$contract_rent_30_39 * 34.5 + potential_tracts_demo$contract_rent_40_49 * 44.5 + potential_tracts_demo$contract_rent_50_59 * 54.5 +
+  potential_tracts_demo$contract_rent_60_69 * 64.5 + potential_tracts_demo$contract_rent_70_79 * 74.5 + potential_tracts_demo$contract_rent_80_89 * 84.5 +
+  potential_tracts_demo$contract_rent_90_99 * 94.5 + potential_tracts_demo$contract_rent_l00_119 * 109.5 + potential_tracts_demo$contract_rent_120_149 * 134.5 +
+  potential_tracts_demo$contract_rent_150p * 150)/potential_tracts_demo$reporting_contract_rent_calc
+
+potential_tracts_demo$weighted_cash_contract_rent_lt_50 <- ifelse(potential_tracts_demo$weighted_cash_contract_rent < 50, 1, 0)
+
+
+colnames(potential_tracts_demo)
+
+potential_tracts_demo <- potential_tracts_demo %>%
+  select(NHGISST:AREANAME, tot_persons_printed:weighted_cash_contract_rent_lt_50)
+
+colnames(potential_tracts_demo)
+
+potential_tracts_demo %>%
+  ggplot(aes(x = weighted_cash_contract_rent)) +
+  geom_histogram()
+
 ```
 
 
@@ -98,6 +508,13 @@ potential_tracts_demo$pop_density <- potential_tracts_demo$tot_persons_printed/p
 
 tracts_selected <- potential_tracts_demo %>%
   filter(pop_density >= 952.4427)
+
+```
+
+
+```{r save as csv}
+
+write.csv(tracts_selected, "tracts_selected.csv")
 
 ```
 
@@ -144,5 +561,69 @@ tracts_selected %>%
   group_by(NAME, treatment) %>%
   summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
   ggplot(aes(x = citypop_1930_, fill = treatment)) +
-  geom_histogram(bins = 100)
+  geom_histogram(bins = 50)
 ```
+
+```{r}
+tracts_selected %>%
+  group_by(NAME, STATE.y, treatment) %>%
+  summarise(citypop_1930_ = mean(citypop_total_1930))
+```
+
+```{r}
+
+list(colnames(tracts_selected))
+
+
+```
+
+```{r}
+tracts_selected %>%
+  ggplot(aes(x = pct_black_printed, color = treatment)) +
+  geom_histogram() +
+  facet_grid(.~treatment)
+
+tracts_selected %>%
+  ggplot(aes(x = pct_black_printed, color = treatment)) +
+  geom_density() +
+  facet_grid(.~treatment)
+
+tracts_selected %>%
+  ggplot(aes(x = pct_black_printed, color = treatment)) +
+  geom_density()
+```
+
+```{r}
+tracts_selected %>%
+  ggplot(aes(x = pct_owner_occupied, color = treatment)) +
+  geom_density()
+```
+
+```{r}
+tracts_selected %>%
+  ggplot(aes(x = pct_unemployed_males, color = treatment)) +
+  geom_density()
+```
+
+```{r}
+tracts_selected %>%
+  ggplot(aes(x = pct_contract_rent_lt_50, color = treatment)) +
+  geom_density()
+```
+
+```{r}
+tracts_selected %>%
+  ggplot(aes(x = pct_vacant_all, color = treatment)) +
+  geom_density()  
+```
+
+
+```{r}
+
+tracts_selected %>%
+  ggplot(aes(x = pct_single_unit, color = treatment)) +
+  geom_density()
+
+
+```
+
