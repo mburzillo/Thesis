@@ -288,6 +288,6 @@ cities_60k_plus_full_sample <- ipums_1930_cities_by_pop_full_sample %>%
 #view(city_pop_name_1930_in_richmond)
 
 ipums_1930_cities_by_pop_full_sample  %>%
-  filter(state == "OK")
+  filter(state == "IL")
 ```
 

@@ -45,7 +45,7 @@ mean(half_coverage_20_60_range$pop_density, na.rm = T)
 median(half_coverage_20_60_range$pop_density, na.rm = T)
 sd(half_coverage$pop_density, na.rm = T)
 
-quantile(half_coverage_20_60_range$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+quantile(half_coverage_20_60_range$pop_density, probs = c(.01, .025, .03, .04,.05, .25, .75, .9, .99, 1), na.rm = T)
 
 half_coverage_20_60_range %>%
   ggplot(aes(x = pop_density)) +

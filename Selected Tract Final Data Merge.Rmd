@@ -15,17 +15,35 @@ library(tidyverse)
 # load demographic data that contains all potential variables
 nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
 
-treatment <- read_csv("selected_treatment.csv")
+potential_treatment <- read_csv("selected_treatment.csv")
+
+potential_control <- read_csv("potential_control.csv")
 
 ```
 
 ```{r}
-treatment
 
-treatment_demo <- left_join(treatment, nhgis0023_ds92_1960_tract, by = "GISJOIN") %>%
-  select(-wkt_geom)
+# drop geometry and add a treatment indicator for both datasets
+potential_treatment <- potential_treatment %>%
+  select(-wkt_geom) %>%
+  mutate(treatment = factor(1))
+
+potential_control <- potential_control %>%
+  select(-wkt_geom) %>%
+  mutate(treatment = factor(0))
+
+# join treatment and control to get one dataset
+potential_tracts <- rbind(potential_control, potential_treatment) 
+
+# join with the demographic data
+potential_tracts_demo <- left_join(potential_tracts, nhgis0023_ds92_1960_tract, by = "GISJOIN") 
+
 ```
-```{r}
+
+
+
+
+```{r OLD - use if restricting within radius}
 # this actually doesn't do anything because it seems like everything intersected correctly
 treatment_within_r <- treatment_demo %>%
   group_by(STATE.x, PLACE, GISJOIN) %>%
@@ -45,13 +63,52 @@ sum(treatment_within_r$within_r_75)
 sum(treatment_within_r$within_r_50)
 ```
 
-```{r}
+```{r calculate statistics and rename relevant rows}
 # Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
-treatment_demo$tot_persons_printed <- treatment_demo$B53001
+potential_tracts_demo$tot_persons_printed <- potential_tracts_demo$B53001
 
 # calculate population density (originally in meters squared area so scale to km)
-treatment_demo$pop_density <- treatment_demo$tot_persons_printed/treatment_demo$SHAPE_AREA * 1000000
+potential_tracts_demo$pop_density <- potential_tracts_demo$tot_persons_printed/potential_tracts_demo$SHAPE_AREA * 1000000
 ```
+
+
+```{r dropping tracts with low density}
+
+tracts_selected <- potential_tracts_demo %>%
+  filter(pop_density >= 952.4427)
+
+```
+
+
+```{r looking at summary statistics}
+
+tracts_selected %>%
+  mutate(count = 1) %>%
+  group_by(treatment) %>%
+  summarise(n_tracts = sum(count))
+
+unique(tracts_selected$treatment)
+
+```
+
+
+
+```{r prop_grade_d}
+
+tracts_selected %>%
+  ggplot(aes(x = pop_density, fill = treatment)) +
+  geom_histogram(bins = 100) +
+  facet_wrap(~treatment)
+
+```
+
+```{r}
+tracts_selected %>%
+  ggplot(aes(x = pop_density, color = treatment)) +
+  geom_density()
+
+```
+
 
 
 ```{r}

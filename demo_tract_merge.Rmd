@@ -31,7 +31,7 @@ all_richmond_with_pop %>%
   filter(city == "Atlantic City")
 
 race_1960_demo %>%
-  filter(GISJOIN == "G34000100001")
+  filter(GISJOIN == "G3400070CJ0045")
 
 ```
 
@@ -287,7 +287,7 @@ filtered <- data_for_analysis %>%
 ```
 
 ```{r}
-data_for_analysis
+#data_for_analysis %>%filter(GISJOIN == "G5501330WC0009") %>% select(pop_density)
 
 ```
 
@@ -757,8 +757,9 @@ data_for_analysis %>%
   summarise(tracts = sum(count)) %>%
   view()
   
-  
+
 data_for_analysis %>%
-   filter(state == "OK")
+  filter(GISJOIN == "G01007300016")
+  
 ```
 
