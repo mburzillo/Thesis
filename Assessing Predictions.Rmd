@@ -1,0 +1,24 @@
+---
+title: "assessing performance"
+author: "Maria Burzillo"
+date: "2/14/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r import data, include = FALSE}
+tracts_selected_predictions <- read.csv("selected_tract_predictions.csv") %>%
+  mutate(treatment = as.factor(treatment))
+```
+
+```{r}
+tracts_selected_predictions %>%
+  ggplot(aes(x = predicted_pct_d, color = treatment)) +
+  geom_density() +
+  ggtitle("Predicted Grade D by Tract: Treatment and Control Groups")
+```
+

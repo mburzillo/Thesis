@@ -30,7 +30,7 @@ all_holc_overlay %>%
   filter(NHGISCTY == "3250")
 ```
 
-```{r what are the differences in the files?}
+```{r what are the differences in the files?, eval = FALSE}
 
 all_holc_overlay_test <- all_holc_overlay %>% 
   mutate(count = 1) %>%
@@ -46,10 +46,6 @@ all_holc_overlay_test_3 <- all_holc_overlay_3 %>%
 
 anti_join(all_holc_overlay_test, all_holc_overlay_test_3)
 
-```
-
-```{r}
-anti_join(all_holc_overlay_test_3, all_holc_overlay_test)
 ```
 
 

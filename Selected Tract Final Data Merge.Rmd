@@ -15,56 +15,78 @@ library(tidyverse)
 # load demographic data that contains all potential variables
 nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
 
-potential_treatment <- read_csv("selected_treatment.csv")
+potential_treatment <- read_csv("selected_treatment.csv") %>%
+  select(-wkt_geom, -YEAR) %>%
+  mutate(treatment = factor(1)) %>%
+  rename(state = STATE,
+         cityname = NAME,
+         intersect_area = area,
+         tract_area = SHAPE_AREA)
 
-potential_control <- read_csv("potential_control.csv")
+potential_control <- read_csv("potential_control.csv") %>%
+  select(-wkt_geom, -YEAR) %>%
+  mutate(treatment = factor(0)) %>%
+  rename(state = STATE,
+         cityname = NAME,
+         intersect_area = area,
+         tract_area = SHAPE_AREA)
 
 state_abs <- read_csv("50_us_states_all_data.csv")
+
+growth_rate_radii_data <- read_xlsx("treatment_control_growth_rate.xlsx") %>%
+  select(-treatment)
+
+# hard code these names again because issue with space in spelling from original data source causing join to fail
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 783362] <- "San Jose"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 57835] <- "Port Arthur"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 84782	] <- "San Angelo"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 85679] <- "Santa Barbara"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 69990] <- "High Point"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 97038] <- "Green Bay"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 283308] <- "Colorado Springs"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 110432] <- "Ann Arbor"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 222684] <- "Baton Rouge"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 258933] <- "Corpus Christi"
+growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 72798] <- "Fort Smith"
 
 ```
 
 ```{r joining tract data, demo data, and city population data}
 
-# drop geometry and add a treatment indicator for both datasets
-potential_treatment <- potential_treatment %>%
-  select(-wkt_geom) %>%
-  mutate(treatment = factor(1))
-
-potential_control <- potential_control %>%
-  select(-wkt_geom) %>%
-  mutate(treatment = factor(0))
-
 # join treatment and control to get one dataset
 potential_tracts <- rbind(potential_control, potential_treatment) 
+
 
 # take relevant columns from city pop data
 city_names_pops_1930 <- ipums_1930_cities_by_pop_full_sample %>%
   select(cityname, state, citypop_total_1930 = citypop_total)
 
-city_names_pops_1930 <- left_join(city_names_pops_1930, state_abs, by = c("state" = "state_ab"))
+city_names_pops_1930 <- left_join(city_names_pops_1930, state_abs, by = c("state" = "state_ab")) %>%
+  rename(state_ab = state, state = state.y)
 
-potential_tracts_demo <- left_join(potential_tracts, city_names_pops_1930, by = c("NAME" = "cityname", "STATE" = "state.y"))
+# join with radii and growth rate data
+city_names_pops_growth <- left_join(city_names_pops_1930, growth_rate_radii_data, by = c("cityname" = "city", "state_ab" = "state", "citypop_total_1930" = "citypop_total_1930"))
+
+potential_tracts_demo <- left_join(potential_tracts, city_names_pops_growth, by = c("cityname" = "cityname", "state" = "state"))
 
 # join with the demographic data
 potential_tracts_demo <- left_join(potential_tracts_demo, nhgis0023_ds92_1960_tract, by = "GISJOIN") 
 
 
+potential_tracts_demo %>%
+  filter(cityname == "Columbus", NHGISST_2 == 130)
+
+potential_tracts_demo %>%
+  filter(state == "Alabama")
+
+growth_rate_radii_data %>%
+  filter(state == "CA")
+
+growth_rate_radii_data %>%
+  filter(city == "Port Arthur")
 
 ```
 
-
-```{r sanity checks on joins}
-
-# checking joins
-potential_tracts_demo %>%
-  group_by(STATE.x, NAME, citypop_total_1930) %>%
-  summarise(mean(citypop_total_1930), median(citypop_total_1930))
-
-potential_tracts_demo %>%
-  filter(is.na(citypop_total_1930))
-
-
-```
 
 
 ```{r OLD - use if restricting within radius, eval = FALSE}
@@ -276,7 +298,7 @@ potential_tracts_demo$contract_rent_no_cash_rent <- potential_tracts_demo$CAV013
 ```{r creating additional variables relevant for analysis, include = FALSE}
 
 # calculate population density (originally in meters squared area so scale to km)
-potential_tracts_demo$pop_density <- potential_tracts_demo$tot_persons_printed/potential_tracts_demo$SHAPE_AREA * 1000000
+potential_tracts_demo$pop_density <- potential_tracts_demo$tot_persons_printed/potential_tracts_demo$tract_area * 1000000
 
 # pct non-white
 potential_tracts_demo$pct_non_white_printed <- (potential_tracts_demo$black_printed +
@@ -490,16 +512,13 @@ potential_tracts_demo$weighted_cash_contract_rent <- (potential_tracts_demo$cont
 potential_tracts_demo$weighted_cash_contract_rent_lt_50 <- ifelse(potential_tracts_demo$weighted_cash_contract_rent < 50, 1, 0)
 
 
-colnames(potential_tracts_demo)
+```
+
+```{r get rid of extra columns}
+# colnames(potential_tracts_demo)
 
 potential_tracts_demo <- potential_tracts_demo %>%
-  select(NHGISST:AREANAME, tot_persons_printed:weighted_cash_contract_rent_lt_50)
-
-colnames(potential_tracts_demo)
-
-potential_tracts_demo %>%
-  ggplot(aes(x = weighted_cash_contract_rent)) +
-  geom_histogram()
+  select(state:AREANAME, tot_persons_printed:weighted_cash_contract_rent_lt_50)
 
 ```
 
@@ -507,7 +526,10 @@ potential_tracts_demo %>%
 ```{r dropping tracts with low density}
 
 tracts_selected <- potential_tracts_demo %>%
-  filter(pop_density >= 952.4427)
+  mutate(pop_density >= 952.4427)
+
+potential_tracts_demo %>%
+  filter(pop_density >= 1417.682)
 
 ```
 
@@ -523,10 +545,19 @@ write.csv(tracts_selected, "tracts_selected.csv")
 
 tracts_selected %>%
   mutate(count = 1) %>%
-  group_by(treatment) %>%
+  group_by(treatment, cityname) %>%
   summarise(n_tracts = sum(count))
 
 unique(tracts_selected$treatment)
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  mutate(count = 1) %>%
+  group_by(cityname) %>%
+  summarise(n_tracts = sum(count)) %>%
+  summarise(mean = mean(n_tracts))
+
+
 
 ```
 
@@ -544,13 +575,14 @@ tracts_selected %>%
 ```{r}
 tracts_selected %>%
   ggplot(aes(x = pop_density, color = treatment)) +
-  geom_density()
+  geom_density() +
+  ggtitle("Distribution of Population Density by Tract")
 
 ```
 
 ```{r}
 tracts_selected %>%
-  group_by(NAME, treatment) %>%
+  group_by(cityname, treatment) %>%
   summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
   ggplot(aes(x = citypop_1930_, color = treatment)) +
   geom_density()
@@ -558,23 +590,19 @@ tracts_selected %>%
 
 ```{r}
 tracts_selected %>%
-  group_by(NAME, treatment) %>%
+  group_by(cityname, treatment) %>%
   summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
   ggplot(aes(x = citypop_1930_, fill = treatment)) +
-  geom_histogram(bins = 50)
+  geom_histogram(bins = 50) +
+  ggtitle("Distribution of City Populations")
 ```
 
 ```{r}
 tracts_selected %>%
-  group_by(NAME, STATE.y, treatment) %>%
-  summarise(citypop_1930_ = mean(citypop_total_1930))
-```
-
-```{r}
-
-list(colnames(tracts_selected))
-
-
+  filter(treatment == 1) %>%
+  group_by(cityname, state, treatment) %>%
+  summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
+  view()
 ```
 
 ```{r}
@@ -624,6 +652,40 @@ tracts_selected %>%
   ggplot(aes(x = pct_single_unit, color = treatment)) +
   geom_density()
 
+
+```
+
+
+```{r}
+tracts_selected %>%
+  filter(cityname == "San Jose")
+```
+
+
+```{r}
+
+control_cities <- tracts_selected %>%
+  filter(treatment == 0) %>%
+  group_by(cityname, state, treatment) %>%
+  summarize(growth_rate = mean(pct_change_pop_30_90))
+
+treatment_cities <- tracts_selected %>%
+  filter(treatment == 1) %>%
+  group_by(cityname, state, treatment) %>%
+  summarize(growth_rate = mean(pct_change_pop_30_90))
+
+mean(control_cities$growth_rate)
+
+mean(treatment_cities$growth_rate)
+
+tracts_selected %>%
+  #filter(treatment == 0) %>%
+  group_by(cityname, state, treatment) %>%
+  summarize(growth_rate = mean(pct_change_pop_30_90)) %>%
+  ggplot(aes(x = growth_rate, fill = treatment)) +
+  geom_histogram() +
+  facet_grid(~treatment) +
+  ggtitle("% Change in Population of Treatment and Control Cities, 1930-1990")
 
 ```
 

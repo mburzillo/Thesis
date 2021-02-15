@@ -22,8 +22,6 @@ colnames(data_for_analysis)
 
 half_coverage <- data_for_analysis %>%
   filter(area_accounted_for >= .5)
-
-  
   
 mean(half_coverage$pop_density, na.rm = T)
 median(half_coverage$pop_density, na.rm = T)
@@ -76,7 +74,7 @@ quantile(treatment_demo$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm 
 quantile(half_coverage_20_60_range$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
 ```
 ```{r}
-quantile(half_coverage$pop_density, probs = c(.1, .25, .75, .9, .99, 1), na.rm = T)
+quantile(half_coverage$pop_density, probs = c(.025, .05, .1, .25, .75, .9, .99, 1), na.rm = T)
 ```
 
 ```{r}
