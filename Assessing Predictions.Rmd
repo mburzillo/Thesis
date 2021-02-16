@@ -13,6 +13,10 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r import data, include = FALSE}
 tracts_selected_predictions <- read.csv("selected_tract_predictions.csv") %>%
   mutate(treatment = as.factor(treatment))
+
+# remove any observations unable to get prediction for 
+tracts_selected_predictions <- tracts_selected_predictions %>%
+  filter(!(is.na(predicted_pct_d)))
 ```
 
 ```{r}
@@ -20,5 +24,268 @@ tracts_selected_predictions %>%
   ggplot(aes(x = predicted_pct_d, color = treatment)) +
   geom_density() +
   ggtitle("Predicted Grade D by Tract: Treatment and Control Groups")
+```
+
+```{r}
+# average population
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(tot_persons_printed))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(tot_persons_printed))
+
+# pct_AA
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_black_printed))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_black_printed))
+
+# pct_foreign_born
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_foreign_born))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_foreign_born))
+
+
+# pct_unemployed_males
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_unemployed_males))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_unemployed_males))
+
+# pct_owner_occupied
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_owner_occupied, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_owner_occupied, na.rm = T))
+
+# pct_contract_rent_lt_50
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_contract_rent_lt_50, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_contract_rent_lt_50, na.rm = T))
+
+# pct_vacant_all"
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_vacant_all, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_vacant_all, na.rm = T))
+
+
+# pct_one_point_0_one_people_per_room_or_more
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_one_point_0_one_people_per_r, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_one_point_0_one_people_per_r, na.rm = T))
+
+#  "pct_single_unit"   
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_single_unit, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_single_unit, na.rm = T))
+
+# pct_housing_deteriorated_dilap
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_housing_deteriorated_dilap, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_housing_deteriorated_dilap, na.rm = T))
+
+# "weighted_cash_contract_rent"         
+
+tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
+
+tracts_selected_predictions  %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pop_density, na.rm = T))
+
+tracts_selected_predictions %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pop_density, na.rm = T))
+
+```
+
+```{r}
+
+tracts_predicted_red <- tracts_selected_predictions %>%
+  filter(predicted_pct_d >= 50)
+```
+
+```{r}
+# average population
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(tot_persons_printed))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(tot_persons_printed))
+
+# pct_AA
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_black_printed))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_black_printed))
+
+# pct_foreign_born
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_foreign_born))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_foreign_born))
+
+
+# pct_unemployed_males
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_unemployed_males))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_unemployed_males))
+
+# pct_owner_occupied
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_owner_occupied, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_owner_occupied, na.rm = T))
+
+# pct_contract_rent_lt_50
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_contract_rent_lt_50, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_contract_rent_lt_50, na.rm = T))
+
+# pct_vacant_all"
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_vacant_all, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_vacant_all, na.rm = T))
+
+
+# pct_one_point_0_one_people_per_room_or_more
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_one_point_0_one_people_per_r, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_one_point_0_one_people_per_r, na.rm = T))
+
+#  "pct_single_unit"   
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_single_unit, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_single_unit, na.rm = T))
+
+# pct_housing_deteriorated_dilap
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_housing_deteriorated_dilap, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_housing_deteriorated_dilap, na.rm = T))
+
+# "weighted_cash_contract_rent"         
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
+
+
+tracts_predicted_red %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pop_density, na.rm = T))
+
+tracts_predicted_red %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pop_density, na.rm = T))
+```
+
+```{r}
+
+tracts_selected_predictions %>%
+  filter(treatment == 1)
+```
+
+
+```{r}
+colnames(tracts_selected_predictions)
 ```
 

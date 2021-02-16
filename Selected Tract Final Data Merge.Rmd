@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(readxl)
 ```
 
 ```{r load data}
@@ -33,7 +34,7 @@ potential_control <- read_csv("potential_control.csv") %>%
 
 state_abs <- read_csv("50_us_states_all_data.csv")
 
-growth_rate_radii_data <- read_xlsx("treatment_control_growth_rate.xlsx") %>%
+growth_rate_radii_data <- read_excel("treatment_control_growth_rate.xlsx") %>%
   select(-treatment)
 
 # hard code these names again because issue with space in spelling from original data source causing join to fail
@@ -526,7 +527,7 @@ potential_tracts_demo <- potential_tracts_demo %>%
 ```{r dropping tracts with low density}
 
 tracts_selected <- potential_tracts_demo %>%
-  mutate(pop_density >= 952.4427)
+  filter(pop_density >= 952.4427)
 
 potential_tracts_demo %>%
   filter(pop_density >= 1417.682)
@@ -545,8 +546,13 @@ write.csv(tracts_selected, "tracts_selected.csv")
 
 tracts_selected %>%
   mutate(count = 1) %>%
-  group_by(treatment, cityname) %>%
-  summarise(n_tracts = sum(count))
+  filter(treatment == 0)
+
+tracts_selected %>%
+  mutate(count = 0) %>%
+  group_by(cityname, state, treatment, citypop_total_1930, citypop_1990, pct_change_pop_30_90) %>%
+  summarise(n_tracts = sum(count))%>%
+  view()
 
 unique(tracts_selected$treatment)
 
@@ -556,6 +562,136 @@ tracts_selected %>%
   group_by(cityname) %>%
   summarise(n_tracts = sum(count)) %>%
   summarise(mean = mean(n_tracts))
+
+tracts_selected %>%
+  select(pop_density)
+
+tracts_selected %>%
+  mutate(count = 1) %>%
+  group_by(state) %>%
+  summarize(sum = sum(count))
+
+
+
+```
+
+```{r}
+colnames(tracts_selected)
+```
+
+
+```{r summary statistics across tracts}
+# average population
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(tot_persons_printed))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(tot_persons_printed))
+
+# pct_AA
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_black_printed))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_black_printed))
+
+# pct_foreign_born
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_foreign_born))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_foreign_born))
+
+
+# pct_unemployed_males
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_unemployed_males))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_unemployed_males))
+
+# pct_owner_occupied
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_owner_occupied, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_owner_occupied, na.rm = T))
+
+# pct_contract_rent_lt_50
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_contract_rent_lt_50, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_contract_rent_lt_50, na.rm = T))
+
+# pct_vacant_all"
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_vacant_all, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_vacant_all, na.rm = T))
+
+
+# pct_one_point_0_one_people_per_room_or_more
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_one_point_0_one_people_per_room_or_more, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_one_point_0_one_people_per_room_or_more, na.rm = T))
+
+#  "pct_single_unit"   
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_single_unit, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_single_unit, na.rm = T))
+
+# pct_housing_deteriorated_dilap
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(pct_housing_deteriorated_dilap, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(pct_housing_deteriorated_dilap, na.rm = T))
+
+# "weighted_cash_contract_rent"         
+
+tracts_selected %>%
+  filter(treatment == 1) %>%
+  summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
+
+tracts_selected %>%
+  filter(treatment == 0) %>%
+  summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
 
 
 
@@ -686,6 +822,11 @@ tracts_selected %>%
   geom_histogram() +
   facet_grid(~treatment) +
   ggtitle("% Change in Population of Treatment and Control Cities, 1930-1990")
+
+
+tracts_selected %>%
+  filter(cityname == "Gadsden") %>%
+  select(pop_density)
 
 ```
 
