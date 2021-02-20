@@ -408,6 +408,19 @@ data_for_analysis$houses_w_property_value_data <- data_for_analysis$property_val
   data_for_analysis$property_value_35000_plus
 
 
+# weighted property value
+
+data_for_analysis$weighted_prop_value <- (data_for_analysis$property_value_u5k * 2500 +
+                                                  data_for_analysis$property_value_5000_7400 * 6250  + 
+                                                  data_for_analysis$property_value_7500_9900 * 8750 +
+                                                  data_for_analysis$property_value_10000_12400 * 11250 + 
+                                                  data_for_analysis$property_value_12500_14900 * ((15000-12500)/2 + 12500) +
+                                                  data_for_analysis$property_value_15000_17400 * ((17500-15000)/2 + 15000) + 
+                                                  data_for_analysis$property_value_17500_19900 * ((20000-17500)/2 + 17500) +
+                                                  data_for_analysis$property_value_20000_24900 * ((25000-20000)/2 + 20000) + 
+                                                  data_for_analysis$property_value_25000_34900 * ((35000-25000)/2 + 25000) +
+                                                  data_for_analysis$property_value_35000_plus* (35000))/ data_for_analysis$houses_w_property_value_data
+
 # percent of houses of value under 5k
 
 data_for_analysis$pct_houses_w_property_value_u5k <- 100* data_for_analysis$property_value_u5k/data_for_analysis$houses_w_property_value_data
@@ -533,11 +546,13 @@ data_for_analysis %>%
 
 ```{r}
 data_for_analysis %>%
-  ggplot(aes(x = pct_contract_rent_lt_50)) +
+  ggplot(aes(x = weighted_prop_value)) +
   geom_histogram()
+
+summary(data_for_analysis$weighted_prop_value)
 ```
 
-```{r}
+```{r eval = FALSE}
 
 data_for_analysis  %>%
   ggplot(aes(x = pct_families_below_4k_income)) +
@@ -557,14 +572,14 @@ data_for_analysis %>%
 
 ```
 
-```{r}
+```{r eval = FALSE}
 data_for_analysis  %>%
   ggplot(aes(x = pct_contract_rent_lt_50 , y= prop_grade_D)) +
   geom_point() +
   geom_smooth(se = FALSE, method = "lm")
 ```
 
-```{r}
+```{r eval = FALSE}
 data_for_analysis  %>%
   ggplot(aes(x = weighted_cash_contract_rent , y= prop_grade_D)) +
   geom_point() +
@@ -572,7 +587,7 @@ data_for_analysis  %>%
 ```
 
 
-```{r}
+```{r eval = FALSE}
 
 data_for_analysis  %>%
   ggplot(aes(x = weighted_cash_contract_rent_lt_50 , y= prop_grade_D)) +
@@ -634,7 +649,7 @@ data_for_analysis %>%
 ```
 
 
-```{r}
+```{r eval = FALSE}
 summary <- data_for_analysis %>%
   filter(area_accounted_for >= .5 ) %>%
   mutate(over_50p_red = ifelse(pct_grade_d > 50, 1, 0),

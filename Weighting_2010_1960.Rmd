@@ -1,0 +1,57 @@
+---
+title: "Untitled"
+author: "Maria Burzillo"
+date: "2/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r load data, include = FALSE}
+
+test_intersect_2010_1960 <- read.csv("Overlay Files from QGIS/test_intersect_2010_1960.csv") %>%
+  mutate(intersect_over_tract = intersect_2010_1960_area/SHAPE_AREA)
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r summarize}
+test_intersect_2010_1960 %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  summarise(sum_count = sum(count)) %>%
+  summarise(mean_intersect_areas_in_1960_tract = mean(sum_count),
+            median_intersect_areas_in_1960_tract = median(sum_count))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+
+# lots of the intersect areas represent negligible areas
+test_intersect_2010_1960 %>%
+  ggplot(aes(x = intersect_over_tract)) +
+  geom_histogram()
+```
+
+
+```{r}
+# Q: how many tracts only have 1 intersect area? 595 out of the 961 tracts are 90% covered by 1 area
+
+test_intersect_2010_1960 %>%
+  filter(intersect_over_tract > .90 )
+
+```
+

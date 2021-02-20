@@ -413,6 +413,19 @@ potential_tracts_demo$houses_w_property_value_data <- potential_tracts_demo$prop
 
 potential_tracts_demo$pct_houses_w_property_value_u5k <- 100* potential_tracts_demo$property_value_u5k/potential_tracts_demo$houses_w_property_value_data
 
+# weighted property value
+
+potential_tracts_demo$weighted_prop_value <- (potential_tracts_demo$property_value_u5k * 2500 +
+                                                  potential_tracts_demo$property_value_5000_7400 * 6250  + 
+                                                  potential_tracts_demo$property_value_7500_9900 * 8750 +
+                                                  potential_tracts_demo$property_value_10000_12400 * 11250 + 
+                                                  potential_tracts_demo$property_value_12500_14900 * ((15000-12500)/2 + 12500) +
+                                                  potential_tracts_demo$property_value_15000_17400 * ((17500-15000)/2 + 15000) + 
+                                                  potential_tracts_demo$property_value_17500_19900 * ((20000-17500)/2 + 17500) +
+                                                  potential_tracts_demo$property_value_20000_24900 * ((25000-20000)/2 + 20000) + 
+                                                  potential_tracts_demo$property_value_25000_34900 * ((35000-25000)/2 + 25000) +
+                                                  potential_tracts_demo$property_value_35000_plus* (35000))/potential_tracts_demo$houses_w_property_value_data
+
 # pct 1 unit houses
 potential_tracts_demo$units_with_unit_data <- potential_tracts_demo$units_1 + potential_tracts_demo$units_2 + potential_tracts_demo$units_3_4 + potential_tracts_demo$units_5_9 + potential_tracts_demo$units_10_P
 potential_tracts_demo$pct_single_unit <- potential_tracts_demo$units_1/potential_tracts_demo$units_with_unit_data * 100
@@ -531,6 +544,8 @@ tracts_selected <- potential_tracts_demo %>%
 
 potential_tracts_demo %>%
   filter(pop_density >= 1417.682)
+
+colnames(tracts_selected)
 
 ```
 
@@ -729,7 +744,7 @@ tracts_selected %>%
   group_by(cityname, treatment) %>%
   summarise(citypop_1930_ = mean(citypop_total_1930)) %>%
   ggplot(aes(x = citypop_1930_, fill = treatment)) +
-  geom_histogram(bins = 50) +
+  geom_histogram(bins = 15) +
   ggtitle("Distribution of City Populations")
 ```
 
@@ -828,5 +843,15 @@ tracts_selected %>%
   filter(cityname == "Gadsden") %>%
   select(pop_density)
 
+```
+
+```{r}
+tracts_selected %>%
+  mutate(count = 1) %>%
+  group_by(cityname, state, treatment) %>%
+  summarize(tot_tracts = sum(count)) %>%
+  view()
+
+summary(tracts_selected$tract_area)
 ```
 
