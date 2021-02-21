@@ -19,7 +19,11 @@ When you click the **Knit** button a document will be generated that includes bo
 ```{r load data, include = FALSE}
 
 test_intersect_2010_1960 <- read.csv("Overlay Files from QGIS/test_intersect_2010_1960.csv") %>%
-  mutate(intersect_over_tract = intersect_2010_1960_area/SHAPE_AREA)
+  # intersect over 2010 tract area 
+  mutate(intersect_over_2010_tract = intersect_2010_1960_area/Shape_area_2,
+         intersect_over_1960_tract = intersect_2010_1960_area/SHAPE_AREA)
+
+colnames(test_intersect_2010_1960)
 
 ```
 
@@ -49,9 +53,10 @@ test_intersect_2010_1960 %>%
 
 ```{r}
 # Q: how many tracts only have 1 intersect area? 595 out of the 961 tracts are 90% covered by 1 area
+# more intersect areas entirely cover 2010 tracts, which makes sense because 2010 tracts should be smaller on average
 
 test_intersect_2010_1960 %>%
-  filter(intersect_over_tract > .90 ) 
+  filter(intersect_over_1960_tract > .90 ) 
 
 ```
 
@@ -62,8 +67,7 @@ test_intersect_2010_1960_edit <- test_intersect_2010_1960 %>%
   mutate(black_or_combo_2010 = nhgis0028_ds176_20105_2010_tract_JMEE001,
          tot_pop_2010 = nhgis0028_ds176_20105_2010_tract_JMAE001,
          pct_black_or_combo_2010 = black_or_combo_2010 / tot_pop_2010 * 100,
-         intersect_over_tract_2010_1960 = intersect_over_tract,
-         pop_2010_in_intersect = intersect_over_tract_2010_1960 * tot_pop_2010) %>%
+         pop_2010_in_intersect = intersect_over_2010_tract * tot_pop_2010) %>%
   select(-nhgis0028_ds176_20105_2010_tract_JMEE001, -nhgis0028_ds176_20105_2010_tract_JMAE001)
 
 colnames(test_intersect_2010_1960_edit)
@@ -72,16 +76,39 @@ colnames(test_intersect_2010_1960_edit)
 
 ```{r}
 test_1960_interpolation <- test_intersect_2010_1960_edit  %>%
-  group_by(GISJOIN, tracts_selected_tot_persons_printed) %>%
+  group_by(tracts_selected_cityname, GISJOIN, tracts_selected_tot_persons_printed) %>%
   mutate(tot_2010_pop_in_1960_tract = sum(pop_2010_in_intersect), interpolation_weight = pop_2010_in_intersect/tot_2010_pop_in_1960_tract, 
-         sum_intersect_over_tract_2010_1960 = sum(intersect_over_tract_2010_1960)) %>%
-  select(GISJOIN, intersect_over_tract_2010_1960, sum_intersect_over_tract_2010_1960, tracts_selected_tot_persons_printed, tot_pop_2010, 
-         pop_2010_in_intersect, tot_2010_pop_in_1960_tract, interpolation_weight, black_or_combo_2010)
+         sum_intersect_over_1960_tract = sum(intersect_over_1960_tract)) %>%
+  select(tracts_selected_cityname, GISJOIN, intersect_over_1960_tract, sum_intersect_over_1960_tract, tracts_selected_tot_persons_printed, tot_pop_2010, intersect_over_2010_tract,
+         pop_2010_in_intersect, tot_2010_pop_in_1960_tract, interpolation_weight, black_or_combo_2010, tracts_selected_pct_black_printed, tracts_selected_black_printed,
+         tot_pop_2010)
 ```
 
 ```{r}
 test_1960_interpolation %>%
-  ggplot(aes(x = intersect_over_tract_2010_1960,  pop_2010_in_intersect)) +
+  filter(tracts_selected_cityname == "Baton Rouge", GISJOIN == "G22003300001")
+```
+
+```{r}
+test_1960_2010_by_tract %>%
+  filter( GISJOIN == "G22003300001")
+```
+
+
+```{r}
+test_1960_interpolation %>%
+  ggplot(aes(x = intersect_over_1960_tract,  pop_2010_in_intersect)) +
+  geom_point()
+
+```
+
+
+```{r}
+
+# evidence that this worked
+test_1960_interpolation %>%
+  mutate(pct_2010_pop_in_intersect = pop_2010_in_intersect/tot_pop_2010) %>%
+  ggplot(aes(x = intersect_over_2010_tract,  pct_2010_pop_in_intersect)) +
   geom_point()
 
 ```
@@ -105,12 +132,56 @@ test_1960_interpolation %>%
 
 ```
 
-```{r}
+
+```{r converting to tract level data and sanity checks, include = FALSE}
+
 test_1960_2010_by_tract <- test_1960_interpolation %>%
-  mutate(black_or_combo_2010_intersect = black_or_combo_2010 * interpolation_weight) %>%
-  group_by(GISJOIN, tot_2010_pop_in_1960_tract) %>%
+  # generate the estimated number of black or black combo individuals in the intersect area
+  mutate(black_or_combo_2010_intersect = black_or_combo_2010 * interpolation_weight,
+         pop_2010_interpolated = tot_pop_2010 * interpolation_weight) %>%
+  group_by(tracts_selected_cityname, GISJOIN, tot_2010_pop_in_1960_tract, tracts_selected_tot_persons_printed, 
+           tracts_selected_pct_black_printed, tracts_selected_black_printed) %>%
+  # sum all the estimated intersect numbers within a tract
   summarize(black_or_combo_2010_in_1960_tract = sum(black_or_combo_2010_intersect),
-            pct_black_or_combo_2010_in_1960_tract = black_or_combo_2010_in_1960_tract/tot_2010_pop_in_1960_tract * 100)
+            pct_black_or_combo_2010_in_1960_tract = black_or_combo_2010_in_1960_tract/tot_2010_pop_in_1960_tract * 100,
+            est_pop_2010_interpolated = sum(pop_2010_interpolated),
+            est_pct_black_or_combo_2010_interpolated = black_or_combo_2010_in_1960_tract/est_pop_2010_interpolated * 100) %>%
+  unique()
+
+
+# 2010 population only greater than 1960 population in 227 cases
+sum(test_1960_2010_by_tract$tot_2010_pop_in_1960_tract > test_1960_2010_by_tract$tracts_selected_tot_persons_printed)
+
+# pct black greater in 2010 in 824 of the tracts
+sum(test_1960_2010_by_tract$pct_black_or_combo_2010_in_1960_tract > test_1960_2010_by_tract$tracts_selected_pct_black_printed)
+
+# number of blacks greater in 729 tracts
+sum(test_1960_2010_by_tract$black_or_combo_2010_in_1960_tract > test_1960_2010_by_tract$tracts_selected_black_printed)
+
+# in 85 cases black population is greater than # of all people estimated in tract
+sum(test_1960_2010_by_tract$black_or_combo_2010_in_1960_tract > test_1960_2010_by_tract$tot_2010_pop_in_1960_tract)
+
+# interpolation weight always <= 1 -> good
+range(test_1960_interpolation$interpolation_weight)
+
+# in no cases is the black population greater than total population in 1960 data
+sum(test_intersect_2010_1960$tracts_selected_tot_persons_printed < test_intersect_2010_1960$tracts_selected_black_printed)
+
+# in no cases is the black population greater than total population in 2010 data
+sum(test_intersect_2010_1960$nhgis0028_ds176_20105_2010_tract_JMAE001< test_intersect_2010_1960$nhgis0028_ds176_20105_2010_tract_JMEE001)
+
+sum(test_1960_2010_by_tract$est_pct_black_or_combo_2010_interpolated > test_1960_2010_by_tract$est_pop_2010_interpolated)
+```
+
+
+```{r}
+
+test_1960_2010_by_tract %>%
+  ggplot(aes(x = est_pct_black_or_combo_2010_interpolated)) +
+  geom_histogram()
+
+sum(test_1960_2010_by_tract$est_pct_black_or_combo_2010_interpolated > 100)
 
 ```
+
 
