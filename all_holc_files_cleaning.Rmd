@@ -30,26 +30,8 @@ all_holc_overlay %>%
   filter(NHGISCTY == "3250")
 ```
 
-```{r what are the differences in the files?, eval = FALSE}
 
-all_holc_overlay_test <- all_holc_overlay %>% 
-  mutate(count = 1) %>%
-  group_by(city, state) %>%
-  summarise(sum = sum(count)) %>%
-  select(-sum)
-
-all_holc_overlay_test_3 <- all_holc_overlay_3 %>% 
-  mutate(count = 1) %>%
-  group_by(city, state) %>%
-  summarise(sum = sum(count)) %>%
-  select(-sum)
-
-anti_join(all_holc_overlay_test, all_holc_overlay_test_3)
-
-```
-
-
-```{r}
+```{r eval = FALSE}
 all_holc_overlay %>%
   group_by(city) %>%
   summarise(sum = sum(SHAPE_AREA))
@@ -70,13 +52,19 @@ all_holc_overlay$holc_red_indicator <- ifelse(all_holc_overlay$holc_grade == "D"
 
 ```{r summarize by tract, include = FALSE}
 
-# create a dataset that summarizes by tract the proportion covered by graded HOLC areas and the proportion of the tract with a graded area that is "D"/Red
+all_holc_overlay %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
 
+# create a dataset that summarizes by tract the proportion covered by graded HOLC areas and the proportion of the tract with a graded area that is "D"/Red
 all_holc_tract_grades <- all_holc_overlay %>%
-  # for every 1960 tract in the dataset...
-  group_by(NHGISST, NHGISCTY, GISJOIN, GISJOIN2, city, state) %>%
+  # for every 1960 tract in the dataset..., previously had city and state, but deleting because this separated tracts into two, one for each state,
+  # if covering HOLC areas were in two different states. Want to keep HOLC city and state for city/state population merge
+  group_by(GISJOIN) %>%
   # summarise
-  summarise(
+  mutate(
     tract_area = mean(SHAPE_AREA),
     # total area accounted for out of area of entire tract
     area_accounted_for = sum(intersect_over_tract),
@@ -89,81 +77,10 @@ all_holc_tract_grades <- all_holc_overlay %>%
     prop_grade_A_B = prop_grade_A + prop_grade_B
     )
 
+
 all_holc_overlay %>%
   filter(city == "Greater Kansas City")
 ```
-
-```{r exploring data, include = FALSE}
-
-# number of tracts graded over 50%: 9412
-
-nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5))
-
-
-# number of tracts graded over 75%: 7078
-
-nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .75))
-
-
-# number of tracts graded over 90%: 5332
-
-nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .9))
-
-
-
-
-# number of tracts graded "D"/red over 50%: 2706
-
-nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5, prop_grade_D >= .5))
-
-
-# number of tracts graded "D"/red over 75%: 1806
-
-nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5, prop_grade_D >= .75))
-
-
-# number of tracts graded "D"/red over 90%: 1302
-
-nrow(all_holc_tract_grades %>% filter(area_accounted_for >= .5, prop_grade_D >= .9))
-
-```
-
-
-```{r}
-all_holc_tract_grades %>%
-  filter(GISJOIN == "G3400030EN0066")
-
-all_holc_tract_grades %>%
-    filter(GISJOIN == "G3400030EN0068")
-```
-
-```{r}
-all_holc_overlay  %>%
-  filter(GISJOIN == "G3400030EN0066")
-
-all_holc_overlay  %>%
-  filter(GISJOIN == "G3400030EN0068")
-
-```
-
-```{r}
-
-all_holc_tract_grades %>%
-  filter(state == "KS")
-
-all_holc_tract_grades %>%
-  filter(city == "Greater Kansas City")
-
-city_pop_name_1930_in_richmond %>%
-  filter(city_name_edited == "Gary")
-
-all_holc_tract_grades %>%
-  filter(city == "Milwaukee Co.")
-
-city_pop_name_1930_in_richmond %>%
-  filter(city_name_edited == "Winston-Salem")
-```
-
 
 ```{r joining population data with data from Caclulating 1930_City_Populations RMD, include = FALSE}
 
@@ -191,8 +108,23 @@ all_holc_tract_grades$city[all_holc_tract_grades$city == "Greater Kansas City"] 
 all_holc_tract_grades$city[all_holc_tract_grades$city == "Milwaukee Co."] <- "Milwaukee"
 
 
+all_richmond_with_pop %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+
+
 ############# JOINING ##########
 all_richmond_with_pop <- left_join(all_holc_tract_grades, city_pop_name_1930_in_richmond, by = c("city" = "city_name_edited", "state" = "state_ab"))
+
+
+### after join, we can now group by GISJOIN to get one entry per census tract 
+all_richmond_with_pop <- all_richmond_with_pop %>%
+  select(NHGISST, NHGISCTY, GISJOIN, GISJOIN2, city, state, citypop_total, tract_area, area_accounted_for, prop_grade_D, 
+         prop_D_of_accounted_for, prop_grade_C, prop_grade_C_D, prop_grade_A, prop_grade_B, prop_grade_A_B) %>%
+  unique()
+
 
 cities_to_exclude = c("Stamford, Darien, and New Canaan", "Holyoke Chicopee", "Bergen Co.", "Essex Co.", 
                       "Hudson Co.", "Union Co.", "Binghamton-Johnson City", "Lower Westchester Co.",
@@ -209,10 +141,7 @@ all_richmond_with_pop <- all_richmond_with_pop[!(all_richmond_with_pop$city == "
 
 
 # There are 10 areas that didn't match after inital join. Resolved with steps below...
-all_richmond_with_pop %>% 
-  filter(is.na(citypop_total)) %>% 
-  group_by(city, state) %>%
-  summarise(sum(NHGISST))
+# all_richmond_with_pop %>% filter(is.na(citypop_total)) %>% group_by(city, state) %>%summarise(sum(NHGISST))
 
 # at start of chunck, rechanged spelling of Schenectady again to fix merge issue with that city and change SouthBend in all_holc_overlay to South Bend (missing a space) to fix join issue.
 
@@ -228,23 +157,19 @@ all_richmond_with_pop <- all_richmond_with_pop %>%
 
 
 # There are now no errors - joined successfully
-all_richmond_with_pop %>% 
-  filter(is.na(citypop_total)) %>% 
-  group_by(city, state) %>%
-  summarise(sum(NHGISST))
+# all_richmond_with_pop %>%  filter(is.na(citypop_total)) %>%  group_by(city, state) %>% summarise(sum(NHGISST))
 
 # there are now 165 cities with HOLC maps and city populations - why did some disappear?
 all_richmond_with_pop %>% 
   mutate(count = 1) %>%
   group_by(city, state) %>%
-  summarise(sum(count)) %>%
-  view()
+  summarise(sum(count)) %>% view()
 
 all_richmond_with_pop %>%
   filter(citypop_total == 0) %>%
   mutate(count = 1) %>%
-  group_by(city, state, NHGISCTY) %>%
-  summarise(sum(count), mean(perwt))
+  group_by(city, state) %>%
+  summarise(sum(count))
 
 ```
 
@@ -280,6 +205,126 @@ testing <- all_richmond_with_pop %>%
   filter(citypop_total > 0) %>%
   select(-citypop_total, -sum)
 
+
+all_richmond_with_pop %>%
+  filter(GISJOIN != "G51065000020" & city != "Newport News" ) %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+
 ```
+
+```{r}
+
+# delete observations where citypop = 0
+all_richmond_with_pop <- all_richmond_with_pop %>%
+  filter(citypop_total != 0)
+
+# need to delete duplicates that arise when 1 tract is in multiple HOLC cities and thus the city population is getting matched to each holc city even though it is one tract Dealing with this by manually inspecting the data and seeing what the largest area coverage is
+
+# exclude duplicate that is clearly the minor portion
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G51065000020" & city == "Newport News"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G51065000005" & city == "Newport News"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100559" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004700443" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004700441" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100042" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100034" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100006" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004701180" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100002" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100004" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004701184" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G360081000440" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004701188" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100036" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004700439" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100549" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100547" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100553" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100555" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004701186" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004700409" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G31005500005" & city == "Council Bluffs"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100543" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100539" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G360081000441" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2701230SP0032" & city == "Minneapolis"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004701202" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36004701208" & city == "Queens"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100545" & city == "Brooklyn"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0048" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0040" & city == "Cambridge"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0030" & city == "Arlington"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0035" & city == "Cambridge"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0038" & city == "Somerville"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0039" & city == "Somerville"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500090EC0021" & city == "Revere"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0073" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0069" & city == "Melrose"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0069" & city == "Medford"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0063" & city == "Everett"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0064" & city == "Melrose"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0066" & city == "Everett"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0070" & city == "Medford"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0053" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0056" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0062" & city == "Melrose"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0062" & city == "Revere"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0046" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0046" & city == "Chelsea"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0046" & city == "Revere"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0051" & city == "Chelsea"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0041" & city == "Cambridge"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0042" & city == "Somerville"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250SC0012" & city == "Boston"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0028" & city == "Cambridge"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0025" & city == "Somerville"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250Y0005A" & city == "Newton"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250Y0005C" & city == "Newton"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0067" & city == "Everett"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0123" & city == "Waltham"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0029" & city == "Cambridge"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0068" & city == "Melrose"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0047" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250SC0002" & city == "Revere"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250SC0002" & city == "Everett"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250SC0009" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250SC0010" & city == "Chelsea"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250SC0010" & city == "Everett"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G1901550PC0212" & city == "Omaha"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0117" & city == "Boston"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0109" & city == "Watertown"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0109" & city == "Boston"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0074" & city == "Malden"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0074" & city == "Revere"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G1700310THT0222" & city == "Gary"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G1700310THT0225" & city == "Gary"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G1700310THT0223" & city == "Gary"))
+
+# drop because in the middle of 2 cities and not clearly in either
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G3600010CO0036"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G3600830RC0023"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36000500291"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2701230R0120"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G36008100561"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500250D0002"))
+
+# dropping because pretty much 50-50 split between 2 HOLC cities
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0061"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0027"))
+all_richmond_with_pop <- subset(all_richmond_with_pop, !(GISJOIN == "G2500170MC0125"))
+
+all_richmond_with_pop %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+```
+```{r}
+unique(all_richmond_with_pop)
+```
+
 
 

@@ -33,6 +33,19 @@ all_richmond_with_pop %>%
 race_1960_demo %>%
   filter(GISJOIN == "G3400070CJ0045")
 
+
+nhgis0023_ds92_1960_tract %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+
+all_richmond_with_pop %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+
 ```
 
 ```{r merge data, include = FALSE}
@@ -42,9 +55,8 @@ race_1960_demo %>%
 # all_cities_grade_demo <- left_join(all_cities_tract_grades, race_1960_demo, by = "GISJOIN")
 
 all_cities_grade_demo <- left_join(all_richmond_with_pop, race_1960_demo, by = "GISJOIN") %>%
-  select(-State, -City, -STATE) %>%
-  rename(tract_year = year,
-         demo_year = YEAR)
+  select(-STATE) %>%
+  rename(demo_year = YEAR)
 
 # NO DATA for Atlantic City from Census -> need to drop/drops
 all_cities_grade_demo %>%

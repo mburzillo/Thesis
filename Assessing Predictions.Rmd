@@ -289,3 +289,14 @@ tracts_selected_predictions %>%
 colnames(tracts_selected_predictions)
 ```
 
+```{r}
+data_for_analysis %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+
+
+
+```
+
