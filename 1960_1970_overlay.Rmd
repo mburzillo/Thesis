@@ -1,0 +1,164 @@
+---
+title: "1960/1970 Overlay"
+author: "Maria Burzillo"
+date: "2/25/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## R Markdown
+
+
+```{r load data, include = FALSE}
+
+overlay_60_70 <- read_csv("Overlay Files from QGIS/tract_60_70_overlay.csv") %>%
+  rename(gisjoin_60 = GISJOIN,
+         tract_area_60 = SHAPE_AREA,
+         gisjoin_70 = GISJOIN_2,
+         tract_area_70 = SHAPE_AREA_2,
+         intersect_60_70_area = area) %>%
+  select(-GISJOIN2, - SHAPE_LEN, -NHGISST_2, -NHGISCTY_2,
+         -GISJOIN2_2, - SHAPE_LEN_2, - perimeter)
+
+
+first_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_1970/nhgis0033_csv/nhgis0033_ds95_1970_tract.csv")
+
+second_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_1970/nhgis0033_csv/nhgis0033_ds96_1970_tract.csv")
+
+
+
+```
+
+```{r Areal Weighting on Original Census Overlay File}
+
+overlay_60_70 <- overlay_60_70%>%
+  mutate(weight_60_70 = intersect_60_70_area/tract_area_60)
+
+```
+
+
+```{r checks}
+
+# grouping by 1960 tract and summing should make weights equal one, range should be between zero and one
+
+range(overlay_60_70$weight_60_70)
+
+# looks good
+overlay_60_70 %>%
+  group_by(gisjoin_60) %>%
+  summarise(sum_weight = sum(weight_60_70),
+            max_coverage = max(weight_60_70))
+
+summary_stats <- overlay_60_70 %>%
+  group_by(gisjoin_60) %>%
+  summarise(sum_weight = sum(weight_60_70),
+            max_coverage = max(weight_60_70))
+
+# On average, 91.8% of the 1960 tract is covered by a single 1970s tract, median 1
+mean(summary_stats$max_coverage)
+median(summary_stats$max_coverage)
+
+summary_stats %>%
+  ggplot(aes(x = max_coverage)) +
+  geom_histogram()
+
+```
+
+
+```{r now merge with 1970s demographic data}
+
+################################################# clean first 1970s dataset #######################################
+
+
+# Owner occupied unit value
+first_1970 <- first_1970 %>%
+  rename(value_lt_5k_1970 =  CG7001,
+         value_5k_7499_1970 =  CG7002,
+         value_7500k_9999_1970 =  CG7003,
+         value_10k_12499_1970 =  CG7004,
+         value_12500_14999_1970 =  CG7005,
+         value_15000_17499_1970 =  CG7006,
+         value_17500_19999_1970 =  CG7007,
+         value_20000_24999k_1970 =  CG7008,
+         value_25000_34999_1970 =  CG7009,
+         value_35000_49999_1970 =  CG7010,
+         value_50000_plus_1970 =  CG7011) %>%
+  mutate(tot_owner_occ_with_value_1970 = value_lt_5k_1970 + value_5k_7499_1970 + value_7500k_9999_1970 + value_10k_12499_1970 +
+         value_12500_14999_1970 + value_15000_17499_1970 + value_17500_19999_1970 + value_20000_24999k_1970 +
+         value_25000_34999_1970 + value_35000_49999_1970 + value_50000_plus_1970,
+         weighted_prop_value_owner_occ_1970 = (value_lt_5k_1970 * 2500 + value_5k_7499_1970 * 6250 + 
+                                                 value_7500k_9999_1970 * 8750 + value_10k_12499_1970 * 11250 +
+                                                 value_12500_14999_1970 * 13750 + value_15000_17499_1970 * 16250 + 
+                                                 value_17500_19999_1970 * 18750 + value_20000_24999k_1970 * 22500 + 
+                                                 value_25000_34999_1970 * 30000 + value_35000_49999_1970 * 42500 +
+                                                 value_50000_plus_1970 * 50000)/tot_owner_occ_with_value_1970)
+         
+
+ 
+# Monthly Contract Rent,  Universe:    Renter-Occupied Units for Which Rent is Tabulated
+
+first_1970 <- first_1970 %>%
+  rename(monthly_contract_rent_lt_30_1970 = CHA001,
+         monthly_contract_rent_30_39_1970 = CHA002,
+         monthly_contract_rent_40_49_1970 = CHA003,
+         monthly_contract_rent_50_59_1970 = CHA004,
+         monthly_contract_rent_60_69_1970 = CHA005,
+         monthly_contract_rent_70_79_1970 = CHA006,
+         monthly_contract_rent_80_89_1970 = CHA007,
+         monthly_contract_rent_90_99_1970 = CHA008,
+         monthly_contract_rent_100_120_1970 = CHA009,
+         monthly_contract_rent_120_150_1970 = CHA010,
+         monthly_contract_rent_150_199_1970 = CHA011,
+         monthly_contract_rent_200_249_1970 = CHA012,
+         monthly_contract_rent_250_299_1970 = CHA013,
+         monthly_contract_rent_300p_1970 = CHA014,
+         monthly_contract_rent_no_pay = CHA015
+         ) %>%
+  mutate(monthly_contract_rent_payers_1970 = monthly_contract_rent_lt_30_1970 + monthly_contract_rent_30_39_1970 + 
+           monthly_contract_rent_40_49_1970 + monthly_contract_rent_50_59_1970 + monthly_contract_rent_60_69_1970 +
+           monthly_contract_rent_70_79_1970 + monthly_contract_rent_80_89_1970 + monthly_contract_rent_90_99_1970 +
+           monthly_contract_rent_100_120_1970 + monthly_contract_rent_120_150_1970 + monthly_contract_rent_150_199_1970 +
+           monthly_contract_rent_200_249_1970 + monthly_contract_rent_250_299_1970 + monthly_contract_rent_300p_1970,
+         weighted_monthly_contract_rent_1970 = (monthly_contract_rent_lt_30_1970 * 15 + monthly_contract_rent_30_39_1970 * 35 + 
+           monthly_contract_rent_40_49_1970 * 45 + monthly_contract_rent_50_59_1970 * 55 + monthly_contract_rent_60_69_1970 * 65 +
+           monthly_contract_rent_70_79_1970 * 75 + monthly_contract_rent_80_89_1970 * 85 + monthly_contract_rent_90_99_1970 * 95 +
+           monthly_contract_rent_100_120_1970 * 110 + monthly_contract_rent_120_150_1970 * 135 + 
+           monthly_contract_rent_150_199_1970 * 175 + monthly_contract_rent_200_249_1970 * 225 + 
+           monthly_contract_rent_250_299_1970 * 275 + monthly_contract_rent_300p_1970 * 300)/ monthly_contract_rent_payers_1970) %>%
+  select(gisjoin_1970 = GISJOIN, weighted_monthly_contract_rent_1970, weighted_prop_value_owner_occ_1970)
+
+
+################################################# clean second 1970s dataset #######################################
+
+# Ooccupancy status and tenure
+second_1970 <- second_1970 %>%
+  rename(occupied_units_1970 = CK1001,
+         vacant_yr_for_rent_1970 = CK1002,
+         vacant_yr_for_sale_only_1970 = CK1003,
+         vacant_yr_other_1970 = CK1004,
+         owner_occupied_1970 = CK2001,
+         renter_occupied_1970 = CK2002) %>%
+  mutate(pct_owner_occupied_1970 = owner_occupied_1970/occupied_units_1970 * 100,
+         pct_vacant_units_1970 = (vacant_yr_for_rent_1970 + vacant_yr_for_sale_only_1970 + vacant_yr_other_1970)/
+           (vacant_yr_for_rent_1970 + vacant_yr_for_sale_only_1970 + vacant_yr_other_1970 + occupied_units_1970) * 100) %>%
+  select(gisjoin_1970 = GISJOIN, pct_owner_occupied_1970:pct_vacant_units_1970)
+
+
+# full join all the various 1970s data sets
+
+full_1970s <- full_join(first_1970, second_1970)
+
+
+```
+
+
+```{r now merge with the actual tracts we want}
+
+data_for_analysis_recode
+
+```
+

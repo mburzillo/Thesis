@@ -290,13 +290,85 @@ colnames(tracts_selected_predictions)
 ```
 
 ```{r}
+
+# idea is to figure out, out of all the tracts, which were used in prediction and final model
+
+potential_treatment_data_for_analysis_gis <- data_for_analysis %>%
+  filter(citypop_total > 40000, citypop_total <= 60000,
+         area_accounted_for >= .5) %>%
+  select(GISJOIN)
+  
+potential_treatment_data_for_analysis <- data_for_analysis %>%
+  filter(citypop_total > 40000, citypop_total <= 60000,
+         area_accounted_for >= .5)
+
 data_for_analysis %>%
   mutate(count = 1) %>%
   group_by(GISJOIN) %>%
   mutate(sum_count = sum(count)) %>%
   filter(sum_count != 1)
 
+treatment_tracts_selected_predictions <- tracts_selected_predictions %>%
+  filter(treatment == 1)
+
+treatment_tracts_selected_predictions_gis <- tracts_selected_predictions %>%
+  filter(treatment == 1) %>%
+  select(GISJOIN = gisjoin)
+
+# returns all rows in x with a match in y
+semi_join(potential_treatment_data_for_analysis_gis, treatment_tracts_selected_predictions_gis)
+
+# all tracts selected that are not in the original group
+gis_extra <- anti_join(treatment_tracts_selected_predictions_gis,potential_treatment_data_for_analysis_gis)$GISJOIN
+
+# all tracts in original that are not selected
+anti_join(potential_treatment_data_for_analysis_gis, treatment_tracts_selected_predictions_gis)
+
+333
 
 
+```
+
+```{r summary statistics of tracts by model selection}
+# treatment_tracts_selected_predictions 
+
+# potential_treatment_data_for_analysis
+
+
+mean(potential_treatment_data_for_analysis$tot_persons_printed)
+mean(potential_treatment_data_for_analysis$pct_black_printed)
+mean(potential_treatment_data_for_analysis$pct_foreign_born)
+mean(potential_treatment_data_for_analysis$pct_unemployed_males)
+mean(potential_treatment_data_for_analysis$pct_owner_occupied)
+
+mean(potential_treatment_data_for_analysis$pct_contract_rent_lt_50)
+mean(potential_treatment_data_for_analysis$pct_vacant_all)
+mean(potential_treatment_data_for_analysis$pct_one_point_0_one_people_per_room_or_more)
+mean(potential_treatment_data_for_analysis$pct_housing_deteriorated_dilap)
+mean(potential_treatment_data_for_analysis$weighted_cash_contract_rent)
+mean(potential_treatment_data_for_analysis$pop_density)
+
+
+extra_selected <- tracts_selected_predictions %>%
+  filter(gisjoin %in% gis_extra)
+
+mean(extra_selected$tot_persons_printed)
+mean(extra_selected$pct_black_printed)
+mean(extra_selected$pct_foreign_born)
+mean(extra_selected$pct_unemployed_males)
+mean(extra_selected$pct_owner_occupied)
+mean(extra_selected$pct_single_unit)
+
+mean(extra_selected$pct_contract_rent_lt_50)
+mean(extra_selected$pct_vacant_all)
+mean(extra_selected$pct_one_point_0_one_people_per_r)
+mean(extra_selected$pct_housing_deteriorated_dilap)
+mean(extra_selected$weighted_cash_contract_rent)
+mean(extra_selected$pop_density)
+```
+
+
+```{r}
+colnames(extra_selected)
 ```
 

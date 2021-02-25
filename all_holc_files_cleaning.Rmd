@@ -108,12 +108,6 @@ all_holc_tract_grades$city[all_holc_tract_grades$city == "Greater Kansas City"] 
 all_holc_tract_grades$city[all_holc_tract_grades$city == "Milwaukee Co."] <- "Milwaukee"
 
 
-all_richmond_with_pop %>%
-  mutate(count = 1) %>%
-  group_by(GISJOIN) %>%
-  mutate(sum_count = sum(count)) %>%
-  filter(sum_count != 1)
-
 
 ############# JOINING ##########
 all_richmond_with_pop <- left_join(all_holc_tract_grades, city_pop_name_1930_in_richmond, by = c("city" = "city_name_edited", "state" = "state_ab"))

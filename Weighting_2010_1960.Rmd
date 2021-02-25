@@ -37,7 +37,7 @@ test_intersect_2010_1960 %>%
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-```{r}
+```{r, eval = FALSE}
 
 # lots of the intersect areas represent negligible areas
 test_intersect_2010_1960 %>%
@@ -166,7 +166,19 @@ sum(test_1960_2010_by_tract$est_pct_below_poverty_level_2010 > 100)
 
 ```
 
+
 ```{r}
-write.csv(test_1960_2010_by_tract, "test_1960_2010_by_tract.csv")
+tracts_selected_predictions <- read.csv("selected_tract_predictions.csv") %>%
+  mutate(treatment = as.factor(treatment))
+
+tracts_selected_predictions
+```
+
+```{r}
+
+test_1960_2010_by_tract_2 <- left_join(test_1960_2010_by_tract, tracts_selected_predictions, by = c("GISJOIN" = "gisjoin"))
+
+
+write.csv(test_1960_2010_by_tract_2, "test_1960_2010_by_tract_2.csv")
 ```
 

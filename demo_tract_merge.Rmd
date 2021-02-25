@@ -790,3 +790,47 @@ data_for_analysis %>%
   
 ```
 
+```{r}
+
+# final data for predictions has 13,073 rows
+
+data_for_analysis %>%
+  mutate(count = 1) %>%
+  group_by(GISJOIN) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+```
+
+
+```{r some cleaning now that we are merging with future years}
+data_for_analysis_recode <- data_for_analysis %>%
+  select(nhgisst_1960 = NHGISST,
+         nhgiscty_1960 = NHGISCTY,
+         gisjoin_1960 = GISJOIN,
+         holc_city = city,
+         holc_state = state,
+         pop_1930 = citypop_total,
+         tract_area_1960 = tract_area,
+         area_accounted_for_1960 = area_accounted_for,
+         prop_grade_D:prop_grade_A_B,
+         tot_persons_printed_1960 = tot_persons_printed,
+         pop_density_1930 = pop_density,
+         pct_non_white_1960 = pct_non_white_printed,
+         pct_black_1960 = pct_black_printed,
+         pct_foreign_born_1960 = pct_foreign_born,
+         pct_hs_grad_1960 = pct_hs_grad,
+         pct_vacant_1960 = pct_vacant_all,
+         pct_owner_occupied_1960 = pct_owner_occupied,
+         pct_renter_occupied_1960 = pct_renter_occupied,
+         pct_one_point_0_one_people_per_room_or_more_1960 = pct_one_point_0_one_people_per_room_or_more,
+         avg_monthly_contract_rent_1960 = avg_monthly_contract_rent,
+         weighted_prop_value_1960 = weighted_prop_value,
+         pct_single_unit_1960 = pct_single_unit,
+         pct_housing_deteriorated_dilap_1960 = pct_housing_deteriorated_dilap,
+         pct_unemployed_males_1960 = pct_unemployed_males,
+         pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
+         pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
+         weighted_cash_contract_rent_1960 = weighted_cash_contract_rent)
+  
+```
+
