@@ -1,0 +1,113 @@
+---
+title: "Balance Testing"
+author: "Maria Burzillo"
+date: "2/28/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+## R Markdown
+
+```{r cars}
+city_1940_ipums_person_level_full_obs <- read_csv("/Users/mariaburzillo/Desktop/Thesis-Work/1930 - 1940 City Population Data/city_1940_ipums_person_level_full_obs.csv") %>%
+  mutate(treatment = as.factor(treatment))
+
+city_1940_ipums_hh_level_full_obs <- read_csv("/Users/mariaburzillo/Desktop/Thesis-Work/1930 - 1940 City Population Data/city_1940_ipums_hh_level_full_obs.csv") %>%
+  mutate(treatment = as.factor(treatment))
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+city_1940_ipums_person_level_full_obs %>%
+  filter(male_emp_14_plus == 1, inc_wage_ok == 1) %>%
+  ggplot(aes(x = incwage_males_emp_14p_perwt)) +
+  geom_histogram(bins = 250) +
+  facet_wrap(~as.factor(treatment)) +
+  coord_cartesian(xlim = c(0,10000))
+
+city_1940_ipums_person_level_full_obs %>%
+  filter(male_emp_14_plus == 1, inc_wage_ok == 1) %>%
+  ggplot(aes(x = incwage_males_emp_14p_perwt, color = treatment)) +
+  geom_density() +
+  coord_cartesian(xlim = c(0,10000)) +
+  ggtitle("Denisty Plot of Wage Income for Employed Males in 1940") +
+  scale_color_discrete(name = "Treatment Status")
+
+city_1940_ipums_person_level_full_obs %>%
+  filter(male_14_plus_in_lf == 1) %>%
+  ggplot(aes(x = n_male_emp_14p_perwt, color = treatment)) +
+  geom_density() +
+  facet_wrap(~treatment) +
+  ggtitle("Denisty Plot of Wage Income for Employed Males in 1940") +
+  scale_color_discrete(name = "Treatment Status")
+
+city_1940_ipums_person_level_full_obs %>%
+  filter(male_14_plus_in_lf == 1) %>%
+  ggplot(aes(x = n_male_emp_14p_perwt, color = treatment)) +
+  geom_density() +
+  ggtitle("Denisty Plot of Employment Status for Males in Labor Force in 1940") +
+  scale_color_discrete(name = "Treatment Status")
+
+
+city_1940_ipums_person_level_full_obs %>%
+  filter(male_14_plus_in_lf == 1) %>%
+  ggplot(aes(x = n_black_perwt, color = treatment)) +
+  geom_density() +
+  ggtitle("Denisty Plot of Employment Status for Males in Labor Force in 1940") +
+  scale_color_discrete(name = "Treatment Status")
+
+```
+
+```{r}
+city_1940_ipums_hh_level_full_obs %>%
+  filter(ok_value_h == 1) %>%
+  ggplot(aes(x = house_value_hhwt, fill = treatment)) +
+  geom_histogram(bins = 5000) +
+  ggtitle("Denisty Plot of House Values in 1940") +
+  scale_color_discrete(name = "Treatment Status") +
+  coord_cartesian(xlim = c(0,30000)) +
+  facet_wrap(~treatment)
+
+city_1940_ipums_hh_level_full_obs %>%
+  filter(for_rent_calcs == 1) %>%
+  ggplot(aes(x = contract_rent_hhwt, fill = treatment)) +
+  geom_histogram(bins = 5000) +
+  ggtitle("Denisty Plot of House Values in 1940") +
+  scale_color_discrete(name = "Treatment Status") +
+  coord_cartesian(xlim = c(0,100)) +
+  facet_wrap(~treatment)
+
+city_1940_ipums_hh_level_full_obs %>%
+  filter(for_rent_calcs == 1) %>%
+  ggplot(aes(x = contract_rent_hhwt, color = treatment)) +
+  geom_density() +
+  ggtitle("Denisty Plot of Monthly Contract Rent in 1940") +
+  scale_color_discrete(name = "Treatment Status") +
+  coord_cartesian(xlim = c(0,100))
+```
+
+```{r}
+city_1940_ipums_hh_level_full_obs %>%
+  filter(ok_value_h == 1, house_value_hhwt > 100000)
+```
+
+```{r}
+  
+range(city_1940_ipums_person_level_full_obs$incwage_males_emp_14p_perwt[city_1940_ipums_person_level_full_obs$inc_wage_ok == 1])
+  
+
+city_1940_ipums_person_level_full_obs %>%
+  filter(perwt > 1)
+
+city_1940_ipums_person_level_full_obs %>%
+  filter(male_emp_14_plus == 1, inc_wage_ok == 1, incwage > 10000)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

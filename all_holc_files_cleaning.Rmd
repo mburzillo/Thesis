@@ -24,10 +24,7 @@ all_holc_overlay <- read_csv("Overlay Files from QGIS/all_holc_overlay_3.csv")
 # import the shapefile with all HOLC data from Richmond database
 # full_shapefile <- st_read("Shapefiles/fullshpfile/holc_ad_data.shp") 
 
-unique(all_holc_overlay$city)
 
-all_holc_overlay %>%
-  filter(NHGISCTY == "3250")
 ```
 
 
@@ -116,7 +113,7 @@ all_richmond_with_pop <- left_join(all_holc_tract_grades, city_pop_name_1930_in_
 ### after join, we can now group by GISJOIN to get one entry per census tract 
 all_richmond_with_pop <- all_richmond_with_pop %>%
   select(NHGISST, NHGISCTY, GISJOIN, GISJOIN2, city, state, citypop_total, tract_area, area_accounted_for, prop_grade_D, 
-         prop_D_of_accounted_for, prop_grade_C, prop_grade_C_D, prop_grade_A, prop_grade_B, prop_grade_A_B) %>%
+         prop_D_of_accounted_for, prop_grade_C, prop_grade_C_D, prop_grade_A, prop_grade_B, prop_grade_A_B, CITY_old) %>%
   unique()
 
 
@@ -321,4 +318,8 @@ unique(all_richmond_with_pop)
 ```
 
 
+```{r join all_}
+
+
+```
 

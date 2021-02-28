@@ -50,6 +50,16 @@ growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 222684] <- "B
 growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 258933] <- "Corpus Christi"
 growth_rate_radii_data$city[growth_rate_radii_data$citypop_1990 == 72798] <- "Fort Smith"
 
+
+# import csv with 1940 city data from ipums for hh observations and person level obs
+ipums_1940_hh_level <- read_csv("1930 - 1940 City Population Data/city_1940_ipums_hh_level_summary.csv")
+
+ipums_1940_person_level <- read_csv("1930 - 1940 City Population Data/city_1940_ipums_person_level_summary.csv")
+
+
+# load region state_ab correspondence
+
+state_ab_region <- read_csv("state_ab_region.csv")
 ```
 
 ```{r joining tract data, demo data, and city population data}
@@ -60,7 +70,7 @@ potential_tracts <- rbind(potential_control, potential_treatment)
 
 # take relevant columns from city pop data
 city_names_pops_1930 <- ipums_1930_cities_by_pop_full_sample %>%
-  select(cityname, state, citypop_total_1930 = citypop_total)
+  select(cityname, state, citypop_total_1930 = citypop_total, numeric_city_code = city)
 
 city_names_pops_1930 <- left_join(city_names_pops_1930, state_abs, by = c("state" = "state_ab")) %>%
   rename(state_ab = state, state = state.y)
@@ -68,23 +78,35 @@ city_names_pops_1930 <- left_join(city_names_pops_1930, state_abs, by = c("state
 # join with radii and growth rate data
 city_names_pops_growth <- left_join(city_names_pops_1930, growth_rate_radii_data, by = c("cityname" = "city", "state_ab" = "state", "citypop_total_1930" = "citypop_total_1930"))
 
-potential_tracts_demo <- left_join(potential_tracts, city_names_pops_growth, by = c("cityname" = "cityname", "state" = "state"))
+# prepare to join the 1940 city level ipums data
+ipums_1940_city <- full_join(ipums_1940_hh_level, ipums_1940_person_level) %>%
+  select(
+    city,
+    city_hh_1940 = hhwt,
+    citypop_1940 = perwt,
+    city_1940_pct_owner_occ_non_v = pct_owner_occupied_non_vacant,
+    city_1940_avg_contract_rent = avg_contract_rent,
+    city_1940_pct_contract_rent_lt_50 = pct_contract_rent_lt_50,
+    city_1940_avg_h_value_ = avg_house_value_hhwt,
+    city_1940_pct_unemp_males_14_plus = pct_unemp_males_14_plus,
+    city_1940_avg_wage_emp_males_14_p = avg_wage_emp_males_14_p,
+    city_1940_pct_black = pct_black_perwt
+  )
+
+city_names_pops_growth_ipums <- left_join(city_names_pops_growth,ipums_1940_city, by = c("numeric_city_code" = "city") )
+
+
+
+potential_tracts_demo <- left_join(potential_tracts, city_names_pops_growth_ipums, by = c("cityname" = "cityname", "state" = "state"))
 
 # join with the demographic data
 potential_tracts_demo <- left_join(potential_tracts_demo, nhgis0023_ds92_1960_tract, by = "GISJOIN") 
 
+city_treatment_status <- potential_tracts_demo %>%
+  select(treatment, numeric_city_code) %>%
+  unique()
 
-potential_tracts_demo %>%
-  filter(cityname == "Columbus", NHGISST_2 == 130)
-
-potential_tracts_demo %>%
-  filter(state == "Alabama")
-
-growth_rate_radii_data %>%
-  filter(state == "CA")
-
-growth_rate_radii_data %>%
-  filter(city == "Port Arthur")
+write.csv(city_treatment_status, "city_treatment_status.csv")
 
 ```
 
@@ -331,6 +353,21 @@ potential_tracts_demo$tot_hs_grads <- potential_tracts_demo$school_yr_hs_4 +
 # calculate hs grads
 potential_tracts_demo$pct_hs_grad <- potential_tracts_demo$tot_hs_grads/potential_tracts_demo$tot_school_persons * 100
 
+# calculate total persons whose highest edu attainment is some college completion or greater
+potential_tracts_demo$tot_some_college <- potential_tracts_demo$school_yr_college_1_3 +
+  potential_tracts_demo$school_yr_college_p
+
+# calculate pct_some college
+potential_tracts_demo$pct_some_college <- potential_tracts_demo$tot_some_college/potential_tracts_demo$tot_school_persons * 100
+
+
+# calc weighted years of school
+potential_tracts_demo$weighted_tot_years_school <- (potential_tracts_demo$no_school * 0 + potential_tracts_demo$school_yr_1_4 * 2  +
+  potential_tracts_demo$school_yr_5_7 * 6 + potential_tracts_demo$school_yr_8 * 8 + potential_tracts_demo$school_yr_hs_1_3 * 10 +
+  potential_tracts_demo$school_yr_hs_4 * 12 + potential_tracts_demo$school_yr_college_1_3 * 14 +
+  potential_tracts_demo$school_yr_college_p * 16)/potential_tracts_demo$tot_school_persons
+
+
 
 # need to calculate income next -> how to choose something for this?? https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-poverty-people.html
 
@@ -357,6 +394,25 @@ potential_tracts_demo$all_families_with_income_lt_4k <- potential_tracts_demo$fa
 
 potential_tracts_demo$pct_families_below_4k_income <-   (potential_tracts_demo$all_families_with_income_lt_4k/
                                                      potential_tracts_demo$all_families_with_income_data) * 100 
+
+
+# add weighted family income
+potential_tracts_demo$weighted_family_income = (potential_tracts_demo$fam_income_less_1k * 500 + 
+                                                  potential_tracts_demo$fam_income_1_2k * 1500 + 
+                                                  potential_tracts_demo$fam_income_2_3k * 2500 +
+                                                  potential_tracts_demo$fam_income_3_4k * 3500 + 
+                                                  potential_tracts_demo$fam_income_4_5k * 4500 + 
+                                                  potential_tracts_demo$fam_income_5_6k * 5500 + 
+                                                  potential_tracts_demo$fam_income_6_7k * 6500 + 
+                                                  potential_tracts_demo$fam_income_7_8k * 7500 +
+                                                  potential_tracts_demo$fam_income_8_9k * 8500 +
+                                                  potential_tracts_demo$fam_income_9_10k * 9500 + 
+                                                  potential_tracts_demo$fam_income_10_15k * 12500 + 
+                                                  potential_tracts_demo$fam_income_15_25k * 20000 +
+                                                  potential_tracts_demo$fam_income_25k_p * 25000)/potential_tracts_demo$all_families_with_income_data
+
+
+
 # hhunits
 
 # other type of vacancy status with other option
@@ -549,12 +605,127 @@ colnames(tracts_selected)
 
 ```
 
+```{r join state region correspondence, include = FALSE}
+
+tracts_selected <- left_join(tracts_selected, state_ab_region)
+
+```
+
+
+
+```{r better cleaning final data, include = FALSE}
+
+tracts_selected <- tracts_selected %>% 
+  select(
+    nhgisst_1960 = NHGISST,
+    nhgiscty_1960 = NHGISCTY,
+    nhgis_place_1940 = NHGISPLACE,
+    holc_state = state,
+    state_ab,
+    region,
+    holc_city = cityname,
+    gisjoin_1960 = GISJOIN,
+    numeric_city_code,
+    pop_density_1930 = pop_density,
+    citypop_1930 = citypop_total_1930,
+    citypop_1940,
+    citypop_1990,
+    pct_change_citypop_30_90 = pct_change_pop_30_90,
+    city_holc_area_radius = holc_area_radius,
+    city_urb_area_90_radius = urb_area_90_radius,
+    city_reg_estimated_multiplier = "reg estimated multiplier",
+    city_reg_estimated_radius = "reg estimated radius",
+    city_1940_pct_owner_occ_non_v:city_1940_pct_black,
+    tract_area_1960 = tract_area,
+    treatment,
+    tot_persons_printed_1960 = tot_persons_printed,
+    pct_non_white_1960 = pct_non_white_printed,
+    pct_black_1960 = pct_black_printed,
+    pct_foreign_born_1960 = pct_foreign_born,
+    pct_hs_grad_1960 = pct_hs_grad,
+    pct_vacant_1960 = pct_vacant_all,
+    pct_owner_occupied_1960 = pct_owner_occupied,
+    pct_renter_occupied_1960 = pct_renter_occupied,
+    pct_one_point_0_one_people_per_room_or_more_1960 = pct_one_point_0_one_people_per_room_or_more,
+    avg_monthly_contract_rent_1960 = avg_monthly_contract_rent,
+    weighted_prop_value_1960 = weighted_prop_value,
+    pct_single_unit_1960 = pct_single_unit,
+    pct_housing_deteriorated_dilap_1960 = pct_housing_deteriorated_dilap,
+    pct_unemployed_males_1960 = pct_unemployed_males,
+    pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
+    pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
+    weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
+    pct_families_below_3k_income_1960 = pct_families_below_3k_income
+      )
+
+```
+
+
+
+```{r}
+colnames(tracts_selected)
+```
+
+
 
 ```{r save as csv}
 
 write.csv(tracts_selected, "tracts_selected.csv")
 
 ```
+
+
+
+
+
+
+
+# SELECTED TRACTS SUMMARY STATISTICS
+
+
+```{r}
+all_city_summary <- tracts_selected %>% 
+  select(holc_state, holc_city, treatment, citypop_1930:citypop_1990, pct_change_citypop_30_90, city_1940_pct_owner_occ_non_v:city_1940_pct_black) %>%
+  unique() %>%
+  view()
+
+write_csv(all_city_summary, "all_city_summary.csv")
+  
+```
+
+```{r}
+
+all_city_summary %>%
+  ggplot(aes(x = city_1940_pct_black, color = treatment)) +
+  geom_density() +
+  ggtitle("% Black Population (City Level), 1940")
+
+all_city_summary %>%
+  ggplot(aes(x = city_1940_avg_wage_emp_males_14_p, color = treatment)) +
+  geom_density() +
+  ggtitle("Average Wage Income for Employed Males 14+ (City Level), 1940")
+
+all_city_summary %>%
+  ggplot(aes(x = city_1940_pct_unemp_males_14_plus, color = treatment)) +
+  geom_density() +
+  ggtitle("% Unemployed Males 14+ (City Level), 1940")
+
+all_city_summary %>%
+  ggplot(aes(x = city_1940_pct_owner_occ_non_v, color = treatment)) +
+  geom_density() +
+  ggtitle("Density of % Owner Occupied Units (City Level), 1940")
+
+all_city_summary %>%
+  ggplot(aes(x = city_1940_avg_contract_rent, color = treatment)) +
+  geom_density() +
+  ggtitle("Average Monthly Contract Rent (City Level), 1940")
+
+all_city_summary %>%
+  ggplot(aes(x = city_1940_avg_h_value_, color = treatment)) +
+  geom_density() +
+  ggtitle("Average House Value (City Level), 1940")
+```
+
 
 
 ```{r looking at summary statistics}

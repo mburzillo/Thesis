@@ -780,7 +780,7 @@ data_for_analysis %>% filter(city == "Kansas City")
 data_for_analysis %>%
   filter(citypop_total <= 60000, citypop_total >= 40000)  %>%
   mutate(count = 1) %>%
-  group_by(city, state, citypop_total) %>%
+  group_by(city, state, citypop_total, CITY_old) %>%
   summarise(tracts = sum(count)) %>%
   view()
   
@@ -799,6 +799,14 @@ data_for_analysis %>%
   group_by(GISJOIN) %>%
   mutate(sum_count = sum(count)) %>%
   filter(sum_count != 1)
+
+city_old_codes <- data_for_analysis %>%
+  group_by(city, state, CITY_old) %>%
+  select(city, state, CITY_old) %>%
+  unique()
+
+write.csv(city_old_codes, "ipums_city_codes_city_state.csv")
+
 ```
 
 
@@ -809,9 +817,10 @@ data_for_analysis_recode <- data_for_analysis %>%
          gisjoin_1960 = GISJOIN,
          holc_city = city,
          holc_state = state,
-         pop_1930 = citypop_total,
+         citypop_1930 = citypop_total,
          tract_area_1960 = tract_area,
          area_accounted_for_1960 = area_accounted_for,
+         pct_grade_d,
          prop_grade_D:prop_grade_A_B,
          tot_persons_printed_1960 = tot_persons_printed,
          pop_density_1930 = pop_density,
@@ -831,6 +840,9 @@ data_for_analysis_recode <- data_for_analysis %>%
          pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
          pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
          weighted_cash_contract_rent_1960 = weighted_cash_contract_rent)
+
+
+write.csv(data_for_analysis_recode, "data_for_analysis_recode.csv")
   
 ```
 

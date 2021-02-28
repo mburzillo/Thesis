@@ -16,7 +16,7 @@ library(sf)
 
 ```{r import ipums data containing city and citypop for 1930 census, include = FALSE}
 
-city_codebook_1930_full_sample <- read_excel("1930 City Population Data/city_codebook_1930_full_sample.xlsx") %>%
+city_codebook_1930_full_sample <- read_excel("1930 - 1940 City Population Data/city_codebook_1930_full_sample.xlsx") %>%
   select(-city_name)
 
 # import list of all cities that have HOLC maps
@@ -24,7 +24,7 @@ city_codebook_1930_full_sample <- read_excel("1930 City Population Data/city_cod
 all_cities_in_richmond <- read_excel("all_cities_in_richmond.xlsx")
 
 # import data from 1930 full sample that I collapsed on Suz'z computer: hopefully this will be the final dataset...
-ipums_full_sample_collapsed_1930 <- read_csv("1930 City Population Data/1930_data_ipums_full_sample_collapsed.csv")
+ipums_full_sample_collapsed_1930 <- read_csv("1930 - 1940 City Population Data/1930_data_ipums_full_sample_collapsed.csv")
 
 ```
 
@@ -210,7 +210,7 @@ city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City
 city_pop_name_1930_in_richmond %>%
   filter(is.na(citypop_total))
 
-ipums_1930_cities_by_pop_full_sample %>% filter(cityname == "Fort Worth")
+ipums_1930_cities_by_pop_full_sample %>% filter(CITY_old == "0003")
 
 
 ```
