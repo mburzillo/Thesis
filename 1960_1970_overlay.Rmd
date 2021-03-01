@@ -29,7 +29,11 @@ first_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_197
 
 second_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_1970/nhgis0033_csv/nhgis0033_ds96_1970_tract.csv")
 
+ds98_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_1970/nhgis0033_csv/nhgis0033_ds98_1970_tract.csv")
 
+ds99_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_1970/nhgis0033_csv/nhgis0033_ds99_1970_tract.csv")
+
+ds99_2_1970 <- read_csv("Demographic Data/nhgis0033_shapefile_tl2000_us_tract_1970/nhgis0034_csv/nhgis0034_ds99_1970_tract.csv")
 
 ```
 
@@ -134,7 +138,7 @@ first_1970 <- first_1970 %>%
 
 ################################################# clean second 1970s dataset #######################################
 
-# Ooccupancy status and tenure
+# Occupancy status and tenure
 second_1970 <- second_1970 %>%
   rename(occupied_units_1970 = CK1001,
          vacant_yr_for_rent_1970 = CK1002,
@@ -153,6 +157,138 @@ second_1970 <- second_1970 %>%
 full_1970s <- full_join(first_1970, second_1970)
 
 
+# ds99_1970
+ds99_1970 <- ds99_1970 %>%
+  rename(fam_income_under_1k = C3T001,
+         fam_income_1_2k = C3T002, 
+         fam_income_2_3k = C3T003, 
+         fam_income_3_4k = C3T004, 
+         fam_income_4_5k = C3T005,
+         fam_income_5_6k = C3T006,
+         fam_income_6_7k = C3T007, 
+         fam_income_7_8k = C3T008, 
+         fam_income_8_9k = C3T009, 
+         fam_income_9_10k = C3T010,
+         fam_income_10_12k = C3T011,
+         fam_income_12_15k = C3T012, 
+         fam_income_15_25k = C3T013, 
+         fam_income_25_50k = C3T014, 
+         fam_income_50p = C3T015) %>%
+  mutate(tot_families_with_income = fam_income_under_1k + fam_income_2_3k +  fam_income_3_4k + fam_income_4_5k +  fam_income_5_6k + 
+           fam_income_6_7k + fam_income_7_8k + fam_income_8_9k + fam_income_9_10k + fam_income_10_12k + fam_income_12_15k +
+           fam_income_15_25k + fam_income_25_50k + fam_income_50p,
+         family_income = (fam_income_under_1k * 500 + fam_income_2_3k * 2500 +  fam_income_3_4k * 3500
+                          + fam_income_4_5k * 4500 +  fam_income_5_6k * 5500 + 
+                            fam_income_6_7k * 6500 + fam_income_7_8k *7500 + fam_income_8_9k * 8500 + 
+                            fam_income_9_10k * 9500 + fam_income_10_12k * 11000 + fam_income_12_15k +
+                            fam_income_15_25k * 20000 + fam_income_25_50k * 37500 + fam_income_50p * 50000)/tot_families_with_income) %>%
+  select(gisjoin_1970 = GISJOIN, family_income)
+
+# join with previous data
+full_1970s <- full_join(full_1970s, ds99_1970 )
+
+
+ds98_1970 <- ds98_1970 %>%
+  rename(school_none = C06001, 
+         school_1_4 = C06002,
+         school_5_6 = C06003,
+         school_7 = C06004,
+         school_8 = C06005,
+         school_9_11 = C06006,
+         school_hs_12 = C06007,
+         school_13_15_some_college = C06008,
+         school_16 = C06009,
+         school_17_plus = C06010) %>%
+  mutate(school_persons_25p = school_none + school_1_4 + school_5_6 + school_7 + school_8 + school_9_11 + 
+           school_hs_12 + school_13_15_some_college + school_16 + school_17_plus,
+         tot_years_school = (school_none * 0 + school_1_4 * 3 + school_5_6 * 5.5 + school_7 * 7 + 
+                               school_8 * 8 + school_9_11 * 10 + 
+                               school_hs_12 * 12 + school_13_15_some_college * 14 + 
+                               school_16 * 16 + school_17_plus * 17)/school_persons_25p,
+         pct_hs_grad =  100 * (school_hs_12 + school_13_15_some_college + school_16 + school_17_plus)/school_persons_25p,
+         pct_some_college = 100 * (school_13_15_some_college + school_16 + school_17_plus)/school_persons_25p) %>%
+  select(gisjoin_1970 = GISJOIN, tot_years_school, pct_hs_grad, pct_some_college)
+
+
+# join with previous data
+full_1970s <- full_join(full_1970s, ds98_1970)
+
+ds99_2_1970 <- ds99_2_1970 %>%
+  rename(pl_ratio_belwo_half = C35001,
+         pl_ratio_half_75 = C35002, 
+         pl_ratio_75_1 = C35003, 
+         pl_ratio_1_quarter = C35004, 
+         pl_ratio_5 = C35005, 
+         pl_ratio_6 = C35006, 
+         pl_ratio_7 = C35007, 
+         pl_ratio_8 = C35008) %>%
+  mutate(tot_pl_persons = pl_ratio_belwo_half + pl_ratio_half_75 + pl_ratio_75_1 + pl_ratio_1_quarter + 
+           pl_ratio_5 + pl_ratio_6 + pl_ratio_7 + pl_ratio_8,
+         pct_in_family_below_pl = 100 * (pl_ratio_belwo_half + pl_ratio_half_75 + pl_ratio_75_1)/tot_pl_persons) %>%
+  select(gisjoin_1970 = GISJOIN, pct_in_family_below_pl)
+
+# this is the full set of 1970s data with corresponding GISJOINS
+full_1970s <- full_join(full_1970s, ds99_2_1970)
+
+```
+
+
+```{r join new 1970 tract data with 1960 selected tracts}
+overlay_60_70
+
+# first, only take the tracts from overlay_60_70 that are in the final selected dataset (tracts_selected)
+
+left_join(tracts_selected, overlay_60_70, by = c("gisjoin_1960" = "gisjoin_60")) %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1960) %>%
+  summarise(sum_count = sum(count)) 
+tracts_selected
+
+# this dataset now has an observation for every 1970 intersect within the 1960s tracts that we have selected for the final analysis
+overlay_selected <- left_join(tracts_selected, overlay_60_70, by = c("gisjoin_1960" = "gisjoin_60")) 
+
+# now join with the 1970s demo data
+overlay_selected_70s_demo <- left_join(overlay_selected, full_1970s, by = c("gisjoin_70" = "gisjoin_1970"))
+
+# now, apply areal weights to 1970s characteristics
+overlay_selected_70s_demo <- overlay_selected_70s_demo %>%
+  mutate(contract_rent_70_in_60_intsct = weight_60_70 * weighted_monthly_contract_rent_1970,
+         prop_value_owner_occ_70_in_60_intsct = weight_60_70 * weighted_prop_value_owner_occ_1970,
+         pct_owner_occupied_70_in_60_intsct = weight_60_70 * pct_owner_occupied_1970,
+         pct_vacant_70_in_60_intsct = weight_60_70 * pct_vacant_units_1970,
+         family_income_70_in_60_intsct = weight_60_70 * family_income,
+         tot_years_school_70_in_60_intsct = weight_60_70 * tot_years_school,
+         pct_hs_grad_70_in_60_instct = weight_60_70 * pct_hs_grad,
+         pct_some_college_70_in_60_instct = weight_60_70 * pct_some_college,
+         pct_in_family_below_pl_70_in_60_instct = weight_60_70 * pct_in_family_below_pl)
+
+
+# Groupby 1960s tracts and sum to get final set with just the 961 tracts
+tracts_selected_70s_data <- overlay_selected_70s_demo %>%
+  group_by(holc_state, state_ab, region, holc_city, gisjoin_1960, numeric_city_code, pop_density_1930, 
+           citypop_1930, citypop_1940, pct_change_citypop_30_90, city_1940_pct_owner_occ_non_v, city_1940_avg_contract_rent, 
+           city_1940_pct_contract_rent_lt_50, city_1940_avg_h_value_, city_1940_pct_unemp_males_14_plus, city_1940_avg_wage_emp_males_14_p,
+           city_1940_pct_black, treatment, tot_persons_printed_1960, pct_non_white_1960, pct_black_1960, pct_foreign_born_1960, pct_hs_grad_1960,
+           pct_some_college_1960, weighted_tot_years_school_1960, pct_vacant_1960,pct_owner_occupied_1960, pct_renter_occupied_1960, 
+           pct_one_point_0_one_people_per_room_or_more_1960, avg_monthly_contract_rent_1960, weighted_prop_value_1960, pct_single_unit_1960,
+           pct_housing_deteriorated_dilap_1960, pct_unemployed_males_1960, pct_more_than_one_bathroom_1960, pct_contract_rent_lt_50_1960, 
+           weighted_cash_contract_rent_1960, pct_families_below_3k_income_1960, weighted_family_income_1960, owner_occ_property_value_1960) %>%
+  summarise(sum_weight = sum(weight_60_70),
+            contract_rent_70_in_60 = sum(contract_rent_70_in_60_intsct),
+            prop_value_owner_occ_70_in_60 = sum(prop_value_owner_occ_70_in_60_intsct),
+            pct_owner_occupied_70_in_60 = sum(pct_owner_occupied_70_in_60_intsct),
+            family_income_70_in_60 = sum(family_income_70_in_60_intsct),
+            tot_years_school_70_in_60 = sum(tot_years_school_70_in_60_intsct),
+            pct_hs_grad_70_in_60 = sum(pct_hs_grad_70_in_60_instct),
+            pct_some_college_70_in_60 = sum(pct_some_college_70_in_60_instct),
+            pct_in_family_below_pl_70_in_60 = sum(pct_in_family_below_pl_70_in_60_instct))
+```
+
+
+```{r}
+tracts_selected_70s_data %>%
+  ggplot(aes(x = pct_hs_grad_1960, pct_hs_grad_70_in_60, color = treatment)) +
+  geom_point()
 ```
 
 
