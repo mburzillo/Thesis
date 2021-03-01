@@ -192,6 +192,22 @@ data_for_analysis$property_value_25000_34900 <- all_cities_grade_demo$B7O009
 data_for_analysis$property_value_35000_plus <- all_cities_grade_demo$B7O010
 
 
+# owner occupied units reporting value
+
+data_for_analysis$owner_occ_property_value_u5k <- all_cities_grade_demo$CAO001
+data_for_analysis$owner_occ_property_value_5000_7499 <- all_cities_grade_demo$CAO002
+data_for_analysis$owner_occ_property_value_7500_9999 <- all_cities_grade_demo$CAO003
+data_for_analysis$owner_occ_property_value_10000_12499 <- all_cities_grade_demo$CAO004
+data_for_analysis$owner_occ_property_value_12500_14999 <- all_cities_grade_demo$CAO005
+data_for_analysis$owner_occ_property_value_15000_17499 <- all_cities_grade_demo$CAO006
+data_for_analysis$owner_occ_property_value_17500_19999 <- all_cities_grade_demo$CAO007
+data_for_analysis$owner_occ_property_value_20000_24999 <- all_cities_grade_demo$CAO008
+data_for_analysis$owner_occ_property_value_25000_34999 <- all_cities_grade_demo$CAO009
+data_for_analysis$owner_occ_property_value_35000_plus <- all_cities_grade_demo$CAO010
+
+
+
+
 # units in structure (housing units)
 
 data_for_analysis$units_1 <- all_cities_grade_demo$B92001
@@ -298,10 +314,6 @@ filtered <- data_for_analysis %>%
 
 ```
 
-```{r}
-#data_for_analysis %>%filter(GISJOIN == "G5501330WC0009") %>% select(pop_density)
-
-```
 
 ```{r creating additional variables relevant for analysis, include = FALSE}
 
@@ -436,6 +448,37 @@ data_for_analysis$weighted_prop_value <- (data_for_analysis$property_value_u5k *
 # percent of houses of value under 5k
 
 data_for_analysis$pct_houses_w_property_value_u5k <- 100* data_for_analysis$property_value_u5k/data_for_analysis$houses_w_property_value_data
+
+
+
+# owner occupied units reporting value
+
+data_for_analysis$owner_occ_property_value_u5k <- all_cities_grade_demo$CAO001
+data_for_analysis$owner_occ_property_value_5000_7499 <- all_cities_grade_demo$CAO002
+data_for_analysis$owner_occ_property_value_7500_9999 <- all_cities_grade_demo$CAO003
+data_for_analysis$owner_occ_property_value_10000_12499 <- all_cities_grade_demo$CAO004
+data_for_analysis$owner_occ_property_value_12500_14999 <- all_cities_grade_demo$CAO005
+data_for_analysis$owner_occ_property_value_15000_17499 <- all_cities_grade_demo$CAO006
+data_for_analysis$owner_occ_property_value_17500_19999 <- all_cities_grade_demo$CAO007
+data_for_analysis$owner_occ_property_value_20000_24999 <- all_cities_grade_demo$CAO008
+data_for_analysis$owner_occ_property_value_25000_34999 <- all_cities_grade_demo$CAO009
+data_for_analysis$owner_occ_property_value_35000_plus <- all_cities_grade_demo$CAO010
+
+
+data_for_analysis$tot_owner_occ_with_value = data_for_analysis$owner_occ_property_value_u5k + data_for_analysis$owner_occ_property_value_5000_7499 + data_for_analysis$owner_occ_property_value_7500_9999 + data_for_analysis$owner_occ_property_value_10000_12499 + data_for_analysis$owner_occ_property_value_12500_14999  + data_for_analysis$owner_occ_property_value_15000_17499 + data_for_analysis$owner_occ_property_value_17500_19999 + data_for_analysis$owner_occ_property_value_20000_24999 + data_for_analysis$owner_occ_property_value_25000_34999 + data_for_analysis$owner_occ_property_value_35000_plus 
+
+data_for_analysis$owner_occ_property_value = (data_for_analysis$owner_occ_property_value_u5k * 2500 + 
+                                                data_for_analysis$owner_occ_property_value_5000_7499 * 6250 +
+                                                data_for_analysis$owner_occ_property_value_7500_9999 * 8750 +
+                                                data_for_analysis$owner_occ_property_value_10000_12499 * 11250 +
+                                                data_for_analysis$owner_occ_property_value_12500_14999 * ((15000-12500)/2 + 12500)  +
+                                                data_for_analysis$owner_occ_property_value_15000_17499 * ((17500-15000)/2 + 15000) +
+                                                data_for_analysis$owner_occ_property_value_17500_19999 * ((20000-17500)/2 + 17500) +
+                                                data_for_analysis$owner_occ_property_value_20000_24999 * ((25000-20000)/2 + 20000) +
+                                                data_for_analysis$owner_occ_property_value_25000_34999 * ((35000-25000)/2 + 25000) +
+                                                data_for_analysis$owner_occ_property_value_35000_plus * 35000)/data_for_analysis$tot_owner_occ_with_value
+
+
 
 # pct 1 unit houses
 data_for_analysis$units_with_unit_data <- data_for_analysis$units_1 + data_for_analysis$units_2 + data_for_analysis$units_3_4 + data_for_analysis$units_5_9 + data_for_analysis$units_10_P

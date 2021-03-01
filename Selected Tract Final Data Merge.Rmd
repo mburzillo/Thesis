@@ -582,13 +582,51 @@ potential_tracts_demo$weighted_cash_contract_rent <- (potential_tracts_demo$cont
 potential_tracts_demo$weighted_cash_contract_rent_lt_50 <- ifelse(potential_tracts_demo$weighted_cash_contract_rent < 50, 1, 0)
 
 
+
+
+
+potential_tracts_demo$owner_occ_property_value_u5k <- potential_tracts_demo$CAO001
+potential_tracts_demo$owner_occ_property_value_5000_7499 <- potential_tracts_demo$CAO002
+potential_tracts_demo$owner_occ_property_value_7500_9999 <- potential_tracts_demo$CAO003
+potential_tracts_demo$owner_occ_property_value_10000_12499 <- potential_tracts_demo$CAO004
+potential_tracts_demo$owner_occ_property_value_12500_14999 <- potential_tracts_demo$CAO005
+potential_tracts_demo$owner_occ_property_value_15000_17499 <- potential_tracts_demo$CAO006
+potential_tracts_demo$owner_occ_property_value_17500_19999 <- potential_tracts_demo$CAO007
+potential_tracts_demo$owner_occ_property_value_20000_24999 <- potential_tracts_demo$CAO008
+potential_tracts_demo$owner_occ_property_value_25000_34999 <- potential_tracts_demo$CAO009
+potential_tracts_demo$owner_occ_property_value_35000_plus <- potential_tracts_demo$CAO010
+
+
+
+
+potential_tracts_demo$tot_owner_occ_with_value = potential_tracts_demo$owner_occ_property_value_u5k + potential_tracts_demo$owner_occ_property_value_5000_7499 + potential_tracts_demo$owner_occ_property_value_7500_9999 + potential_tracts_demo$owner_occ_property_value_10000_12499 + potential_tracts_demo$owner_occ_property_value_12500_14999  + potential_tracts_demo$owner_occ_property_value_15000_17499 + potential_tracts_demo$owner_occ_property_value_17500_19999 + potential_tracts_demo$owner_occ_property_value_20000_24999 + potential_tracts_demo$owner_occ_property_value_25000_34999 + potential_tracts_demo$owner_occ_property_value_35000_plus 
+
+
+
+
+
+
+potential_tracts_demo$owner_occ_property_value = (potential_tracts_demo$owner_occ_property_value_u5k * 2500 + 
+                                                potential_tracts_demo$owner_occ_property_value_5000_7499 * 6250 +
+                                                potential_tracts_demo$owner_occ_property_value_7500_9999 * 8750 +
+                                                potential_tracts_demo$owner_occ_property_value_10000_12499 * 11250 +
+                                                potential_tracts_demo$owner_occ_property_value_12500_14999 * ((15000-12500)/2 + 12500)  +
+                                                potential_tracts_demo$owner_occ_property_value_15000_17499 * ((17500-15000)/2 + 15000) +
+                                                potential_tracts_demo$owner_occ_property_value_17500_19999 * ((20000-17500)/2 + 17500) +
+                                                potential_tracts_demo$owner_occ_property_value_20000_24999 * ((25000-20000)/2 + 20000) +
+                                                potential_tracts_demo$owner_occ_property_value_25000_34999 * ((35000-25000)/2 + 25000) +
+                                                potential_tracts_demo$owner_occ_property_value_35000_plus * 35000)/potential_tracts_demo$tot_owner_occ_with_value
+
+
+
+
 ```
 
 ```{r get rid of extra columns}
 # colnames(potential_tracts_demo)
 
 potential_tracts_demo <- potential_tracts_demo %>%
-  select(state:AREANAME, tot_persons_printed:weighted_cash_contract_rent_lt_50)
+  select(state:AREANAME, tot_persons_printed:owner_occ_property_value)
 
 ```
 
@@ -643,6 +681,8 @@ tracts_selected <- tracts_selected %>%
     pct_black_1960 = pct_black_printed,
     pct_foreign_born_1960 = pct_foreign_born,
     pct_hs_grad_1960 = pct_hs_grad,
+    pct_some_college_1960 = pct_some_college,
+    weighted_tot_years_school_1960 = weighted_tot_years_school,
     pct_vacant_1960 = pct_vacant_all,
     pct_owner_occupied_1960 = pct_owner_occupied,
     pct_renter_occupied_1960 = pct_renter_occupied,
@@ -655,7 +695,9 @@ tracts_selected <- tracts_selected %>%
     pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
     pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
     weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
-    pct_families_below_3k_income_1960 = pct_families_below_3k_income
+    pct_families_below_3k_income_1960 = pct_families_below_3k_income,
+    weighted_family_income_1960 = weighted_family_income,
+    owner_occ_property_value_1960 = owner_occ_property_value
       )
 
 ```
