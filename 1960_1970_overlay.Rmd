@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(stringr)
 ```
 
 ## R Markdown
@@ -281,20 +282,177 @@ tracts_selected_70s_data <- overlay_selected_70s_demo %>%
             tot_years_school_70_in_60 = sum(tot_years_school_70_in_60_intsct),
             pct_hs_grad_70_in_60 = sum(pct_hs_grad_70_in_60_instct),
             pct_some_college_70_in_60 = sum(pct_some_college_70_in_60_instct),
-            pct_in_family_below_pl_70_in_60 = sum(pct_in_family_below_pl_70_in_60_instct))
+            pct_in_family_below_pl_70_in_60 = sum(pct_in_family_below_pl_70_in_60_instct),
+            pct_vacant_70_in_60 = sum(pct_vacant_70_in_60_intsct))
 ```
 
 
 ```{r}
 tracts_selected_70s_data %>%
   ggplot(aes(x = pct_hs_grad_1960, pct_hs_grad_70_in_60, color = treatment)) +
-  geom_point()
+  geom_point() +
+  geom_smooth(method = lm) +
+  facet_wrap(~treatment)
 ```
 
 
-```{r now merge with the actual tracts we want}
+```{r reshaping for time series, include = FALSE}
 
-data_for_analysis_recode
+tracts_timeseries <- tracts_selected_70s_data %>%
+  rename(prop_value_all_units_1960 = weighted_prop_value_1960,
+         prop_value_owner_occ_1960 = owner_occ_property_value_1960,
+         family_income_1960 = weighted_family_income_1960,
+         tot_years_school_1960 = weighted_tot_years_school_1960,
+         pct_in_families_below_pl_1960 = pct_families_below_3k_income_1960,
+         avg_monthly_contract_rent_1970 = contract_rent_70_in_60, 
+         prop_value_owner_occ_1970 = prop_value_owner_occ_70_in_60, 
+         pct_owner_occupied_1970 = pct_owner_occupied_70_in_60, 
+         family_income_1970 = family_income_70_in_60, 
+         tot_years_school_1970 = tot_years_school_70_in_60, 
+         pct_hs_grad_1970 = pct_hs_grad_70_in_60, 
+         pct_some_college_1970 = pct_some_college_70_in_60, 
+         pct_in_families_below_pl_1970 = pct_in_family_below_pl_70_in_60,
+         pct_vacant_1970 = pct_vacant_70_in_60)
+
+
+prop_value_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, prop_value_owner_occ_1960, prop_value_owner_occ_1970) %>%
+  pivot_longer(c(prop_value_owner_occ_1960, prop_value_owner_occ_1970), names_to = "prop_value_owner_occ_year", values_to = "prop_value_owner_occ") %>%
+  separate(prop_value_owner_occ_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+vacancy_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, pct_vacant_1960, pct_vacant_1970) %>%
+  pivot_longer(c(pct_vacant_1960, pct_vacant_1970), names_to = "pct_vacant_year", values_to = "pct_vacant") %>%
+  separate(pct_vacant_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+
+
+tracts_timeseries_full <- full_join(prop_value_sub, vacancy_sub)
+
+
+poverty_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, pct_in_families_below_pl_1960, pct_in_families_below_pl_1970) %>%
+  pivot_longer(c(pct_in_families_below_pl_1960, pct_in_families_below_pl_1970), names_to = "pct_in_families_below_pl_year", 
+               values_to = "pct_in_families_below_pl") %>%
+  separate(pct_in_families_below_pl_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+tracts_timeseries_full <- full_join(tracts_timeseries_full, poverty_sub)
+
+fam_income_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, family_income_1960, family_income_1970) %>%
+  pivot_longer(c(family_income_1960, family_income_1970), names_to = "family_income_year", 
+               values_to = "family_income") %>%
+  separate(family_income_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+tracts_timeseries_full <- full_join(tracts_timeseries_full, fam_income_sub)
+
+
+years_edu_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, tot_years_school_1960, tot_years_school_1970) %>%
+  pivot_longer(c(tot_years_school_1960, tot_years_school_1970), names_to = "tot_years_school_year", 
+               values_to = "tot_years_school") %>%
+  separate(tot_years_school_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+tracts_timeseries_full <- full_join(tracts_timeseries_full, years_edu_sub)
+
+
+hs_grad_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, pct_hs_grad_1960, pct_hs_grad_1970) %>%
+  pivot_longer(c(pct_hs_grad_1960, pct_hs_grad_1970), names_to = "pct_hs_grad_year", values_to = "pct_hs_grad") %>%
+  separate(pct_hs_grad_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+tracts_timeseries_full <- full_join(tracts_timeseries_full, hs_grad_sub)
+
+
+some_college_sub <- tracts_timeseries %>%
+  select(holc_state:treatment, pct_black_1960, pct_owner_occupied_1960, pct_renter_occupied_1960, 
+         pct_unemployed_males_1960, pct_some_college_1960, pct_some_college_1970) %>%
+  pivot_longer(c(pct_some_college_1960, pct_some_college_1970), names_to = "pct_some_college_year", values_to = "pct_some_college") %>%
+  separate(pct_some_college_year, into = c("drop", "indep_year"), sep = -4) %>%
+  select(-drop)
+
+tracts_timeseries_full <- full_join(tracts_timeseries_full, some_college_sub) %>%
+  mutate(indep_year = as.numeric(indep_year))
+
+tracts_timeseries_full <- tracts_timeseries_full[, 18:47]
+
+
+write.csv(tracts_timeseries_full, "tracts_timeseries.csv")
+
+```
+
+
+```{r further reshape for visualization, include = FALSE}
+
+# further reshape for visualization
+
+viz_tracts_timeseries_full <- tracts_timeseries_full %>%
+  pivot_longer(c(prop_value_owner_occ, pct_vacant, pct_in_families_below_pl, family_income, tot_years_school, 
+                 pct_hs_grad, pct_some_college), names_to = "indep_var", values_to = "value")
+
+
+# also summarize by city
+viz_tracts_timeseries_full_city <- viz_tracts_timeseries_full %>%
+  group_by(holc_state, state_ab, region, holc_city, numeric_city_code, 
+           citypop_1930, citypop_1940, pct_change_citypop_30_90, city_1940_pct_owner_occ_non_v, city_1940_avg_contract_rent, 
+           city_1940_pct_contract_rent_lt_50, city_1940_avg_h_value_, city_1940_pct_unemp_males_14_plus, city_1940_avg_wage_emp_males_14_p,
+           city_1940_pct_black, treatment, indep_year, indep_var) %>%
+  summarise(mean_value = mean(value, na.rm = T))
+
+# also summarize by treatment
+viz_tracts_timeseries_full_treatment <- viz_tracts_timeseries_full %>%
+  group_by(treatment, indep_year, indep_var) %>%
+  summarise(mean_value = mean(value, na.rm = T))
+
+```
+
+
+```{r}
+viz_tracts_timeseries_full %>%
+  ggplot(aes(x = indep_year, y = value, color = treatment)) +
+  geom_jitter() +
+  geom_line() +
+  facet_wrap(~indep_var)
+
+```
+
+
+```{r}
+# tract-level
+viz_tracts_timeseries_full %>%
+  filter(indep_var == "family_income") %>%
+  ggplot(aes(x = indep_year, y = value, color = treatment)) +
+  geom_jitter() +
+  ggtitle("Family Income at the Tract Level, 1960-1970")
+
+# city level
+viz_tracts_timeseries_full_city %>%
+  filter(indep_var == "family_income") %>%
+  ggplot(aes(x = indep_year, y = mean_value, color = treatment)) +
+  geom_point() +
+  geom_smooth() +
+  ggtitle("Family Income at the City Level, 1960-1970")
+
+# treatment level
+viz_tracts_timeseries_full_treatment %>%
+  filter(indep_var == "family_income") %>%
+  ggplot(aes(x = indep_year, y = mean_value, color = treatment)) +
+  geom_point() +
+  geom_line() +
+  ggtitle("Family Income at the Treatment Level, 1960-1970")
+
 
 ```
 
