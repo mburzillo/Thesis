@@ -16,6 +16,9 @@ library(readxl)
 # load demographic data that contains all potential variables
 nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
 
+# load demographic data that contains housing add on variables to look at land rents
+housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")
+
 potential_treatment <- read_csv("selected_treatment.csv") %>%
   select(-wkt_geom, -YEAR) %>%
   mutate(treatment = factor(1)) %>%
@@ -93,7 +96,10 @@ ipums_1940_city <- full_join(ipums_1940_hh_level, ipums_1940_person_level) %>%
     city_1940_avg_wage_emp_males_14_p = avg_wage_emp_males_14_p,
     city_1940_pct_black = pct_black_perwt,
     city_1940_pct_completed_hs = pct_completed_hs,
-    city_1940_pct_completed_hs_male_18_64 = pct_completed_hs_male_18_64
+    city_1940_pct_completed_hs_male_18_64 = pct_completed_hs_male_18_64,
+    city_1940_pct_all_males_18_64_employed = pct_all_males_18_64_employed,
+    city_1940_pct_all_males_14_plus_employed = pct_all_males_14_plus_emp,
+    city_1940_pct_completed_hs_25_plus = pct_completed_hs_25_plus
   )
 
 city_names_pops_growth_ipums <- left_join(city_names_pops_growth,ipums_1940_city, by = c("numeric_city_code" = "city") )
@@ -518,6 +524,19 @@ potential_tracts_demo$pct_unemployed_males <- 100 * potential_tracts_demo$unempl
    + potential_tracts_demo$armed_forces_males + potential_tracts_demo$not_in_lf_males)  
 
 
+# pct employed males over total
+
+potential_tracts_demo$employed_males <- potential_tracts_demo$B82001
+potential_tracts_demo$unemployed_males <- potential_tracts_demo$B82002
+potential_tracts_demo$armed_forces_males <- potential_tracts_demo$B82003
+potential_tracts_demo$not_in_lf_males <- potential_tracts_demo$B82004
+
+potential_tracts_demo$pct_employed_out_of_all_males <- 100 * potential_tracts_demo$employed_males/
+  (potential_tracts_demo$unemployed_males + potential_tracts_demo$employed_males +
+     potential_tracts_demo$armed_forces_males + potential_tracts_demo$not_in_lf_males)
+
+
+
 # plumbing: pct deteriorating or dilapidated
 potential_tracts_demo$pct_plumbing_detdilap <- 100 * (potential_tracts_demo$plumbing_deteriorating_w_all_facilities  +
   potential_tracts_demo$plumbing_deteriorating_lackorshare_hwater +
@@ -625,6 +644,7 @@ potential_tracts_demo$owner_occ_property_value = (potential_tracts_demo$owner_oc
 
 ```
 
+
 ```{r get rid of extra columns}
 # colnames(potential_tracts_demo)
 
@@ -632,6 +652,8 @@ potential_tracts_demo <- potential_tracts_demo %>%
   select(state:AREANAME, tot_persons_printed:owner_occ_property_value)
 
 ```
+
+
 
 
 ```{r dropping tracts with low density}
@@ -643,6 +665,8 @@ potential_tracts_demo %>%
   filter(pop_density >= 1417.682)
 
 colnames(tracts_selected)
+
+
 
 ```
 
@@ -680,6 +704,9 @@ tracts_selected <- tracts_selected %>%
     city_1940_pct_emp_males_14_plus,
     city_1940_pct_completed_hs,
     city_1940_pct_completed_hs_male_18_64,
+    city_1940_pct_all_males_18_64_employed,
+    city_1940_pct_all_males_14_plus_employed,
+    city_1940_pct_completed_hs_25_plus,
     tract_area_1960 = tract_area,
     treatment,
     tot_persons_printed_1960 = tot_persons_printed,
@@ -699,12 +726,13 @@ tracts_selected <- tracts_selected %>%
     pct_single_unit_1960 = pct_single_unit,
     pct_housing_deteriorated_dilap_1960 = pct_housing_deteriorated_dilap,
     pct_unemployed_males_1960 = pct_unemployed_males,
+    pct_employed_out_of_all_males_1960 = pct_employed_out_of_all_males,
     pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
     pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
     weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
     pct_families_below_3k_income_1960 = pct_families_below_3k_income,
     weighted_family_income_1960 = weighted_family_income,
-    owner_occ_property_value_1960 = owner_occ_property_value,
+    owner_occ_property_value_1960 = owner_occ_property_value
       ) %>%
   mutate(log_property_value_1960 = log(weighted_prop_value_1960),
          log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
@@ -735,7 +763,7 @@ write.csv(tracts_selected, "tracts_selected.csv")
 ```{r merge with data_analysis_recode.csv for special use with associations, include = FALSE}
 
 tracts_selected_sub <- tracts_selected %>%
-  select(gisjoin_1960, region, citypop_1940, city_1940_pct_owner_occ_non_v:city_1940_pct_black, log_property_value_1960:log_city_1940_avg_wage_emp_males)
+  select(gisjoin_1960, region, citypop_1940, city_1940_pct_owner_occ_non_v:city_1940_pct_completed_hs_25_plus, log_property_value_1960:log_city_1940_avg_wage_emp_males)
 
 data_for_analysis_recode_assoc <- left_join(data_for_analysis_recode, tracts_selected_sub)
 
@@ -1089,5 +1117,45 @@ tracts_selected %>%
   view()
 
 summary(tracts_selected$tract_area)
+```
+
+
+```{r}
+city_only <- tracts_selected %>%
+  select(holc_city, treatment, numeric_city_code, city_1940_pct_owner_occ_non_v:city_1940_pct_completed_hs_25_plus) %>%
+  unique()
+
+city_only %>%
+  ggplot() +
+  geom_density(aes(x = city_1940_pct_completed_hs), color = "red") +
+  geom_density(aes(x = city_1940_pct_completed_hs_male_18_64), color = "blue") +
+  geom_density(aes(x = city_1940_pct_completed_hs_25_plus), color = "green")
+```
+
+
+
+```{r}
+city_only %>%
+  ggplot() +
+  geom_density(aes(x = city_1940_pct_all_males_14_plus_employed), color = "red") +
+  geom_density(aes(x = city_1940_pct_all_males_18_64_employed), color = "blue") +
+  geom_density(aes(x = city_1940_pct_emp_males_14_plus), color = "green") +
+  facet_wrap(~treatment)
+  
+```
+
+
+```{r}
+ipums_1940_person_level %>%
+  ggplot(aes(x = pct_completed_hs)) +
+  geom_histogram()
+```
+
+
+```{r}
+ipums_1940_person_level %>%
+  ggplot(aes(x = pct_completed_hs_male_18_64)) +
+  geom_histogram()
+
 ```
 

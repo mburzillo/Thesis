@@ -1,0 +1,23 @@
+---
+title: "Special Housing Add-On for Land Rents"
+author: "Maria Burzillo"
+date: "3/5/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+
+```{r}
+# load demographic data that contains housing add on variables to look at land rents
+housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")
+```
+
+
+
+```{r working with extra housing data}
+housing_add_on_1960_tract 
+```
