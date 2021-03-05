@@ -89,8 +89,11 @@ ipums_1940_city <- full_join(ipums_1940_hh_level, ipums_1940_person_level) %>%
     city_1940_pct_contract_rent_lt_50 = pct_contract_rent_lt_50,
     city_1940_avg_h_value_ = avg_house_value_hhwt,
     city_1940_pct_unemp_males_14_plus = pct_unemp_males_14_plus,
+    city_1940_pct_emp_males_14_plus = pct_emp_males_14_plus,
     city_1940_avg_wage_emp_males_14_p = avg_wage_emp_males_14_p,
-    city_1940_pct_black = pct_black_perwt
+    city_1940_pct_black = pct_black_perwt,
+    city_1940_pct_completed_hs = pct_completed_hs,
+    city_1940_pct_completed_hs_male_18_64 = pct_completed_hs_male_18_64
   )
 
 city_names_pops_growth_ipums <- left_join(city_names_pops_growth,ipums_1940_city, by = c("numeric_city_code" = "city") )
@@ -664,7 +667,7 @@ tracts_selected <- tracts_selected %>%
     holc_city = cityname,
     gisjoin_1960 = GISJOIN,
     numeric_city_code,
-    pop_density_1930 = pop_density,
+    pop_density_1960 = pop_density,
     citypop_1930 = citypop_total_1930,
     citypop_1940,
     citypop_1990,
@@ -674,6 +677,9 @@ tracts_selected <- tracts_selected %>%
     city_reg_estimated_multiplier = "reg estimated multiplier",
     city_reg_estimated_radius = "reg estimated radius",
     city_1940_pct_owner_occ_non_v:city_1940_pct_black,
+    city_1940_pct_emp_males_14_plus,
+    city_1940_pct_completed_hs,
+    city_1940_pct_completed_hs_male_18_64,
     tract_area_1960 = tract_area,
     treatment,
     tot_persons_printed_1960 = tot_persons_printed,
@@ -687,6 +693,7 @@ tracts_selected <- tracts_selected %>%
     pct_owner_occupied_1960 = pct_owner_occupied,
     pct_renter_occupied_1960 = pct_renter_occupied,
     pct_one_point_0_one_people_per_room_or_more_1960 = pct_one_point_0_one_people_per_room_or_more,
+    # avg contract rent got messed up, better to use weighted
     avg_monthly_contract_rent_1960 = avg_monthly_contract_rent,
     weighted_prop_value_1960 = weighted_prop_value,
     pct_single_unit_1960 = pct_single_unit,
@@ -697,8 +704,15 @@ tracts_selected <- tracts_selected %>%
     weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
     pct_families_below_3k_income_1960 = pct_families_below_3k_income,
     weighted_family_income_1960 = weighted_family_income,
-    owner_occ_property_value_1960 = owner_occ_property_value
-      )
+    owner_occ_property_value_1960 = owner_occ_property_value,
+      ) %>%
+  mutate(log_property_value_1960 = log(weighted_prop_value_1960),
+         log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
+         log_family_income_1960 = log(weighted_family_income_1960),
+         log_property_value_1960 = log(owner_occ_property_value_1960),
+         log_city_1940_avg_contract_rent = log(city_1940_avg_contract_rent),
+         log_city_1940_avg_h_value_ = log(city_1940_avg_h_value_),
+         log_city_1940_avg_wage_emp_males = log(city_1940_avg_wage_emp_males_14_p))
 
 ```
 
@@ -718,6 +732,15 @@ write.csv(tracts_selected, "tracts_selected.csv")
 
 
 
+```{r merge with data_analysis_recode.csv for special use with associations, include = FALSE}
+
+tracts_selected_sub <- tracts_selected %>%
+  select(gisjoin_1960, region, citypop_1940, city_1940_pct_owner_occ_non_v:city_1940_pct_black, log_property_value_1960:log_city_1940_avg_wage_emp_males)
+
+data_for_analysis_recode_assoc <- left_join(data_for_analysis_recode, tracts_selected_sub)
+
+write.csv(data_for_analysis_recode_assoc, "data_for_analysis_recode_assoc.csv")
+```
 
 
 
@@ -1061,7 +1084,7 @@ tracts_selected %>%
 ```{r}
 tracts_selected %>%
   mutate(count = 1) %>%
-  group_by(cityname, state, treatment) %>%
+  group_by(holc_city, holc_state, treatment, numeric_city_code) %>%
   summarize(tot_tracts = sum(count)) %>%
   view()
 

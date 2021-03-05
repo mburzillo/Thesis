@@ -866,7 +866,7 @@ data_for_analysis_recode <- data_for_analysis %>%
          pct_grade_d,
          prop_grade_D:prop_grade_A_B,
          tot_persons_printed_1960 = tot_persons_printed,
-         pop_density_1930 = pop_density,
+         pop_density_1960 = pop_density,
          pct_non_white_1960 = pct_non_white_printed,
          pct_black_1960 = pct_black_printed,
          pct_foreign_born_1960 = pct_foreign_born,
@@ -882,10 +882,14 @@ data_for_analysis_recode <- data_for_analysis %>%
          pct_unemployed_males_1960 = pct_unemployed_males,
          pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
          pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
-         weighted_cash_contract_rent_1960 = weighted_cash_contract_rent)
+         weighted_cash_contract_rent_1960 = weighted_cash_contract_rent) %>%
+  mutate(log_property_value_1960 = log(weighted_prop_value_1960),
+         log_contract_rent_1960 = log(weighted_cash_contract_rent_1960))
 
 
 write.csv(data_for_analysis_recode, "data_for_analysis_recode.csv")
+
+colnames(data_for_analysis_recode)
   
 ```
 
