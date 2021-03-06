@@ -14,10 +14,238 @@ library(tidyverse)
 ```{r}
 # load demographic data that contains housing add on variables to look at land rents
 housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")
+housing_add_on_1960_tract_2 <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0036_ds92_1960_tract.csv")
+
+housing_add_on_1960_tract <- left_join(housing_add_on_1960_tract, housing_add_on_1960_tract_2)
 ```
-
-
 
 ```{r working with extra housing data}
 housing_add_on_1960_tract 
 ```
+
+# Variables Wanted
+
+Using log housing value as the DV, I would think the RHS variables to start are:
+
+Dummies for no. of rooms (eg, 2, 3-5, 5+)
+Dummies for no. of bathrooms (eg, 2, 3+)
+Dummies  units in structure (eg, 2-4, 5-9, 10+)
+Dummy for having non-earthen floor
+Dummy for having functioning indoor plumbing
+Dummy for having indoor heating other than wood burning
+Year built
+
+
+```{r}
+
+# value of property from printed report (housing units)
+
+housing_add_on_1960_tract$property_value_u5k <- housing_add_on_1960_tract$B7O001
+housing_add_on_1960_tract$property_value_5000_7400 <- housing_add_on_1960_tract$B7O002
+housing_add_on_1960_tract$property_value_7500_9900 <- housing_add_on_1960_tract$B7O003
+housing_add_on_1960_tract$property_value_10000_12400 <- housing_add_on_1960_tract$B7O004
+housing_add_on_1960_tract$property_value_12500_14900 <- housing_add_on_1960_tract$B7O005
+housing_add_on_1960_tract$property_value_15000_17400 <- housing_add_on_1960_tract$B7O006
+housing_add_on_1960_tract$property_value_17500_19900 <- housing_add_on_1960_tract$B7O007
+housing_add_on_1960_tract$property_value_20000_24900 <- housing_add_on_1960_tract$B7O008
+housing_add_on_1960_tract$property_value_25000_34900 <- housing_add_on_1960_tract$B7O009
+housing_add_on_1960_tract$property_value_35000_plus <- housing_add_on_1960_tract$B7O010
+
+
+# https://archive.curbed.com/2018/4/10/17219786/buying-a-house-mortgage-government-gi-bill says median home value was 11,900 in 1960
+
+housing_add_on_1960_tract$houses_w_property_value_data <- housing_add_on_1960_tract$property_value_u5k +
+  housing_add_on_1960_tract$property_value_5000_7400 + housing_add_on_1960_tract$property_value_7500_9900 +
+  housing_add_on_1960_tract$property_value_10000_12400 + housing_add_on_1960_tract$property_value_12500_14900 +
+  housing_add_on_1960_tract$property_value_15000_17400 + housing_add_on_1960_tract$property_value_17500_19900 +
+  housing_add_on_1960_tract$property_value_20000_24900 + housing_add_on_1960_tract$property_value_25000_34900 +
+  housing_add_on_1960_tract$property_value_35000_plus
+
+
+
+# weighted property value
+
+housing_add_on_1960_tract$weighted_prop_value <- (housing_add_on_1960_tract$property_value_u5k * 2500 +
+                                                  housing_add_on_1960_tract$property_value_5000_7400 * 6250  + 
+                                                  housing_add_on_1960_tract$property_value_7500_9900 * 8750 +
+                                                  housing_add_on_1960_tract$property_value_10000_12400 * 11250 + 
+                                                  housing_add_on_1960_tract$property_value_12500_14900 * ((15000-12500)/2 + 12500) +
+                                                  housing_add_on_1960_tract$property_value_15000_17400 * ((17500-15000)/2 + 15000) + 
+                                                  housing_add_on_1960_tract$property_value_17500_19900 * ((20000-17500)/2 + 17500) +
+                                                  housing_add_on_1960_tract$property_value_20000_24900 * ((25000-20000)/2 + 20000) + 
+                                                  housing_add_on_1960_tract$property_value_25000_34900 * ((35000-25000)/2 + 25000) +
+                                                  housing_add_on_1960_tract$property_value_35000_plus* (35000))/housing_add_on_1960_tract$houses_w_property_value_data
+
+
+housing_add_on_1960_tract$log_prop_value_1960 <- log(housing_add_on_1960_tract$weighted_prop_value)
+
+
+# number of rooms
+
+housing_add_on_1960_tract$nroom_1 <- housing_add_on_1960_tract$B7C001
+housing_add_on_1960_tract$nroom_2 <- housing_add_on_1960_tract$B7C002
+housing_add_on_1960_tract$nroom_3 <- housing_add_on_1960_tract$B7C003
+housing_add_on_1960_tract$nroom_4 <- housing_add_on_1960_tract$B7C004
+housing_add_on_1960_tract$nroom_5 <- housing_add_on_1960_tract$B7C005
+housing_add_on_1960_tract$nroom_6 <- housing_add_on_1960_tract$B7C006
+housing_add_on_1960_tract$nroom_7 <- housing_add_on_1960_tract$B7C007
+housing_add_on_1960_tract$nroom_8 <- housing_add_on_1960_tract$B7C008
+
+housing_add_on_1960_tract$avg_nrooms <- (housing_add_on_1960_tract$nroom_1 * 1 + housing_add_on_1960_tract$nroom_2 * 2  + 
+                                           housing_add_on_1960_tract$nroom_3 * 3 + housing_add_on_1960_tract$nroom_4 * 4 +
+                                           housing_add_on_1960_tract$nroom_5 * 5 + housing_add_on_1960_tract$nroom_6 * 6 + 
+                                           housing_add_on_1960_tract$nroom_7 * 7 + housing_add_on_1960_tract$nroom_8 * 8)/
+  (housing_add_on_1960_tract$nroom_1 + housing_add_on_1960_tract$nroom_2 + 
+                                           housing_add_on_1960_tract$nroom_3 + housing_add_on_1960_tract$nroom_4 +
+                                           housing_add_on_1960_tract$nroom_5 + housing_add_on_1960_tract$nroom_6 + 
+                                           housing_add_on_1960_tract$nroom_7 + housing_add_on_1960_tract$nroom_8)
+
+
+# number of bathrooms
+
+housing_add_on_1960_tract$one_bathroom <- housing_add_on_1960_tract$B69001
+housing_add_on_1960_tract$more_than_one_bathroom <- housing_add_on_1960_tract$B69002
+housing_add_on_1960_tract$shared_or_no <- housing_add_on_1960_tract$B69003
+
+housing_add_on_1960_tract$pct_more_than_one_bathroom <- 100 * housing_add_on_1960_tract$more_than_one_bathroom / (housing_add_on_1960_tract$more_than_one_bathroom + housing_add_on_1960_tract$one_bathroom + housing_add_on_1960_tract$shared_or_no)
+
+housing_add_on_1960_tract$pct_shared_or_no_bath <- 100 * housing_add_on_1960_tract$shared_or_no / (housing_add_on_1960_tract$more_than_one_bathroom + housing_add_on_1960_tract$one_bathroom + housing_add_on_1960_tract$shared_or_no)
+
+
+# units in structure
+
+housing_add_on_1960_tract$nunits_1 <- housing_add_on_1960_tract$B7D001
+housing_add_on_1960_tract$nunits_2 <- housing_add_on_1960_tract$B7D002
+housing_add_on_1960_tract$nunits_3_4 <- housing_add_on_1960_tract$B7D003
+housing_add_on_1960_tract$nunits_5_9 <- housing_add_on_1960_tract$B7D004
+housing_add_on_1960_tract$nunits_10_p <- housing_add_on_1960_tract$B7D005
+
+housing_add_on_1960_tract$avg_nunits <- (housing_add_on_1960_tract$nunits_1 * 1 +  housing_add_on_1960_tract$nunits_2 * 2 + housing_add_on_1960_tract$nunits_3_4 * 3.5 + housing_add_on_1960_tract$nunits_5_9 * 7 + housing_add_on_1960_tract$nunits_10_p * 10)/ (housing_add_on_1960_tract$nunits_1 +  housing_add_on_1960_tract$nunits_2 + housing_add_on_1960_tract$nunits_3_4 + housing_add_on_1960_tract$nunits_5_9 + housing_add_on_1960_tract$nunits_10_p)
+
+housing_add_on_1960_tract$pct_single_unit = 100 * housing_add_on_1960_tract$nunits_1/ (housing_add_on_1960_tract$nunits_1 +  housing_add_on_1960_tract$nunits_2 + housing_add_on_1960_tract$nunits_3_4 + housing_add_on_1960_tract$nunits_5_9 + housing_add_on_1960_tract$nunits_10_p)
+
+
+# foundation type -> really low correlation -> don't include
+housing_add_on_1960_tract$basement <- housing_add_on_1960_tract$B7G001
+housing_add_on_1960_tract$concrete_slab<- housing_add_on_1960_tract$B7G002
+housing_add_on_1960_tract$basement_other <- housing_add_on_1960_tract$B7G003
+
+housing_add_on_1960_tract$pct_concrete_slab_foundation <- 100 * housing_add_on_1960_tract$basement/(housing_add_on_1960_tract$basement + housing_add_on_1960_tract$concrete_slab + housing_add_on_1960_tract$basement_other)
+
+
+# functioning indoor plumbing
+housing_add_on_1960_tract$plumbing_sound_1 <- housing_add_on_1960_tract$B68001
+housing_add_on_1960_tract$plumbing_sound_2 <- housing_add_on_1960_tract$B68002
+housing_add_on_1960_tract$plumbing_sound_3 <- housing_add_on_1960_tract$B68003
+housing_add_on_1960_tract$plumbing_deteriorating_1 <- housing_add_on_1960_tract$B68004
+housing_add_on_1960_tract$plumbing_deteriorating_2 <- housing_add_on_1960_tract$B68005
+housing_add_on_1960_tract$plumbing_deteriorating_3 <- housing_add_on_1960_tract$B68006
+housing_add_on_1960_tract$plumbing_delapidated <- housing_add_on_1960_tract$B68007
+
+housing_add_on_1960_tract$pct_plumbing_fuctional <- 100 * (housing_add_on_1960_tract$plumbing_sound_1 + 
+                                                             housing_add_on_1960_tract$plumbing_sound_2 +
+                                                             housing_add_on_1960_tract$plumbing_sound_3)/ 
+  (housing_add_on_1960_tract$plumbing_sound_1 +  housing_add_on_1960_tract$plumbing_sound_2 +
+     housing_add_on_1960_tract$plumbing_sound_3 + housing_add_on_1960_tract$plumbing_deteriorating_1 +
+     housing_add_on_1960_tract$plumbing_deteriorating_2 + housing_add_on_1960_tract$plumbing_deteriorating_3 +
+     housing_add_on_1960_tract$plumbing_delapidated)
+
+
+# indoor heating other than wood burning
+# steam/hot water -> non wood burning
+# central warm air furnace -> non wood burning
+# built in electric -> non wood
+# floor wall pipeless furnce -> non wood
+
+# other with flue -> wood
+
+housing_add_on_1960_tract$heating_steam <- housing_add_on_1960_tract$B7H001
+housing_add_on_1960_tract$heating_warm_air <- housing_add_on_1960_tract$B7H002
+housing_add_on_1960_tract$heating_built_in_room_unit <- housing_add_on_1960_tract$B7H003
+housing_add_on_1960_tract$heating_other_w_flue <- housing_add_on_1960_tract$B7H004
+housing_add_on_1960_tract$heating_other_wo_flue <- housing_add_on_1960_tract$B7H005
+housing_add_on_1960_tract$heating_none <- housing_add_on_1960_tract$B7H006
+
+housing_add_on_1960_tract$heating_pct_non_wood_burn <- 100 * (housing_add_on_1960_tract$heating_steam + housing_add_on_1960_tract$heating_warm_air + housing_add_on_1960_tract$heating_built_in_room_unit + housing_add_on_1960_tract$heating_other_wo_flue)/(housing_add_on_1960_tract$heating_steam + housing_add_on_1960_tract$heating_warm_air + housing_add_on_1960_tract$heating_built_in_room_unit + housing_add_on_1960_tract$heating_other_w_flue + housing_add_on_1960_tract$heating_other_wo_flue)
+
+
+# year structure built
+housing_add_on_1960_tract$built_50_60 <- housing_add_on_1960_tract$B7E001
+housing_add_on_1960_tract$built_40_49 <- housing_add_on_1960_tract$B7E002
+housing_add_on_1960_tract$built_pre_40 <- housing_add_on_1960_tract$B7E003
+
+housing_add_on_1960_tract$avg_age <- (housing_add_on_1960_tract$built_50_60 * 5 + housing_add_on_1960_tract$built_40_49 * 15.5 +
+                                        housing_add_on_1960_tract$built_pre_40 * 21) / (housing_add_on_1960_tract$built_50_60 +
+                                                                                     housing_add_on_1960_tract$built_40_49 +
+                                                                                     housing_add_on_1960_tract$built_pre_40)
+housing_add_on_1960_tract$pct_built_pre_40 = 100 * housing_add_on_1960_tract$built_pre_40/(housing_add_on_1960_tract$built_50_60 +
+                                                                                     housing_add_on_1960_tract$built_40_49 +
+                                                                                     housing_add_on_1960_tract$built_pre_40)
+
+# rental value
+
+housing_add_on_1960_tract$contract_rent_lt_20 <- housing_add_on_1960_tract$B7Q001
+housing_add_on_1960_tract$contract_rent_20_29 <- housing_add_on_1960_tract$B7Q002
+housing_add_on_1960_tract$contract_rent_30_39 <- housing_add_on_1960_tract$B7Q003
+housing_add_on_1960_tract$contract_rent_40_49 <- housing_add_on_1960_tract$B7Q004
+housing_add_on_1960_tract$contract_rent_50_59 <- housing_add_on_1960_tract$B7Q005
+housing_add_on_1960_tract$contract_rent_60_69 <- housing_add_on_1960_tract$B7Q006
+housing_add_on_1960_tract$contract_rent_70_79 <- housing_add_on_1960_tract$B7Q007
+housing_add_on_1960_tract$contract_rent_80_89 <- housing_add_on_1960_tract$B7Q008
+housing_add_on_1960_tract$contract_rent_90_99 <- housing_add_on_1960_tract$B7Q009
+housing_add_on_1960_tract$contract_rent_l00_119 <- housing_add_on_1960_tract$B7Q010
+housing_add_on_1960_tract$contract_rent_120_149 <- housing_add_on_1960_tract$B7Q011
+housing_add_on_1960_tract$contract_rent_150p <- housing_add_on_1960_tract$B7Q012
+housing_add_on_1960_tract$contract_rent_no_cash_rent <- housing_add_on_1960_tract$B7Q013
+
+housing_add_on_1960_tract$avg_contract_rent <- (housing_add_on_1960_tract$contract_rent_lt_20 * 10+
+  housing_add_on_1960_tract$contract_rent_20_29 * 24.5 + housing_add_on_1960_tract$contract_rent_30_39 * 34.5 +
+  housing_add_on_1960_tract$contract_rent_40_49 * 44.5 + housing_add_on_1960_tract$contract_rent_50_59 * 55.5 +
+  housing_add_on_1960_tract$contract_rent_60_69 * 64.5 + housing_add_on_1960_tract$contract_rent_70_79 * 74.5 +
+  housing_add_on_1960_tract$contract_rent_80_89 * 84.5 + housing_add_on_1960_tract$contract_rent_90_99 * 94.5 +
+  housing_add_on_1960_tract$contract_rent_l00_119 * 109.5 + housing_add_on_1960_tract$contract_rent_120_149 * 134.5 +
+  housing_add_on_1960_tract$contract_rent_150p * 150)/(housing_add_on_1960_tract$contract_rent_lt_20 +
+  housing_add_on_1960_tract$contract_rent_20_29 +housing_add_on_1960_tract$contract_rent_30_39 +
+  housing_add_on_1960_tract$contract_rent_40_49 + housing_add_on_1960_tract$contract_rent_50_59 +
+  housing_add_on_1960_tract$contract_rent_60_69 + housing_add_on_1960_tract$contract_rent_70_79 +
+  housing_add_on_1960_tract$contract_rent_80_89 + housing_add_on_1960_tract$contract_rent_90_99 +
+  housing_add_on_1960_tract$contract_rent_l00_119 + housing_add_on_1960_tract$contract_rent_120_149 +
+  housing_add_on_1960_tract$contract_rent_150p)
+
+housing_add_on_1960_tract$log_avg_contract_rent <- log(housing_add_on_1960_tract$avg_contract_rent)
+
+
+```
+
+
+```{r}
+
+housing_add_on_1960_tract %>%
+  ggplot(aes(x = pct_built_pre_40, y = log_prop_value_1960)) +
+  geom_point() +
+  geom_smooth()
+
+
+cor(housing_add_on_1960_tract$pct_built_pre_40, housing_add_on_1960_tract$log_prop_value_1960, use = "complete.obs")
+cor(housing_add_on_1960_tract$avg_age, housing_add_on_1960_tract$log_prop_value_1960, use = "complete.obs")
+
+
+```
+
+```{r}
+
+housing_add_on_1960_tract_select <- housing_add_on_1960_tract %>%
+  select(GISJOIN, weighted_prop_value, log_prop_value_1960, avg_contract_rent, 
+         log_avg_contract_rent, pct_concrete_slab_foundation, 
+         pct_plumbing_fuctional, pct_more_than_one_bathroom, pct_shared_or_no_bath, 
+         heating_pct_non_wood_burn, avg_nunits, pct_single_unit, avg_age, pct_built_pre_40)
+
+tracts_selected_gis <- tracts_selected %>%
+  select(gisjoin_1960)
+
+housing_add_join <- left_join(tracts_selected_gis, housing_add_on_1960_tract_select, by = c("gisjoin_1960" = "GISJOIN"))
+
+write.csv(housing_add_join, "Demographic Data/housing_add_join.csv")
+
+```
+

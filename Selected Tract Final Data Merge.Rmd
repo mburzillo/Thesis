@@ -63,6 +63,10 @@ ipums_1940_person_level <- read_csv("1930 - 1940 City Population Data/city_1940_
 # load region state_ab correspondence
 
 state_ab_region <- read_csv("state_ab_region.csv")
+
+# import land residuals data
+
+land_residuals <- read_csv("Demographic Data/land_rent_value_resid.csv")
 ```
 
 ```{r joining tract data, demo data, and city population data}
@@ -677,6 +681,15 @@ tracts_selected <- left_join(tracts_selected, state_ab_region)
 ```
 
 
+```{r join in land rent and value residuals, include = FALSE}
+
+land_residuals_selected <- land_residuals %>%
+  select(gisjoin_1960, resid_land_rent, resid_land_value)
+
+tracts_selected <- left_join(tracts_selected, land_residuals_selected, by = c("GISJOIN" = "gisjoin_1960"))
+
+```
+
 
 ```{r better cleaning final data, include = FALSE}
 
@@ -732,7 +745,9 @@ tracts_selected <- tracts_selected %>%
     weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
     pct_families_below_3k_income_1960 = pct_families_below_3k_income,
     weighted_family_income_1960 = weighted_family_income,
-    owner_occ_property_value_1960 = owner_occ_property_value
+    owner_occ_property_value_1960 = owner_occ_property_value,
+    resid_land_rent_1960 = resid_land_rent,
+    resid_land_value_1960 = resid_land_value
       ) %>%
   mutate(log_property_value_1960 = log(weighted_prop_value_1960),
          log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
@@ -770,6 +785,36 @@ data_for_analysis_recode_assoc <- left_join(data_for_analysis_recode, tracts_sel
 write.csv(data_for_analysis_recode_assoc, "data_for_analysis_recode_assoc.csv")
 ```
 
+```{r create dataset with selected tracts for control but real tracts for treatment, include = FALSE}
+
+tracts_selected_control <- tracts_selected %>%
+  filter(treatment == 1)
+
+data_for_analysis_recode_sub <- data_for_analysis_recode %>%
+  filter(citypop_1930 <= 60000, area_accounted_for_1960 >= .5) %>%
+  mutate(nhgiscty_1960 = as.numeric(nhgiscty_1960))
+
+
+data_for_analysis_recode_selected_control_d <- full_join(tracts_selected, data_for_analysis_recode_sub)
+
+colnames(data_for_analysis_recode_selected_control_d)
+
+data_for_analysis_recode_selected_control_d %>%
+  filter(citypop_1930 <= 60000, treatment == 0) %>%
+  group_by(holc_city, treatment) %>%
+  summarise(sum_1 = mean(city_1940_avg_wage_emp_males_14_p),
+            mean_pct_d = mean(pct_grade_d, na.rm = T))
+
+
+write.csv(data_for_analysis_recode_selected_control_d, "data_for_analysis_recode_selected_control_d.csv")
+
+
+data_for_analysis %>%
+  filter(citypop_total <= 60000, area_accounted_for >= .5)
+
+anti_join(tracts_selected, data_for_analysis, by = c("gisjoin_1960" = "GISJOIN"))
+anti_join(data_for_analysis, tracts_selected, by = c("GISJOIN" = "gisjoin_1960"))
+```
 
 
 
