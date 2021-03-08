@@ -161,7 +161,7 @@ city_pop_name_1930_in_richmond <- city_pop_name_1930_in_richmond[!(city_pop_name
 
 
 city_pop_name_1930_in_richmond %>%
-  filter(is.na(city_code))
+  filter(City == "Lexington")
 
 
 ######################## Notes on mismatches ##################################3
@@ -208,9 +208,9 @@ city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City
 # Milwaukee Co. is not directly in the census but Milwaukee city is with population 578,200. The county seems to be a slightly bigger area than the city, but not by much... excluded for now but seems like this should really be included. If anything, population would be underestimate.
 
 city_pop_name_1930_in_richmond %>%
-  filter(is.na(citypop_total))
+  filter(City == "Newport News")
 
-ipums_1930_cities_by_pop_full_sample %>% filter(CITY_old == "0003")
+ipums_1930_cities_by_pop_full_sample %>% filter(cityname == "Newport News")
 
 
 ```

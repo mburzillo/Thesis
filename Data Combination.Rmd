@@ -1,0 +1,151 @@
+---
+title: "Data Combination"
+author: "Maria Burzillo"
+date: "3/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+
+```
+
+```{r}
+# import land residuals
+land_residuals <- read_csv("Demographic Data/land_rent_value_resid.csv")
+colnames(tracts_selected)
+
+```
+             
+
+```{r create universal city level data to be applied to all tracts}
+
+city_desc <- tracts_selected %>%
+  select(nhgisst_1960, nhgiscty_1960, nhgis_place_1940, holc_state, state_ab, 
+  region, holc_city, numeric_city_code, citypop_1930:city_1940_pct_completed_hs_25_plus, 
+  city_selected_into_treat = treatment, log_city_1940_avg_contract_rent:log_city_1940_avg_wage_emp_males)  
+
+
+```
+
+
+```{r}
+
+data_for_analysis_recode
+colnames(tracts_selected)
+
+big_join_tracts_selected <- tracts_selected %>%
+  mutate(tracts_selected = 1, city_selected_into_treat = treatment) %>%
+  select(-treatment, -resid_land_rent_1960, -resid_land_value_1960)
+  
+
+```
+
+```{r}
+
+big_join_data_for_analysis <- data_for_analysis_recode %>%
+  mutate(all_holc_tracts = 1, nhgiscty_1960 = as.numeric(nhgiscty_1960)) %>%
+  select(-nhgisst_1960, -nhgiscty_1960, -citypop_1930)
+
+big_join_data_for_analysis_city <- right_join(big_join_data_for_analysis, city_desc, by = c("holc_city" = "holc_city", "holc_state" = "state_ab")) %>%
+  rename(state_ab = holc_state, holc_state = holc_state.y)
+
+big_join_data_for_analysis_city  %>%
+  filter(holc_city == "Phoenix")
+
+city_desc %>%
+  filter(holc_city == "Phoenix")
+
+data_for_analysis_recode %>%
+  mutate(count = 1) %>%
+  group_by(holc_city, holc_state) %>%
+  summarize(s_count = sum(count))
+
+```
+
+
+```{r}
+colnames(big_join_data_for_analysis_city)
+```
+
+```{r examine differences in the two datasets}
+
+list_data_for_analysis_columns <- c(colnames(big_join_data_for_analysis_city))
+
+list_tracts_selected_columns <- c(colnames(big_join_tracts_selected))
+
+intersect(list_tracts_selected_columns, list_data_for_analysis_columns)
+
+
+setdiff(list_tracts_selected_columns, list_data_for_analysis_columns)
+
+# all of these differences are fine/desired
+setdiff(list_data_for_analysis_columns, list_tracts_selected_columns)
+
+# missing from data for analysis:
+# pct_some_college_1960
+# weighted_tot_years_school_1960
+# pct_employed_out_of_all_males_1960
+# pct_families_below_3k_income_1960 
+# weighted_family_income_1960      
+# owner_occ_property_value_1960
+# resid_land_rent_1960
+# resid_land_value_1960
+# log_family_income_1960"
+
+
+
+```
+
+```{r full join}
+
+
+# check that this worked based off of same thing with just the gis codes and row numbers then
+big_join <- full_join(big_join_data_for_analysis_city, big_join_tracts_selected)
+
+
+tracts_gis_rows <- big_join_tracts_selected %>%
+  select(gisjoin_1960)
+data_for_gis_rows <- big_join_data_for_analysis_city %>%
+  select(gisjoin_1960)
+
+full_join(data_for_gis_rows, tracts_gis_rows)
+
+
+length(setdiff(tracts_gis_rows$gisjoin_1960, data_for_gis_rows$gisjoin_1960))
+
+# 355 control tracts in tracts selected, but 432 tracts not in data_for_gis - selecting other ones
+
+tracts_selected %>%
+  filter(treatment == 0)
+
+big_join %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1960) %>%
+  mutate(obs = sum(count)) %>%
+  unique()
+  filter(obs == 1)
+  
+  
+big_join %>%
+  unique()
+  
+data_for_analysis_recode %>%
+  unique()
+
+tracts_selected
+
+
+```
+
+
+```{r}
+data_for_analysis_recode
+```
+
+
+```{r}
+# join land residuals to both
+```
+

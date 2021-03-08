@@ -235,17 +235,17 @@ cor(housing_add_on_1960_tract$avg_age, housing_add_on_1960_tract$log_prop_value_
 ```{r}
 
 housing_add_on_1960_tract_select <- housing_add_on_1960_tract %>%
-  select(GISJOIN, weighted_prop_value, log_prop_value_1960, avg_contract_rent, 
+  select(GISJOIN, STATE, weighted_prop_value, log_prop_value_1960, avg_contract_rent, 
          log_avg_contract_rent, pct_concrete_slab_foundation, 
          pct_plumbing_fuctional, pct_more_than_one_bathroom, pct_shared_or_no_bath, 
          heating_pct_non_wood_burn, avg_nunits, pct_single_unit, avg_age, pct_built_pre_40)
 
-tracts_selected_gis <- tracts_selected %>%
-  select(gisjoin_1960)
+# only do this if you just want them for tracts selected -> better to do for all and then join everything
+tracts_selected_gis <- tracts_selected %>% select(gisjoin_1960, region, holc_state, holc_city)
 
 housing_add_join <- left_join(tracts_selected_gis, housing_add_on_1960_tract_select, by = c("gisjoin_1960" = "GISJOIN"))
 
-write.csv(housing_add_join, "Demographic Data/housing_add_join.csv")
+write.csv(housing_add_join, "Demographic Data/housing_add_join_2.csv")
 
 ```
 

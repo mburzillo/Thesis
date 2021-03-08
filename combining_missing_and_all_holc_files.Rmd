@@ -108,6 +108,8 @@ st_write(master_holc_shape_file, "master_holc_shape_files.shp", append = FALSE)
 
 # for some reason only Stockton and Phoenix geography are showing up
 
+unique(master_holc_shape_file$city)
+
 ```
 
 

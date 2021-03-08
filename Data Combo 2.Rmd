@@ -1,0 +1,708 @@
+---
+title: "Demo Combo 2"
+author: "Maria Burzillo"
+date: "3/7/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r}
+# load demographic data that contains all potential variables
+nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
+
+# load demographic data that contains housing add on variables to look at land rents
+housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")
+
+# load tracts selected as potential treatment tracts
+potential_treatment <- read_csv("selected_treatment.csv") %>%
+  select(-wkt_geom, -YEAR) %>%
+  mutate(treatment = factor(1)) %>%
+  rename(state = STATE,
+         cityname = NAME,
+         intersect_area = area,
+         tract_area = SHAPE_AREA)
+
+# load tracts selected as potential control tracts
+potential_control <- read_csv("potential_control.csv") %>%
+  select(-wkt_geom, -YEAR) %>%
+  mutate(treatment = factor(0)) %>%
+  rename(state = STATE,
+         cityname = NAME,
+         intersect_area = area,
+         tract_area = SHAPE_AREA)
+
+
+# get all city level data
+city_desc <- tracts_selected %>%
+  select(nhgisst_1960, nhgiscty_1960, nhgis_place_1940, holc_state, state_ab, 
+  region, holc_city, numeric_city_code, citypop_1930:city_1940_pct_completed_hs_25_plus, log_city_1940_avg_contract_rent:log_city_1940_avg_wage_emp_males) %>%
+  mutate(nhgiscty_1960 = as.character(nhgiscty_1960))
+
+
+land_residuals <- read_csv("Demographic Data/land_rent_value_resid.csv")
+
+# state abbreviation correspondence
+state_abs <- read_csv("50_us_states_all_data.csv") %>%
+  select(state, state_ab)
+
+```
+
+
+```{r cleaning data_for_analysis, include = FALSE}
+# get all_all_richmond_with_pop by running calculating city 1930 and all holc files cleaning
+data_for_analysis <- all_richmond_with_pop %>%
+  rename(nhgisst_1960 = NHGISST, nhgiscty_1960 = NHGISCTY, gisjoin_1960 = GISJOIN, state_ab = state,
+         citypop_1930  = citypop_total, tract_area_1960 = tract_area, area_accounted_for_1960 = area_accounted_for,
+         holc_city = city, gisjoin_1960 = GISJOIN) %>%
+  mutate(numeric_city_code = as.numeric(CITY_old), nhgiscty_1960 = as.character(as.numeric(nhgiscty_1960))) %>%
+  select(-CITY_old, - GISJOIN2) %>%
+  mutate(holc_coverage_tracts = 1)
+
+# convert prop to percent
+data_for_analysis$pct_d_of_accounted_for<- data_for_analysis$prop_D_of_accounted_for * 100
+data_for_analysis$pct_grade_d <- data_for_analysis$prop_grade_D * 100
+
+
+data_for_analysis <- left_join(data_for_analysis, state_abs) %>%
+  rename(holc_state = state) 
+
+
+city_desc_2 <- city_desc %>%
+  select(holc_state, holc_city, nhgis_place_1940, region, citypop_1930:log_city_1940_avg_wage_emp_males)
+
+data_for_analysis_2 <- left_join(data_for_analysis, city_desc_2) %>%
+  unique()
+
+```
+
+```{r}
+colnames(data_for_analysis_2)
+```
+
+
+```{r cleaning selected tracts}
+potential_tracts_2 <- rbind(potential_control, potential_treatment) %>%
+  rename(nhgisst_1960 = NHGISST,
+    nhgiscty_1960 = NHGISCTY,
+    nhgis_place_1940 = NHGISPLACE,
+    holc_state = state,
+    holc_city = cityname,
+    gisjoin_1960 = GISJOIN) %>%
+  select(-GISJOIN2, -tract_area, -SHAPE_LEN, -intersect_area, -perimeter, -NHGISST_2, -PLACE) %>%
+  mutate(selected_tracts = 1, nhgiscty_1960 = as.character(nhgiscty_1960),
+         selected_into_treatment = treatment) %>%
+  select(-treatment) %>%
+  unique()
+
+
+city_desc_1 <- city_desc %>%
+  select(holc_state, holc_city, state_ab, region, numeric_city_code, citypop_1930:log_city_1940_avg_wage_emp_males)
+
+potential_tracts_2_2 <- left_join(potential_tracts_2, city_desc_1) %>%
+  unique()
+
+```
+
+```{r join the two groups}
+
+# this join gives all the relevant tracts that are ever in the analysis with all the relevant data
+
+# 14,520 rows total: data_for_analysis: 13,230 rows, tracts_selected 1,521 rows: sum is 14751 -> means should be 231 non-matches, 
+big_join <- full_join(data_for_analysis_2, potential_tracts_2_2) %>%
+  # filter out these sets of tracts that have proven issues
+  filter(gisjoin_1960 != "G0900030nodata", gisjoin_1960 != "G4400050nodata") %>%
+  # re-order
+  select(gisjoin_1960, region, nhgisst_1960, state_ab, holc_state, nhgiscty_1960, numeric_city_code, holc_city, nhgis_place_1940, citypop_1930, 
+         citypop_1940:city_1940_pct_completed_hs_25_plus, log_city_1940_avg_contract_rent:log_city_1940_avg_wage_emp_males,
+         holc_coverage_tracts, selected_tracts, selected_into_treatment, 
+         tract_area_1960, area_accounted_for_1960:prop_grade_A_B, pct_d_of_accounted_for, pct_grade_d)
+
+# 2 tracts are in 2 cities each, everything elese looks good besides set of "nodata" tracts already dropped directly above
+big_join %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1960) %>%
+  mutate(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+
+# 685 tracts in both selection groups
+big_join %>%
+  filter(selected_tracts == 1, holc_coverage_tracts != 1 )
+
+# region is not there for the ones 1 didn't get 1940s full count data for -> would need to go back and do
+big_join %>%
+  filter(is.na(region))
+
+big_join %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1) %>%
+  group_by(selected_into_treatment) %>%
+  summarize(sum(count))
+  
+```
+
+
+```{r sanity check, include = FALSE}
+
+big_join_demo$holc_coverage_tracts[big_join$holc_coverage_tracts != 1] <- 0
+big_join_demo$selected_tracts[big_join$selected_tracts != 1] <- 0
+
+sum(big_join$holc_coverage_tracts, na.rm = T)
+sum(as.numeric(big_join$selected_tracts), na.rm = T)
+```
+
+
+```{r join with demographic data, include = FALSE}
+
+big_join_demo <- left_join(big_join, nhgis0023_ds92_1960_tract, by = c("gisjoin_1960" = "GISJOIN"))
+
+```
+
+
+```{r renaming relevant census variables, include = FALSE}
+# variable encodings in format: description (universe)
+
+# Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
+
+big_join_demo$tot_persons_printed <- big_join_demo$B53001
+
+
+# RACE from printed report (Persons)
+
+big_join_demo$white_printed <- big_join_demo$B7B001
+big_join_demo$black_printed <- big_join_demo$B7B002
+big_join_demo$other_printed <- big_join_demo$B7B003
+
+# total foreign stock from printed report (foreign stock persons)
+
+big_join_demo$foreign_stock_printed <- big_join_demo$B7M001
+
+# foreign born (foreign stock persons)
+
+big_join_demo$foreign_born <- big_join_demo$B8J001
+
+
+# School completed (persons 25 yr and over)
+
+big_join_demo$no_school <- big_join_demo$B8R001
+big_join_demo$school_yr_1_4 <- big_join_demo$B8R002
+big_join_demo$school_yr_5_7 <- big_join_demo$B8R003
+big_join_demo$school_yr_8 <- big_join_demo$B8R004
+big_join_demo$school_yr_hs_1_3 <- big_join_demo$B8R005
+big_join_demo$school_yr_hs_4 <- big_join_demo$B8R006
+big_join_demo$school_yr_college_1_3 <- big_join_demo$B8R007
+big_join_demo$school_yr_college_p <- big_join_demo$B8R008
+
+
+# family income in 1959 (families)
+
+big_join_demo$fam_income_less_1k <- big_join_demo$B8W001
+big_join_demo$fam_income_1_2k <- big_join_demo$B8W002
+big_join_demo$fam_income_2_3k <- big_join_demo$B8W003
+big_join_demo$fam_income_3_4k <- big_join_demo$B8W004
+big_join_demo$fam_income_4_5k <- big_join_demo$B8W005
+big_join_demo$fam_income_5_6k <- big_join_demo$B8W006
+big_join_demo$fam_income_6_7k <- big_join_demo$B8W007
+big_join_demo$fam_income_7_8k <- big_join_demo$B8W008
+big_join_demo$fam_income_8_9k <- big_join_demo$B8W009
+big_join_demo$fam_income_9_10k <- big_join_demo$B8W010
+big_join_demo$fam_income_10_15k <- big_join_demo$B8W011
+big_join_demo$fam_income_15_25k <- big_join_demo$B8W012
+big_join_demo$fam_income_25k_p <- big_join_demo$B8W013
+
+
+# Total Housing Units (h units)
+big_join_demo$tot_hunits <- big_join_demo$CA5001
+
+
+# N owner occupied (occupied year round h units)
+big_join_demo$owner_occupied <- big_join_demo$B9O001
+
+# N renter occupied (occupied year round h units)
+big_join_demo$renter_occupied <- big_join_demo$B9O002
+
+
+# N vacant for rent (vacant year-round housing units)
+big_join_demo$vacant_for_rent<- big_join_demo$B8Q001
+# N vacant for sale (vacant year-round housing units)
+big_join_demo$vacant_for_sale <- big_join_demo$B8Q002
+
+
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+big_join_demo$vacant_for_sale_2<- big_join_demo$B9R001
+# N vacant for sale (vacant year-round housing units)
+big_join_demo$vacant_for_rent_2 <- big_join_demo$B9R002
+# N vacant for sale (vacant year-round housing units)
+big_join_demo$vacant_other_2 <- big_join_demo$B9R003
+
+
+# Occupied Units by Persons per Room (occupied units)
+big_join_demo$persons_per_room_half_or_less <- big_join_demo$B76001
+big_join_demo$persons_per_room_point51_point75 <- big_join_demo$B76002
+big_join_demo$persons_per_room_point76_one<- big_join_demo$B76003
+big_join_demo$persons_per_room_onepone_or_more <- big_join_demo$B76004
+
+
+# Renter occupied units reporting rent
+big_join_demo$renter_occupied_units_reporting_rent <- big_join_demo$B8A001
+
+# renter occupied unit aggregate monthly contract rent
+
+big_join_demo$agg_monthly_contract_rent <- big_join_demo$B8B001
+
+# value of property from printed report (housing units)
+
+
+big_join_demo$property_value_u5k <- big_join_demo$B7O001
+big_join_demo$property_value_5000_7400 <- big_join_demo$B7O002
+big_join_demo$property_value_7500_9900 <- big_join_demo$B7O003
+big_join_demo$property_value_10000_12400 <- big_join_demo$B7O004
+big_join_demo$property_value_12500_14900 <- big_join_demo$B7O005
+big_join_demo$property_value_15000_17400 <- big_join_demo$B7O006
+big_join_demo$property_value_17500_19900 <- big_join_demo$B7O007
+big_join_demo$property_value_20000_24900 <- big_join_demo$B7O008
+big_join_demo$property_value_25000_34900 <- big_join_demo$B7O009
+big_join_demo$property_value_35000_plus <- big_join_demo$B7O010
+
+
+# units in structure (housing units)
+
+big_join_demo$units_1 <- big_join_demo$B92001
+big_join_demo$units_2 <- big_join_demo$B92002
+big_join_demo$units_3_4 <- big_join_demo$B92003
+big_join_demo$units_5_9 <- big_join_demo$B92004
+big_join_demo$units_10_P <- big_join_demo$B92005
+
+
+# year structure built (all housing units)
+
+big_join_demo$built_1950_1960 <- big_join_demo$B96001
+big_join_demo$built_1940_1949 <- big_join_demo$B96002
+big_join_demo$built_pre_1940 <- big_join_demo$B96003
+
+
+
+# year head moved into household (occupied housing units)
+
+big_join_demo$moved_1958_1960 <- big_join_demo$CAJ001
+big_join_demo$moved_in_1954_1957 <- big_join_demo$CAJ002
+big_join_demo$moved_in_1940_1953 <- big_join_demo$CAJ003
+big_join_demo$moved_in_pre_1940 <- big_join_demo$CAJ004
+
+# persons in group quarters from printed report (persons in hhs)
+
+big_join_demo$persons_group_quarters<- big_join_demo$B54001
+
+
+# housing by condition
+
+big_join_demo$condition_sound <- big_join_demo$B67001
+big_join_demo$condition_deteriorated <- big_join_demo$B67002
+big_join_demo$condition_dilapidated <- big_join_demo$B67003
+
+# employment status
+big_join_demo$employed_males <- big_join_demo$B82001
+big_join_demo$unemployed_males <- big_join_demo$B82002
+big_join_demo$armed_forces_males <- big_join_demo$B82003
+big_join_demo$not_in_lf_males <- big_join_demo$B82004
+big_join_demo$employed_females <- big_join_demo$B82005
+big_join_demo$unemployed_females <- big_join_demo$B82006
+big_join_demo$armed_forces_females <- big_join_demo$B82007
+big_join_demo$not_in_lf_females<- big_join_demo$B82008
+
+
+# plumbing: DID NOT CODE ALL OPTIONS
+big_join_demo$plumbing_sound_w_all_facilities <- big_join_demo$B9V001
+
+big_join_demo$plumbing_deteriorating_w_all_facilities <- big_join_demo$B9V004
+big_join_demo$plumbing_deteriorating_lackorshare_hwater <- big_join_demo$B9V005
+big_join_demo$plumbing_deteriorating_lackorshare_privatetoilet <- big_join_demo$B9V006
+big_join_demo$plumbing_delapidated <- big_join_demo$B9V007
+
+# bathrooms
+big_join_demo$one_bathroom <- big_join_demo$B9Y001
+big_join_demo$more_than_one_bathroom <- big_join_demo$B9Y002
+big_join_demo$shared_or_no_inside_bathroom <- big_join_demo$B9Y003
+
+
+# rent buckets
+big_join_demo$contract_rent_lt_20 <- big_join_demo$CAV001
+big_join_demo$contract_rent_20_29 <- big_join_demo$CAV002
+big_join_demo$contract_rent_30_39 <- big_join_demo$CAV003
+big_join_demo$contract_rent_40_49 <- big_join_demo$CAV004
+big_join_demo$contract_rent_50_59 <- big_join_demo$CAV005
+big_join_demo$contract_rent_60_69 <- big_join_demo$CAV006
+big_join_demo$contract_rent_70_79 <- big_join_demo$CAV007
+big_join_demo$contract_rent_80_89 <- big_join_demo$CAV008
+big_join_demo$contract_rent_90_99 <- big_join_demo$CAV009
+big_join_demo$contract_rent_l00_119 <- big_join_demo$CAV010
+big_join_demo$contract_rent_120_149 <- big_join_demo$CAV011
+big_join_demo$contract_rent_150p <- big_join_demo$CAV012
+big_join_demo$contract_rent_no_cash_rent <- big_join_demo$CAV013
+
+
+```
+
+
+```{r creating additional variables relevant for analysis, include = FALSE}
+
+# calculate population density (originally in meters squared area so scale to km)
+big_join_demo$pop_density <- big_join_demo$tot_persons_printed/big_join_demo$tract_area_1960 * 1000000
+
+# pct non-white
+big_join_demo$pct_non_white_printed <- (big_join_demo$black_printed +
+                                      big_join_demo$other_printed)/big_join_demo$tot_persons_printed * 100
+
+# pct black
+big_join_demo$pct_black_printed <- (big_join_demo$black_printed)/big_join_demo$tot_persons_printed * 100
+
+
+# % foreign stock
+big_join_demo$pct_foreign_stock_printed<- (big_join_demo$foreign_stock_printed)/big_join_demo$tot_persons_printed * 100
+
+# % foreign born
+big_join_demo$pct_foreign_born <- (big_join_demo$foreign_born)/big_join_demo$tot_persons_printed * 100
+
+# pct hs grads
+
+# calculate total persons who have school data
+big_join_demo$tot_school_persons <- big_join_demo$no_school + big_join_demo$school_yr_1_4  +
+  big_join_demo$school_yr_5_7 + big_join_demo$school_yr_8 + big_join_demo$school_yr_hs_1_3 +
+  big_join_demo$school_yr_hs_4 + big_join_demo$school_yr_college_1_3 +
+  big_join_demo$school_yr_college_p
+
+# calculate total persons whose highest edu attainment is hs completion or greater
+big_join_demo$tot_hs_grads <- big_join_demo$school_yr_hs_4 +
+  big_join_demo$school_yr_college_1_3 +
+  big_join_demo$school_yr_college_p
+
+# calculate hs grads
+big_join_demo$pct_hs_grad <- big_join_demo$tot_hs_grads/big_join_demo$tot_school_persons * 100
+
+# calculate total persons whose highest edu attainment is some college completion or greater
+big_join_demo$tot_some_college <- big_join_demo$school_yr_college_1_3 +
+  big_join_demo$school_yr_college_p
+
+# calculate pct_some college
+big_join_demo$pct_some_college <- big_join_demo$tot_some_college/big_join_demo$tot_school_persons * 100
+
+
+# calc weighted years of school
+big_join_demo$weighted_tot_years_school <- (big_join_demo$no_school * 0 + big_join_demo$school_yr_1_4 * 2  +
+  big_join_demo$school_yr_5_7 * 6 + big_join_demo$school_yr_8 * 8 + big_join_demo$school_yr_hs_1_3 * 10 +
+  big_join_demo$school_yr_hs_4 * 12 + big_join_demo$school_yr_college_1_3 * 14 +
+  big_join_demo$school_yr_college_p * 16)/big_join_demo$tot_school_persons
+
+
+
+# need to calculate income next -> how to choose something for this?? https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-poverty-people.html
+
+# based on the above source, the pverty level for families of 3 in 1959 was 2,324 -> create indicator of below or above 3k income, roughly the poverty line for a family of 3. 
+
+# average household size according to the census in 1960 was 3.29 https://www.census.gov/library/publications/1962/dec/pc-s1-23.html#:~:text=The%20number%20of%20households%20in,of%20household%20was%203.29%20persons.
+
+# sum families with income in 1959 <3k and then divide by total # families
+
+
+big_join_demo$all_families_with_income_data <- big_join_demo$fam_income_less_1k + big_join_demo$fam_income_1_2k + big_join_demo$fam_income_2_3k +
+big_join_demo$fam_income_3_4k + big_join_demo$fam_income_4_5k + big_join_demo$fam_income_5_6k +
+big_join_demo$fam_income_6_7k + big_join_demo$fam_income_7_8k + big_join_demo$fam_income_8_9k +
+big_join_demo$fam_income_9_10k + big_join_demo$fam_income_10_15k + big_join_demo$fam_income_15_25k +
+big_join_demo$fam_income_25k_p
+
+big_join_demo$all_families_with_income_lt_3k <- big_join_demo$fam_income_less_1k + big_join_demo$fam_income_1_2k + big_join_demo$fam_income_2_3k 
+
+big_join_demo$pct_families_below_3k_income <- (big_join_demo$all_families_with_income_lt_3k/
+                                                     big_join_demo$all_families_with_income_data) * 100
+
+big_join_demo$all_families_with_income_lt_4k <- big_join_demo$fam_income_less_1k + big_join_demo$fam_income_1_2k + big_join_demo$fam_income_2_3k +
+  big_join_demo$fam_income_3_4k 
+
+big_join_demo$pct_families_below_4k_income <-   (big_join_demo$all_families_with_income_lt_4k/
+                                                     big_join_demo$all_families_with_income_data) * 100 
+
+
+# add weighted family income
+big_join_demo$weighted_family_income = (big_join_demo$fam_income_less_1k * 500 + 
+                                                  big_join_demo$fam_income_1_2k * 1500 + 
+                                                  big_join_demo$fam_income_2_3k * 2500 +
+                                                  big_join_demo$fam_income_3_4k * 3500 + 
+                                                  big_join_demo$fam_income_4_5k * 4500 + 
+                                                  big_join_demo$fam_income_5_6k * 5500 + 
+                                                  big_join_demo$fam_income_6_7k * 6500 + 
+                                                  big_join_demo$fam_income_7_8k * 7500 +
+                                                  big_join_demo$fam_income_8_9k * 8500 +
+                                                  big_join_demo$fam_income_9_10k * 9500 + 
+                                                  big_join_demo$fam_income_10_15k * 12500 + 
+                                                  big_join_demo$fam_income_15_25k * 20000 +
+                                                  big_join_demo$fam_income_25k_p * 25000)/big_join_demo$all_families_with_income_data
+
+
+
+# hhunits
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+big_join_demo$vacant_all <- big_join_demo$vacant_for_rent_2 + big_join_demo$vacant_for_sale_2 + 
+  big_join_demo$vacant_other_2
+
+big_join_demo$pct_vacant_all <- 100 * big_join_demo$vacant_all/big_join_demo$tot_hunits
+
+
+# create var for occupied units which is all units minus vacant
+
+big_join_demo$occupied_units <- big_join_demo$tot_hunits - big_join_demo$vacant_all
+
+
+# pct_owner_occupied out of all units
+big_join_demo$pct_owner_occupied <- 100 * big_join_demo$owner_occupied/big_join_demo$occupied_units
+
+
+# pct renter occupied (occupied year round h units)
+big_join_demo$pct_renter_occupied <- 100 * big_join_demo$renter_occupied/big_join_demo$occupied_units
+
+
+# pct units 1.01 or more people per room (highest category)
+big_join_demo$pct_one_point_0_one_people_per_room_or_more <- 100 *  big_join_demo$persons_per_room_onepone_or_more/big_join_demo$occupied_units
+
+
+# average rent of owner occupied units
+big_join_demo$avg_monthly_contract_rent <- big_join_demo$agg_monthly_contract_rent/ big_join_demo$renter_occupied_units_reporting_rent
+
+# big_join_demo %>%  select(agg_monthly_contract_rent, renter_occupied_units_reporting_rent, avg_monthly_contract_rent, log_avg_monthly_contract_rent) %>% filter(avg_monthly_contract_rent > 300)
+
+# big_join_demo$avg_monthly_contract_rent[big_join_demo$renter_occupied_units_reporting_rent == 0] <- NA
+# big_join_demo$avg_monthly_contract_rent[big_join_demo$GISJOIN == 	"G08000100079" ] <- NA
+
+
+
+# log average rent of owner occupied units
+big_join_demo$log_avg_monthly_contract_rent <- log(big_join_demo$avg_monthly_contract_rent)
+
+
+
+# https://archive.curbed.com/2018/4/10/17219786/buying-a-house-mortgage-government-gi-bill says median home value was 11,900 in 1960
+
+big_join_demo$houses_w_property_value_data <- big_join_demo$property_value_u5k +
+  big_join_demo$property_value_5000_7400 + big_join_demo$property_value_7500_9900 +
+  big_join_demo$property_value_10000_12400 + big_join_demo$property_value_12500_14900 +
+  big_join_demo$property_value_15000_17400 + big_join_demo$property_value_17500_19900 +
+  big_join_demo$property_value_20000_24900 + big_join_demo$property_value_25000_34900 +
+  big_join_demo$property_value_35000_plus
+
+
+# percent of houses of value under 5k
+
+big_join_demo$pct_houses_w_property_value_u5k <- 100* big_join_demo$property_value_u5k/big_join_demo$houses_w_property_value_data
+
+# weighted property value
+
+big_join_demo$weighted_prop_value <- (big_join_demo$property_value_u5k * 2500 +
+                                                  big_join_demo$property_value_5000_7400 * 6250  + 
+                                                  big_join_demo$property_value_7500_9900 * 8750 +
+                                                  big_join_demo$property_value_10000_12400 * 11250 + 
+                                                  big_join_demo$property_value_12500_14900 * ((15000-12500)/2 + 12500) +
+                                                  big_join_demo$property_value_15000_17400 * ((17500-15000)/2 + 15000) + 
+                                                  big_join_demo$property_value_17500_19900 * ((20000-17500)/2 + 17500) +
+                                                  big_join_demo$property_value_20000_24900 * ((25000-20000)/2 + 20000) + 
+                                                  big_join_demo$property_value_25000_34900 * ((35000-25000)/2 + 25000) +
+                                                  big_join_demo$property_value_35000_plus* (35000))/big_join_demo$houses_w_property_value_data
+
+# pct 1 unit houses
+big_join_demo$units_with_unit_data <- big_join_demo$units_1 + big_join_demo$units_2 + big_join_demo$units_3_4 + big_join_demo$units_5_9 + big_join_demo$units_10_P
+big_join_demo$pct_single_unit <- big_join_demo$units_1/big_join_demo$units_with_unit_data * 100
+
+# pct built pre 1940
+
+big_join_demo$pct_built_pre_1940 <- big_join_demo$built_pre_1940/(big_join_demo$built_1950_1960 + big_join_demo$built_1940_1949 + big_join_demo$built_pre_1940) * 100
+
+
+
+# year head moved into household (occupied housing units)
+
+big_join_demo$pct_moved_pre_1940 <- big_join_demo$moved_in_pre_1940/(big_join_demo$moved_1958_1960 + big_join_demo$moved_in_1954_1957 + big_join_demo$moved_in_1940_1953 + big_join_demo$moved_in_pre_1940) * 100
+
+big_join_demo$pct_moved_1958_1960 <- big_join_demo$moved_1958_1960/(big_join_demo$moved_1958_1960 + big_join_demo$moved_in_1954_1957 + big_join_demo$moved_in_1940_1953 + big_join_demo$moved_in_pre_1940) * 100
+
+# pct_pop group quarters
+
+big_join_demo$pct_persons_group_quarters <- 100 * big_join_demo$persons_group_quarters/big_join_demo$tot_persons_printed
+
+# CONDITION
+
+# housing by condition: pct deteriorated or dilapidated
+
+big_join_demo$pct_housing_deteriorated_dilap <- (big_join_demo$condition_deteriorated + big_join_demo$condition_dilapidated)/ (big_join_demo$condition_sound + big_join_demo$condition_deteriorated + big_join_demo$condition_dilapidated) * 100
+
+# pct males unemployed
+
+big_join_demo$pct_unemployed_males <- 100 * big_join_demo$unemployed_males/
+  (big_join_demo$unemployed_males + big_join_demo$employed_males
+   + big_join_demo$armed_forces_males + big_join_demo$not_in_lf_males)  
+
+
+# pct employed males over total
+
+big_join_demo$employed_males <- big_join_demo$B82001
+big_join_demo$unemployed_males <- big_join_demo$B82002
+big_join_demo$armed_forces_males <- big_join_demo$B82003
+big_join_demo$not_in_lf_males <- big_join_demo$B82004
+
+big_join_demo$pct_employed_out_of_all_males <- 100 * big_join_demo$employed_males/
+  (big_join_demo$unemployed_males + big_join_demo$employed_males +
+     big_join_demo$armed_forces_males + big_join_demo$not_in_lf_males)
+
+
+
+# plumbing: pct deteriorating or dilapidated
+big_join_demo$pct_plumbing_detdilap <- 100 * (big_join_demo$plumbing_deteriorating_w_all_facilities  +
+  big_join_demo$plumbing_deteriorating_lackorshare_hwater +
+  big_join_demo$plumbing_deteriorating_lackorshare_privatetoilet +
+  big_join_demo$plumbing_delapidated )/big_join_demo$tot_hunits
+
+# bathrooms
+
+big_join_demo$pct_shared_or_bath_outside <- big_join_demo$shared_or_no_inside_bathroom/ big_join_demo$tot_hunits * 100
+big_join_demo$pct_more_than_one_bathroom <- big_join_demo$more_than_one_bathroom/big_join_demo$tot_hunits * 100
+
+
+# rent buckets
+big_join_demo$contract_rent_lt_20 <- big_join_demo$CAV001
+big_join_demo$contract_rent_20_29 <- big_join_demo$CAV002
+big_join_demo$contract_rent_30_39 <- big_join_demo$CAV003
+big_join_demo$contract_rent_40_49 <- big_join_demo$CAV004
+big_join_demo$contract_rent_50_59 <- big_join_demo$CAV005
+big_join_demo$contract_rent_60_69 <- big_join_demo$CAV006
+big_join_demo$contract_rent_70_79 <- big_join_demo$CAV007
+big_join_demo$contract_rent_80_89 <- big_join_demo$CAV008
+big_join_demo$contract_rent_90_99 <- big_join_demo$CAV009
+big_join_demo$contract_rent_l00_119 <- big_join_demo$CAV010
+big_join_demo$contract_rent_120_149 <- big_join_demo$CAV011
+big_join_demo$contract_rent_150p <- big_join_demo$CAV012
+big_join_demo$contract_rent_no_cash_rent <- big_join_demo$CAV013
+
+all_houses_reporting_contract_rent <- sum(big_join_demo$contract_rent_lt_20, na.rm = T) + sum(big_join_demo$contract_rent_20_29, na.rm = T) +
+  sum(big_join_demo$contract_rent_30_39, na.rm = T) + sum(big_join_demo$contract_rent_40_49 , na.rm = T) + 
+  sum(big_join_demo$contract_rent_50_59, na.rm = T) + sum(big_join_demo$contract_rent_60_69, na.rm = T) +
+  sum(big_join_demo$contract_rent_70_79, na.rm = T) + sum(big_join_demo$contract_rent_80_89 , na.rm = T) + 
+  sum(big_join_demo$contract_rent_90_99, na.rm = T) + sum(big_join_demo$contract_rent_l00_119, na.rm = T) + 
+  sum(big_join_demo$contract_rent_120_149, na.rm = T) + sum(big_join_demo$contract_rent_150p, na.rm = T) +
+  sum(big_join_demo$contract_rent_no_cash_rent, na.rm = T)
+  
+
+.25 * all_houses_reporting_contract_rent 
+
+sum(big_join_demo$contract_rent_lt_20, na.rm = T) + sum(big_join_demo$contract_rent_20_29, na.rm = T) + sum(big_join_demo$contract_rent_30_39, na.rm = T) + sum(big_join_demo$contract_rent_40_49 , na.rm = T)
+
+# pct with rent < $50 (approximately 25 percentile of rent)
+
+big_join_demo$pct_contract_rent_lt_50 <- 100 * (big_join_demo$contract_rent_lt_20 + big_join_demo$contract_rent_20_29 + big_join_demo$contract_rent_30_39
+                                              + big_join_demo$contract_rent_40_49)/(big_join_demo$contract_rent_lt_20 + big_join_demo$contract_rent_20_29 +
+                                                                                          big_join_demo$contract_rent_30_39 + big_join_demo$contract_rent_40_49 +
+                                                                                          big_join_demo$contract_rent_50_59 + big_join_demo$contract_rent_60_69 +
+                                                                                          big_join_demo$contract_rent_70_79 + big_join_demo$contract_rent_80_89 +
+                                                                                          big_join_demo$contract_rent_90_99 + big_join_demo$contract_rent_l00_119 +
+                                                                                          big_join_demo$contract_rent_120_149 + big_join_demo$contract_rent_150p)
+# number of units reporting cash rent
+big_join_demo$reporting_contract_rent_calc <- big_join_demo$contract_rent_lt_20 + big_join_demo$contract_rent_20_29 +
+                                                                                          big_join_demo$contract_rent_30_39 + big_join_demo$contract_rent_40_49 +
+                                                                                          big_join_demo$contract_rent_50_59 + big_join_demo$contract_rent_60_69 +
+                                                                                          big_join_demo$contract_rent_70_79 + big_join_demo$contract_rent_80_89 +
+                                                                                          big_join_demo$contract_rent_90_99 + big_join_demo$contract_rent_l00_119 +
+                                                                                          big_join_demo$contract_rent_120_149 + big_join_demo$contract_rent_150p
+
+# weighted contract rent: 150+ coded as 150
+big_join_demo$weighted_cash_contract_rent <- (big_join_demo$contract_rent_lt_20 * 10 + big_join_demo$contract_rent_20_29  * 24.5 + 
+  big_join_demo$contract_rent_30_39 * 34.5 + big_join_demo$contract_rent_40_49 * 44.5 + big_join_demo$contract_rent_50_59 * 54.5 +
+  big_join_demo$contract_rent_60_69 * 64.5 + big_join_demo$contract_rent_70_79 * 74.5 + big_join_demo$contract_rent_80_89 * 84.5 +
+  big_join_demo$contract_rent_90_99 * 94.5 + big_join_demo$contract_rent_l00_119 * 109.5 + big_join_demo$contract_rent_120_149 * 134.5 +
+  big_join_demo$contract_rent_150p * 150)/big_join_demo$reporting_contract_rent_calc
+
+big_join_demo$weighted_cash_contract_rent_lt_50 <- ifelse(big_join_demo$weighted_cash_contract_rent < 50, 1, 0)
+
+
+
+
+
+big_join_demo$owner_occ_property_value_u5k <- big_join_demo$CAO001
+big_join_demo$owner_occ_property_value_5000_7499 <- big_join_demo$CAO002
+big_join_demo$owner_occ_property_value_7500_9999 <- big_join_demo$CAO003
+big_join_demo$owner_occ_property_value_10000_12499 <- big_join_demo$CAO004
+big_join_demo$owner_occ_property_value_12500_14999 <- big_join_demo$CAO005
+big_join_demo$owner_occ_property_value_15000_17499 <- big_join_demo$CAO006
+big_join_demo$owner_occ_property_value_17500_19999 <- big_join_demo$CAO007
+big_join_demo$owner_occ_property_value_20000_24999 <- big_join_demo$CAO008
+big_join_demo$owner_occ_property_value_25000_34999 <- big_join_demo$CAO009
+big_join_demo$owner_occ_property_value_35000_plus <- big_join_demo$CAO010
+
+
+
+
+big_join_demo$tot_owner_occ_with_value = big_join_demo$owner_occ_property_value_u5k + big_join_demo$owner_occ_property_value_5000_7499 + big_join_demo$owner_occ_property_value_7500_9999 + big_join_demo$owner_occ_property_value_10000_12499 + big_join_demo$owner_occ_property_value_12500_14999  + big_join_demo$owner_occ_property_value_15000_17499 + big_join_demo$owner_occ_property_value_17500_19999 + big_join_demo$owner_occ_property_value_20000_24999 + big_join_demo$owner_occ_property_value_25000_34999 + big_join_demo$owner_occ_property_value_35000_plus 
+
+
+
+
+
+
+big_join_demo$owner_occ_property_value = (big_join_demo$owner_occ_property_value_u5k * 2500 + 
+                                                big_join_demo$owner_occ_property_value_5000_7499 * 6250 +
+                                                big_join_demo$owner_occ_property_value_7500_9999 * 8750 +
+                                                big_join_demo$owner_occ_property_value_10000_12499 * 11250 +
+                                                big_join_demo$owner_occ_property_value_12500_14999 * ((15000-12500)/2 + 12500)  +
+                                                big_join_demo$owner_occ_property_value_15000_17499 * ((17500-15000)/2 + 15000) +
+                                                big_join_demo$owner_occ_property_value_17500_19999 * ((20000-17500)/2 + 17500) +
+                                                big_join_demo$owner_occ_property_value_20000_24999 * ((25000-20000)/2 + 20000) +
+                                                big_join_demo$owner_occ_property_value_25000_34999 * ((35000-25000)/2 + 25000) +
+                                                big_join_demo$owner_occ_property_value_35000_plus * 35000)/big_join_demo$tot_owner_occ_with_value
+
+
+
+```
+
+
+```{r}
+colnames(big_join_demo)
+```
+
+
+```{r get rid of extra columns}
+# colnames(potential_tracts_demo)
+
+big_join_demo <- big_join_demo %>%
+  select(gisjoin_1960:AREANAME, tot_persons_printed:owner_occ_property_value)
+
+
+colnames(big_join_demo)
+
+big_join_demo_2 %>%
+  filter(selected_tracts == 1, selected_into_treatment == 0)
+
+big_join_demo %>%
+  filter(tot_hunits == 0)
+```
+
+
+
+```{r}
+# drop 	GISJOIN = G2500250SC0003 in treatment group because major denominator, tot_hunits missing/0 and others where 0
+big_join_demo_2 <- big_join_demo  %>%
+  #filter(GISJOIN != "G2500250SC0003")
+  filter(tot_hunits != 0)
+
+big_join_demo_2 %>%
+  filter(selected_tracts == 1, pop_density < 953.4427, selected_into_treatment == 1)
+
+big_join_demo_3 <- big_join_demo_2[!(big_join_demo_2$selected_tracts == 1 & big_join_demo_2$pop_density < 952.4427),]
+
+subset(big_join_demo_2, selected_tracts == 1 & big_join_demo_2$pop_density < 952.4427)
+
+big_join_demo_3 %>%
+  filter(selected_tracts == 1, selected_into_treatment == 0)
+```
+

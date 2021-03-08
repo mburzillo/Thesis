@@ -72,7 +72,8 @@ land_residuals <- read_csv("Demographic Data/land_rent_value_resid.csv")
 ```{r joining tract data, demo data, and city population data}
 
 # join treatment and control to get one dataset
-potential_tracts <- rbind(potential_control, potential_treatment) 
+potential_tracts <- rbind(potential_control, potential_treatment)  %>%
+  unique
 
 
 # take relevant columns from city pop data
@@ -771,6 +772,8 @@ colnames(tracts_selected)
 
 write.csv(tracts_selected, "tracts_selected.csv")
 
+tracts_selected %>%
+  filter(treatment == 1)
 ```
 
 
@@ -895,7 +898,11 @@ tracts_selected %>%
   group_by(state) %>%
   summarize(sum = sum(count))
 
-
+tracts_selected %>%
+  mutate(count = 1) %>%
+  group_by(holc_city, treatment) %>%
+  summarise(sum_count = sum(count)) %>%
+  view()
 
 ```
 
@@ -1112,6 +1119,10 @@ tracts_selected %>%
   ggplot(aes(x = pct_single_unit, color = treatment)) +
   geom_density()
 
+data_for_analysis %>%
+  filter(citypop_total > 60000) %>%
+  group_by(city) %>%
+  summarise(mean(citypop_total))
 
 ```
 
@@ -1202,5 +1213,14 @@ ipums_1940_person_level %>%
   ggplot(aes(x = pct_completed_hs_male_18_64)) +
   geom_histogram()
 
+```
+
+```{r}
+tracts_selected %>%
+  mutate(count = 1) %>%
+  group_by(holc_city, holc_state, treatment) %>%
+  summarise(sum_count = sum(count), mean_hs = mean(city_1940_pct_completed_hs_25_plus)) %>%
+  group_by(treatment) %>%
+  summarise(mean_hs_treatment = mean(mean_hs))
 ```
 
