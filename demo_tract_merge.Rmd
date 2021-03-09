@@ -956,5 +956,8 @@ colnames(data_for_analysis)
 # resid_land_rent_1960
 # resid_land_value_1960
 ## log_family_income_1960"
+
+data_for_analysis %>%
+  filter(tot_hunits != 0)
 ```
 

@@ -666,8 +666,7 @@ potential_tracts_demo <- potential_tracts_demo %>%
 tracts_selected <- potential_tracts_demo %>%
   filter(pop_density >= 952.4427)
 
-potential_tracts_demo %>%
-  filter(pop_density >= 1417.682)
+
 
 colnames(tracts_selected)
 

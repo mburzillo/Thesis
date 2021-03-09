@@ -14,13 +14,24 @@ library(tidyverse)
 # load demographic data that contains all potential variables
 nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
 
+
 # load demographic data that contains housing add on variables to look at land rents
-housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")
+housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")%>%
+  select(GISJOIN, B7H001, B7H002, B7H003, B7H004, B7H005, B7H006, B7G001, B7G002, B7G003)
+housing_add_on_1960_tract_2 <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0036_ds92_1960_tract.csv")
+
+nhgis0023_ds92_1960_tract  %>%
+  select(GISJOIN, B68001)
+
+housing_add_on_1960_tract <- left_join(housing_add_on_1960_tract, housing_add_on_1960_tract_2)
+
+
+nhgis0023_ds92_1960_tract <- left_join(nhgis0023_ds92_1960_tract,housing_add_on_1960_tract)
 
 # load tracts selected as potential treatment tracts
 potential_treatment <- read_csv("selected_treatment.csv") %>%
   select(-wkt_geom, -YEAR) %>%
-  mutate(treatment = factor(1)) %>%
+  mutate(treatment = 1) %>%
   rename(state = STATE,
          cityname = NAME,
          intersect_area = area,
@@ -29,7 +40,7 @@ potential_treatment <- read_csv("selected_treatment.csv") %>%
 # load tracts selected as potential control tracts
 potential_control <- read_csv("potential_control.csv") %>%
   select(-wkt_geom, -YEAR) %>%
-  mutate(treatment = factor(0)) %>%
+  mutate(treatment = 0) %>%
   rename(state = STATE,
          cityname = NAME,
          intersect_area = area,
@@ -79,10 +90,6 @@ data_for_analysis_2 <- left_join(data_for_analysis, city_desc_2) %>%
 
 ```
 
-```{r}
-colnames(data_for_analysis_2)
-```
-
 
 ```{r cleaning selected tracts}
 potential_tracts_2 <- rbind(potential_control, potential_treatment) %>%
@@ -91,12 +98,16 @@ potential_tracts_2 <- rbind(potential_control, potential_treatment) %>%
     nhgis_place_1940 = NHGISPLACE,
     holc_state = state,
     holc_city = cityname,
-    gisjoin_1960 = GISJOIN) %>%
-  select(-GISJOIN2, -tract_area, -SHAPE_LEN, -intersect_area, -perimeter, -NHGISST_2, -PLACE) %>%
+    gisjoin_1960 = GISJOIN,
+    tract_area_1960 = tract_area) %>%
+  select(-GISJOIN2, -SHAPE_LEN, -intersect_area, -perimeter, -NHGISST_2, -PLACE) %>%
   mutate(selected_tracts = 1, nhgiscty_1960 = as.character(nhgiscty_1960),
          selected_into_treatment = treatment) %>%
   select(-treatment) %>%
   unique()
+
+# recast from factor
+potential_tracts_2$selected_into_treatment <- ifelse(potential_tracts_2$selected_into_treatment == "1", 1, 0)
 
 
 city_desc_1 <- city_desc %>%
@@ -134,24 +145,27 @@ big_join %>%
 
 # region is not there for the ones 1 didn't get 1940s full count data for -> would need to go back and do
 big_join %>%
-  filter(is.na(region))
+  filter(is.na(selected_tracts))
 
 big_join %>%
   mutate(count = 1) %>%
   filter(selected_tracts == 1) %>%
   group_by(selected_into_treatment) %>%
   summarize(sum(count))
-  
+
 ```
 
 
 ```{r sanity check, include = FALSE}
 
-big_join_demo$holc_coverage_tracts[big_join$holc_coverage_tracts != 1] <- 0
-big_join_demo$selected_tracts[big_join$selected_tracts != 1] <- 0
+#big_join_demo$holc_coverage_tracts[big_join$holc_coverage_tracts != 1] <- 0
+#big_join_demo$holc_coverage_tracts[is.na(big_join$holc_coverage_tracts)] <- 0
+#big_join_demo$selected_tracts[big_join$selected_tracts != 1] <- 0
+# big_join_demo$selected_tracts[is.na(big_join$selected_tracts)] <- 0
 
-sum(big_join$holc_coverage_tracts, na.rm = T)
-sum(as.numeric(big_join$selected_tracts), na.rm = T)
+big_join$selected_tracts <- ifelse(is.na(big_join$selected_tracts), 0, 1)
+big_join$holc_coverage_tracts <- ifelse(is.na(big_join$holc_coverage_tracts), 0, 1)
+
 ```
 
 
@@ -344,6 +358,59 @@ big_join_demo$contract_rent_l00_119 <- big_join_demo$CAV010
 big_join_demo$contract_rent_120_149 <- big_join_demo$CAV011
 big_join_demo$contract_rent_150p <- big_join_demo$CAV012
 big_join_demo$contract_rent_no_cash_rent <- big_join_demo$CAV013
+
+
+# year structure built
+big_join_demo$built_50_60 <- big_join_demo$B7E001
+big_join_demo$built_40_49 <- big_join_demo$B7E002
+big_join_demo$built_pre_40 <- big_join_demo$B7E003
+
+# units in structure
+
+big_join_demo$nunits_1 <- big_join_demo$B7D001
+big_join_demo$nunits_2 <- big_join_demo$B7D002
+big_join_demo$nunits_3_4 <- big_join_demo$B7D003
+big_join_demo$nunits_5_9 <- big_join_demo$B7D004
+big_join_demo$nunits_10_p <- big_join_demo$B7D005
+
+
+# indoor heating other than wood burning
+# steam/hot water -> non wood burning
+# central warm air furnace -> non wood burning
+# built in electric -> non wood
+# floor wall pipeless furnce -> non wood
+
+# other with flue -> wood
+
+big_join_demo$heating_steam <- big_join_demo$B7H001
+big_join_demo$heating_warm_air <- big_join_demo$B7H002
+big_join_demo$heating_built_in_room_unit <- big_join_demo$B7H003
+big_join_demo$heating_other_w_flue <- big_join_demo$B7H004
+big_join_demo$heating_other_wo_flue <- big_join_demo$B7H005
+big_join_demo$heating_none <- big_join_demo$B7H006
+
+
+# foundation type -> really low correlation -> don't include
+big_join_demo$basement <- big_join_demo$B7G001
+big_join_demo$concrete_slab<- big_join_demo$B7G002
+big_join_demo$basement_other <- big_join_demo$B7G003
+
+
+# number of bathrooms
+
+big_join_demo$one_bathroom <- big_join_demo$B69001
+big_join_demo$more_than_one_bathroom <- big_join_demo$B69002
+big_join_demo$shared_or_no <- big_join_demo$B69003
+
+
+# functioning indoor plumbing
+big_join_demo$plumbing_sound_1 <- big_join_demo$B68001
+big_join_demo$plumbing_sound_2 <- big_join_demo$B68002
+big_join_demo$plumbing_sound_3 <- big_join_demo$B68003
+big_join_demo$plumbing_deteriorating_1 <- big_join_demo$B68004
+big_join_demo$plumbing_deteriorating_2 <- big_join_demo$B68005
+big_join_demo$plumbing_deteriorating_3 <- big_join_demo$B68006
+big_join_demo$plumbing_delapidated <- big_join_demo$B68007
 
 
 ```
@@ -662,11 +729,52 @@ big_join_demo$owner_occ_property_value = (big_join_demo$owner_occ_property_value
                                                 big_join_demo$owner_occ_property_value_35000_plus * 35000)/big_join_demo$tot_owner_occ_with_value
 
 
+# structure avg age
+big_join_demo$avg_age <- (big_join_demo$built_50_60 * 5 + big_join_demo$built_40_49 * 15.5 +
+                                        big_join_demo$built_pre_40 * 21) / (big_join_demo$built_50_60 +
+                                                                                     big_join_demo$built_40_49 +
+                                                                                     big_join_demo$built_pre_40)
+
+# pct built pre 1940
+big_join_demo$pct_built_pre_40 = 100 * big_join_demo$built_pre_40/(big_join_demo$built_50_60 +
+                                                                                     big_join_demo$built_40_49 +
+                                                                                     big_join_demo$built_pre_40)
+
+
+# units in structure
+
+big_join_demo$avg_nunits <- (big_join_demo$nunits_1 * 1 +  big_join_demo$nunits_2 * 2 + big_join_demo$nunits_3_4 * 3.5 + big_join_demo$nunits_5_9 * 7 + big_join_demo$nunits_10_p * 10)/ (big_join_demo$nunits_1 +  big_join_demo$nunits_2 + big_join_demo$nunits_3_4 + big_join_demo$nunits_5_9 + big_join_demo$nunits_10_p)
+
+
+# indoor heating other than wood burning
+
+big_join_demo$heating_pct_non_wood_burn <- 100 * (big_join_demo$heating_steam + big_join_demo$heating_warm_air + big_join_demo$heating_built_in_room_unit + big_join_demo$heating_other_wo_flue)/(big_join_demo$heating_steam + big_join_demo$heating_warm_air + big_join_demo$heating_built_in_room_unit + big_join_demo$heating_other_w_flue + big_join_demo$heating_other_wo_flue)
+
+# foundation type
+big_join_demo$pct_concrete_slab_foundation <- 100 * big_join_demo$basement/(big_join_demo$basement + big_join_demo$concrete_slab + big_join_demo$basement_other)
+
+
+# number of bathrooms
+
+big_join_demo$pct_more_than_one_bathroom <- 100 * big_join_demo$more_than_one_bathroom / (big_join_demo$more_than_one_bathroom + big_join_demo$one_bathroom + big_join_demo$shared_or_no)
+
+big_join_demo$pct_shared_or_no_bath <- 100 * big_join_demo$shared_or_no / (big_join_demo$more_than_one_bathroom + big_join_demo$one_bathroom + big_join_demo$shared_or_no)
+
+# functioning indoor plumbing
+big_join_demo$pct_plumbing_fuctional <- 100 * (big_join_demo$plumbing_sound_1 + 
+                                                             big_join_demo$plumbing_sound_2 +
+                                                             big_join_demo$plumbing_sound_3)/ 
+  (big_join_demo$plumbing_sound_1 +  big_join_demo$plumbing_sound_2 +
+     big_join_demo$plumbing_sound_3 + big_join_demo$plumbing_deteriorating_1 +
+     big_join_demo$plumbing_deteriorating_2 + big_join_demo$plumbing_deteriorating_3 +
+     big_join_demo$plumbing_delapidated)
 
 ```
 
-
 ```{r}
+big_join_demo %>%
+  select(avg_age)
+
 colnames(big_join_demo)
 ```
 
@@ -675,34 +783,275 @@ colnames(big_join_demo)
 # colnames(potential_tracts_demo)
 
 big_join_demo <- big_join_demo %>%
-  select(gisjoin_1960:AREANAME, tot_persons_printed:owner_occ_property_value)
-
-
-colnames(big_join_demo)
-
-big_join_demo_2 %>%
-  filter(selected_tracts == 1, selected_into_treatment == 0)
+  select(gisjoin_1960:AREANAME, tot_persons_printed:pct_plumbing_fuctional)
 
 big_join_demo %>%
-  filter(tot_hunits == 0)
+  filter(selected_tracts == 1, selected_into_treatment == 0) 
+
+unique(big_join_demo$selected_into_treatment)
+unique(big_join_demo$selected_tracts)
+unique(big_join_demo$holc_coverage_tracts)
+
+big_join_demo %>%
+  filter(selected_into_treatment == 0)
+
+nrow(big_join_demo %>%
+  filter(selected_tracts == 1))
+
+nrow(big_join_demo %>%
+  filter(selected_tracts == 0))
+
+nrow(big_join_demo %>%
+  filter(selected_into_treatment == 1))
+
+
+unique(big_join_demo_3$selected_into_treatment)
+unique(big_join_demo_2$selected_tracts)
+unique(big_join_demo_2$holc_coverage_tracts)
+
+
+# seems to be good up through here...
+
 ```
 
 
 
-```{r}
+```{r filter out undesired obs}
 # drop 	GISJOIN = G2500250SC0003 in treatment group because major denominator, tot_hunits missing/0 and others where 0
 big_join_demo_2 <- big_join_demo  %>%
   #filter(GISJOIN != "G2500250SC0003")
   filter(tot_hunits != 0)
 
-big_join_demo_2 %>%
-  filter(selected_tracts == 1, pop_density < 953.4427, selected_into_treatment == 1)
+# remove any rows from tracts selected where the population density is below the threshold
 
-big_join_demo_3 <- big_join_demo_2[!(big_join_demo_2$selected_tracts == 1 & big_join_demo_2$pop_density < 952.4427),]
+big_join_demo_2$low_density <- 0
 
-subset(big_join_demo_2, selected_tracts == 1 & big_join_demo_2$pop_density < 952.4427)
 
-big_join_demo_3 %>%
-  filter(selected_tracts == 1, selected_into_treatment == 0)
+for (i in 1:nrow(big_join_demo_2)){
+  if (big_join_demo_2$selected_tracts[i] == 1){
+    if (!(is.na(big_join_demo_2$pop_density[i]))){
+      if (big_join_demo_2$pop_density[i] < 952.4427){
+        big_join_demo_2$low_density[i] = 1
+        print("1")
+      }
+    }
+  }
+}
+
+
+# actually don't drop, just make this a condition in stat when using tracts selected
+big_join_final <- big_join_demo_2 
+# big_join_final <- big_join_demo_2 %>% filter(drop_if_1 != 1)
+
+unique(big_join_final$selected_into_treatment)
+unique(big_join_final$selected_tracts)
+unique(big_join_final$holc_coverage_tracts)
+
+nrow(big_join_final %>%
+  filter(selected_tracts == 1))
+
+nrow(big_join_final %>%
+  filter(selected_tracts == 0))
+
+nrow(big_join_final %>%
+  filter(selected_into_treatment == 0))
+
+nrow(big_join_final %>%
+  filter(selected_into_treatment == 0, selected_tracts == 1) %>% unique())
+
+nrow(big_join_final %>%
+  filter(selected_into_treatment == 1, selected_tracts == 1) %>% unique())
+
+# should be 961 selected tracts
+big_join_final %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1) %>%
+  group_by(gisjoin_1960) %>%
+  summarise(nobs = sum(count)) %>%
+  filter(nobs != 1)
+
+  
+big_join_final %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1) %>%
+  filter(selected_into_treatment == 1)
+    
+
+big_join_final %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1) %>%
+  filter(selected_into_treatment == 0)
+
+range(big_join_final$pop_density[big_join_final$selected_tracts == 1], na.rm = T)
+
+big_join_final %>%
+  mutate(count = 1) %>%
+  filter(holc_coverage_tracts == 1) %>%
+  filter(selected_into_treatment == 1)
+
+
+new_method_gis <- big_join_final %>%
+  filter(selected_tracts == 1) %>%
+  select(gisjoin_1960)
+
+tracts_selected_gis <- tracts_selected %>%
+  select(gisjoin_1960)
+
+list <- setdiff(new_method_gis$gisjoin_1960, tracts_selected_gis$gisjoin_1960)
+list_2 <- setdiff(tracts_selected_gis$gisjoin_1960, new_method_gis$gisjoin_1960)
+
+# seems to be a mismatch of 3: "G0600770S0030" "G45007900017" are in tracts selected but not new method ; G1701190AL0025" is in new method but not in tracts selected (missing population data)
+
+new_method_gis <- big_join_final %>%
+  filter(gisjoin_1960 %in% list)
+
+# this is completely random tract not sure how/why it was selected -> somewhat problematic
+tracts_selected %>%
+  filter(gisjoin_1960 == "G1701190AL0025")
+
+big_join_final %>%
+  filter(gisjoin_1960 == "G1701190AL0025")
+
+tracts_selected %>%
+  filter(gisjoin_1960 == "G0600770S0030")
+
+# this is being dropped because no hh units
+big_join_demo %>%
+  filter(gisjoin_1960 == "G0600770S0030")
+
+# this is being dropped because no hh units
+big_join_demo %>%
+  filter(gisjoin_1960 == "G45007900017")
+
+# NEW METHOD IS BETTER BECAUSE DROPS TOT HUNITS = 0
+
+new_method_gis_holc <- big_join_final %>%
+  filter(holc_coverage_tracts == 1)
+
+data_for_analysis_list <- data_for_analysis_recode %>%
+  select(gisjoin_1960)
+
+
+# "G1701190AL0025" in new method but not gisjoin > 
+list_3 <- setdiff(new_method_gis_holc$gisjoin_1960, data_for_analysis_list$gisjoin_1960)
+# in data for analysis but not in new method "G29007700021"
+list_4 <- setdiff(data_for_analysis_list$gisjoin_1960, new_method_gis_holc$gisjoin_1960)
+
+data_for_analysis_recode %>%
+  filter(gisjoin_1960 %in% list_4)
+
+
+
 ```
+
+```{r}
+colnames(big_join_final)
+```
+                
+
+```{r better cleaning final data, include = FALSE}
+
+# to add back in
+#     resid_land_rent_1960 = resid_land_rent,resid_land_value_1960 = resid_land_value
+
+big_join_recode <- big_join_final %>% 
+  select(
+    nhgisst_1960, 
+    nhgiscty_1960, 
+    holc_state,
+    state_ab,
+    region,
+    holc_city,
+    gisjoin_1960,
+    numeric_city_code,
+    pop_density_1960 = pop_density,
+    # indicator for low density and being a selected tract (aka drop for regressions)
+    low_density_1960 = low_density,
+    citypop_1930,
+    citypop_1940,
+    citypop_1990,
+    city_holc_area_radius,
+    city_urb_area_90_radius,
+    city_reg_estimated_multiplier,
+    city_reg_estimated_radius,
+    city_1940_pct_owner_occ_non_v:city_1940_pct_black,
+    city_1940_pct_emp_males_14_plus,
+    city_1940_pct_completed_hs,
+    city_1940_pct_completed_hs_male_18_64,
+    city_1940_pct_all_males_18_64_employed,
+    city_1940_pct_all_males_14_plus_employed,
+    city_1940_pct_completed_hs_25_plus,
+    tract_area_1960,
+    holc_coverage_tracts,
+    selected_tracts, selected_into_treatment,
+    area_accounted_for_1960,
+    pct_grade_d,
+    pct_d_of_accounted_for,
+    tot_persons_printed_1960 = tot_persons_printed,
+    pct_non_white_1960 = pct_non_white_printed,
+    pct_black_1960 = pct_black_printed,
+    pct_foreign_born_1960 = pct_foreign_born,
+    pct_hs_grad_1960 = pct_hs_grad,
+    pct_some_college_1960 = pct_some_college,
+    weighted_tot_years_school_1960 = weighted_tot_years_school,
+    pct_vacant_1960 = pct_vacant_all,
+    pct_owner_occupied_1960 = pct_owner_occupied,
+    pct_renter_occupied_1960 = pct_renter_occupied,
+    pct_one_point_0_one_people_per_room_or_more_1960 = pct_one_point_0_one_people_per_room_or_more,
+    # avg contract rent got messed up, better to use weighted
+    avg_monthly_contract_rent_1960 = avg_monthly_contract_rent,
+    weighted_prop_value_1960 = weighted_prop_value,
+    pct_single_unit_1960 = pct_single_unit,
+    pct_housing_deteriorated_dilap_1960 = pct_housing_deteriorated_dilap,
+    pct_unemployed_males_1960 = pct_unemployed_males,
+    pct_employed_out_of_all_males_1960 = pct_employed_out_of_all_males,
+    pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
+    pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
+    weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
+    pct_families_below_3k_income_1960 = pct_families_below_3k_income,
+    weighted_family_income_1960 = weighted_family_income,
+    owner_occ_property_value_1960 = owner_occ_property_value,
+    avg_age_1960 = avg_age,
+    avg_nunits_1960 = avg_nunits,
+    pct_plumbing_fuctional_1960 = pct_plumbing_fuctional,
+    pct_shared_or_no_bath_1960 = pct_shared_or_no_bath,
+    pct_more_than_one_bathroom_1960 =  pct_more_than_one_bathroom,
+    pct_concrete_slab_foundation_1960 = pct_concrete_slab_foundation,
+    heating_pct_non_wood_burn_1960 = heating_pct_non_wood_burn,
+    avg_nunits_1960 =  avg_nunits, 
+    pct_built_pre_40_1960 =  pct_built_pre_40
+      ) %>%
+  mutate(log_property_value_1960 = log(weighted_prop_value_1960),
+         log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
+         log_family_income_1960 = log(weighted_family_income_1960),
+         log_property_value_1960 = log(owner_occ_property_value_1960),
+         log_city_1940_avg_contract_rent = log(city_1940_avg_contract_rent),
+         log_city_1940_avg_h_value_ = log(city_1940_avg_h_value_),
+         log_city_1940_avg_wage_emp_males = log(city_1940_avg_wage_emp_males_14_p))
+
+```
+
+```{r add one final indicator of whether or not city was treated}
+city_treatment_status_2 <- city_treatment_status %>%
+  mutate(city_treatment = ifelse(treatment == "0", 0, 1)) %>%
+  select(city_treatment, numeric_city_code)
+
+big_join_recode <- left_join(big_join_recode, city_treatment_status_2)
+  
+```
+
+
+```{r write to csv}
+
+write.csv(big_join_recode, "big_join_recode.csv")
+
+```
+
+
+```{r}
+big_join_recode %>%
+  filter(holc_coverage_tracts == 1) %>%
+  filter(area_accounted_for_1960 >= .5)
+```
+
 
