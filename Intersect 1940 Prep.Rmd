@@ -18,9 +18,51 @@ When you click the **Knit** button a document will be generated that includes bo
 
 ```{r cars}
 
-additional_pop <- read_csv("1930 - 1940 City Population Data/holc_1940_tract_intersect.csv") 
+additional_pop <- read_csv("1930 - 1940 City Population Data/holc_1940_tract_intersect.csv") %>%
+  rename(gisjoin_1940 = GISJOIN,
+         nhgisst_1940 = NHGISST,
+         nhgiscty_1940 = NHGISCTY,
+         tract_area_1940 = SHAPE_AREA,
+         holc_area_1940 = area,
+         holc_tract_intersect_area_1940 = area_2) %>%
+  select(-GISJOIN2, -SHAPE_LEN, -name, holc_id, -perimeter, -perimeter_2, -holc_id)
+  
 
 ```
+
+
+```{r}
+all_holc_tract_grades_1940 <- additional_pop %>%
+  mutate(intersect_over_tract_1940 = holc_tract_intersect_area_1940/tract_area_1940) %>%
+  # for every 1960 tract in the dataset..., previously had city and state, but deleting because this separated tracts into two, one for each state,
+  # if covering HOLC areas were in two different states. Want to keep HOLC city and state for city/state population merge
+  group_by(gisjoin_1940) %>%
+  # summarise
+  summarize(
+    tract_area_1940 = mean(tract_area_1940),
+    # total area accounted for out of area of entire tract
+    area_accounted_for_1940 = sum(intersect_over_tract_1940),
+    prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract_1940, 0)),
+    prop_D_of_accounted_for = prop_grade_D/area_accounted_for_1940,
+    prop_grade_C = sum(ifelse(holc_grade == "C", intersect_over_tract_1940, 0)),
+    prop_grade_C_D = prop_grade_C + prop_grade_D,
+    prop_grade_A = sum(ifelse(holc_grade == "A", intersect_over_tract_1940, 0)),
+    prop_grade_B = sum(ifelse(holc_grade == "B", intersect_over_tract_1940, 0)),
+    prop_grade_A_B = prop_grade_A + prop_grade_B
+    )
+
+# Sanity check
+all_holc_tract_grades_1940  %>%
+  ggplot(aes(x = prop_grade_C)) +
+  geom_histogram()
+
+all_holc_tract_grades_1940 %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1940) %>%
+  summarise(scount = sum(count))
+  
+```
+
 
 ## Including Plots
 

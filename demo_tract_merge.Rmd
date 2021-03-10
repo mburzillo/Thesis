@@ -960,4 +960,11 @@ colnames(data_for_analysis)
 data_for_analysis %>%
   filter(tot_hunits != 0)
 ```
+```{r}
+data_for_analysis %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1960) %>%
+  summarise(sum_count = sum(count)) %>%
+  filter(sum_count != 1)
+```
 
