@@ -713,6 +713,7 @@ tracts_selected <- tracts_selected %>%
     city_urb_area_90_radius = urb_area_90_radius,
     city_reg_estimated_multiplier = "reg estimated multiplier",
     city_reg_estimated_radius = "reg estimated radius",
+    city_hh_1940,
     city_1940_pct_owner_occ_non_v:city_1940_pct_black,
     city_1940_pct_emp_males_14_plus,
     city_1940_pct_completed_hs,

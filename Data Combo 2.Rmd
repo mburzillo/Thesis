@@ -54,11 +54,21 @@ city_desc <- tracts_selected %>%
   mutate(nhgiscty_1960 = as.character(nhgiscty_1960))
 
 
+# add back in extra city pops for 1930 that weren't in tracts selected
+additional_pop <- read_csv("1930 - 1940 City Population Data/1930_data_ipums_full_sample_collapsed.csv") %>%
+  select(numeric_city_code = city, citypop_1930 = citypop) %>%
+  mutate(citypop_1930 = citypop_1930 * 100)
+
+
 land_residuals <- read_csv("Demographic Data/land_rent_value_resid.csv")
 
 # state abbreviation correspondence
 state_abs <- read_csv("50_us_states_all_data.csv") %>%
   select(state, state_ab)
+
+# load region state_ab correspondence
+state_ab_region <- read_csv("state_ab_region.csv")
+
 
 ```
 
@@ -81,6 +91,9 @@ data_for_analysis$pct_grade_d <- data_for_analysis$prop_grade_D * 100
 data_for_analysis <- left_join(data_for_analysis, state_abs) %>%
   rename(holc_state = state) 
 
+data_for_analysis <- left_join(data_for_analysis, state_ab_region)
+
+data_for_analysis <- left_join(data_for_analysis, additional_pop)
 
 city_desc_2 <- city_desc %>%
   select(holc_state, holc_city, nhgis_place_1940, region, citypop_1930:log_city_1940_avg_wage_emp_males)
@@ -970,6 +983,7 @@ big_join_recode <- big_join_final %>%
     citypop_1930,
     citypop_1940,
     citypop_1990,
+    city_hh_1940, 
     city_holc_area_radius,
     city_urb_area_90_radius,
     city_reg_estimated_multiplier,
@@ -1027,7 +1041,9 @@ big_join_recode <- big_join_final %>%
          log_property_value_1960 = log(owner_occ_property_value_1960),
          log_city_1940_avg_contract_rent = log(city_1940_avg_contract_rent),
          log_city_1940_avg_h_value_ = log(city_1940_avg_h_value_),
-         log_city_1940_avg_wage_emp_males = log(city_1940_avg_wage_emp_males_14_p))
+         log_city_1940_avg_wage_emp_males = log(city_1940_avg_wage_emp_males_14_p),
+         citypop_1940 = citypop_1940/10000,
+         city_persons_p_hh_1940 = citypop_1940 * 10000/city_hh_1940)
 
 ```
 
