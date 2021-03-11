@@ -44,18 +44,28 @@ state_ab_region <- read_csv("state_ab_region.csv")
 
 full_state_specifications <- left_join(state_abs, state_ab_region)
 
-additional_pop %>%
-  mutate(count = 1) %>%
-  group_by(state, city, gisjoin_1940) %>%
-  summarise(scount = sum(count)) %>%
-  filter(scount != 1)
 
-additional_pop %>%
-  mutate(count = 1) %>%
-  group_by(state, city, nhgisst_1940, nhgiscty_1940) %>%
-  summarise(scount = sum(count)) %>%
-  filter(scount != 1)
+# load the 1940 tract data csv
 
+tract_demo_1940 <- read_csv("Demographic Data/nhgis0038_csv_1940_tract/nhgis0038_ds76_1940_tract.csv")
+
+# read in 1960s intersect file
+intersect_40_60 <- read_csv("Overlay Files from QGIS/overlay_40_60.csv") %>%
+  select(gisjoin_1960, tract_area_1960, gisjoin_1940, tract_area_1940, intersect_area = area)
+
+# load demographic data that contains all potential variables
+nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
+
+
+# load demographic data that contains housing add on variables to look at land rents
+housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")%>%
+  select(GISJOIN, B7H001, B7H002, B7H003, B7H004, B7H005, B7H006, B7G001, B7G002, B7G003)
+housing_add_on_1960_tract_2 <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0036_ds92_1960_tract.csv")
+
+housing_add_on_1960_tract <- left_join(housing_add_on_1960_tract, housing_add_on_1960_tract_2)
+
+# this is the demo data I will want to join with the 1960s intersect info
+nhgis0023_ds92_1960_tract <- left_join(nhgis0023_ds92_1960_tract,housing_add_on_1960_tract)
 
 ```
 
@@ -173,21 +183,18 @@ all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city
 all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Queens"] <- 1079129
 all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Staten Island"] <- 158346
 
-# join issues remaining are just for the NYC surrounding counties, which seem fine to exclude.
+# join issues remaining are just for the NYC surrounding counties, which seem fine to exclude if 1930s pop needs to be considered
 all_holc_tract_grades_1940_a %>%
   #filter(holc_city == "Milwaukee Co.")
   filter(is.na(citypop_1930))
 
 
-all_holc_tract_grades_1940_a %>%
-  mutate(count = 1) %>%
-  group_by(gisjoin_1940) %>%
-  summarise(scount = sum(count))
-
+# select tract level+ variables and take unique obs to get all tract level data
 all_holc_tract_grades_1940_b  <- all_holc_tract_grades_1940_a %>%
-  select(gisjoin_1940, region, nhgisst_1940, nhgiscty_1940, holc_state, state_ab, holc_city, numeric_city_code,  tract_area_1940, citypop_1930, area_accounted_for_1940:prop_grade_A_B) %>%
+  select(gisjoin_1940, region, nhgisst_1940, nhgiscty_1940, holc_state, state_ab, holc_city, numeric_city_code,  tract_area_1940, citypop_1930, area_accounted_for_1940:prop_grade_A_B, pct_grade_d_1940) %>%
   unique()
 
+# still a bunch of duplicates - seems to be the saame issue where they are in multiple HOLC cities - manually inspected and took best option, dropped other
 all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700025" & holc_city == "Somerville"))
 all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700027" & holc_city == "Cambridge"))
 all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700028" & holc_city == "Cambridge"))
@@ -199,104 +206,1000 @@ all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_
 all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0001B" & holc_city == "Brookline"))
 all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0006D" & holc_city == "Dedham"))
 all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250X0003B" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250X0006B" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250X0006C" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Y0003A" & holc_city == "Brookline"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Y0005A" & holc_city == "Newton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Z0001A" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Z0001B" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Z0001C" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Z0001C" & holc_city == "Dedham"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250Z0002" & holc_city == "Dedham"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3400170C0023" & holc_city == "Bergen Co."))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3400170C0024" & holc_city == "Bergen Co."))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3400170C0044" & holc_city == "Bergen Co."))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600050000200" & holc_city == "Manhattan"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600050000510" & holc_city == "Lower Westchester Co."))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600050000520" & holc_city == "Lower Westchester Co."))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600470003300" & holc_city == "Queens"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600470003500" & holc_city == "Queens"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600470003900" & holc_city == "Queens"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600470006410" & holc_city == "Queens"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600810002200" & holc_city == "Brooklyn"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600810002300" & holc_city == "Brooklyn"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600810002500" & holc_city == "Brooklyn"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G3600810003000" & holc_city == "Brooklyn"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G36011900002" & holc_city == "Bronx"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G36011900013" & holc_city == "Bronx"))
 
-all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700025" & holc_city == "Somerville"))
-all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700027" & holc_city == "Cambridge"))
-all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700028" & holc_city == "Cambridge"))
-all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250X0003B" & holc_city == "Milton"))
-all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0001B" & holc_city == "Brookline"))
-
-
-# still a bunch of duplicates - seems to be the saame issue where they are in multiple HOLC cities
+# checking no more duplicates - now have 1 obs per tracts
 all_holc_tract_grades_1940_b %>%
   mutate(count = 1) %>%
   group_by(gisjoin_1940, holc_state) %>%
   summarise(scount = sum(count)) %>%
-  filter(scount > 1)
+  filter(scount == 1)
 
 
-```
-
-
-```{r}
+# sanity check - looks good
 all_holc_tract_grades_1940_b %>%
-  filter(gisjoin_1940 == "G2500250X0003B")
+  ggplot(aes(x = pct_grade_d_1940)) +
+  geom_histogram()
+
 ```
 
+
 ```{r}
-all_holc_tract_grades_1940_2 
 
-ipums_pop_city_code <- ipums_1930_cities_by_pop_full_sample %>%
-  select(citypop_1930 = citypop_total, 
-         numeric_city_code = city)
+all_holc_tract_grades_1940_b %>%
+  filter(holc_city == "Chicago")
 
-all_holc_tract_grades_1940_3 <- left_join(all_holc_tract_grades_1940_2, ipums_pop_city_code)
-
-all_holc_tract_grades_1940_3 %>%
-  mutate(count = 1) %>%
-  group_by(holc_city, state_ab) %>%
-  summarise(scount = sum(count))
-
-all_holc_tract_grades_1940_2 %>%
-  mutate(count = 1) %>%
-  group_by(holc_city, state_ab) %>%
-  summarise(scount = sum(count))
+```
 
 
-# unsuccessfully joined: Denver CO, Macon GA, Augusta GA, Chicago IL
-all_holc_tract_grades_1940_3 %>%
-  filter(is.na(citypop_1930)) %>%
-  select(holc_city, holc_state) %>%
-  unique
 
-unique_tracts_1930 <- all_holc_tract_grades_1940_3 %>%
-  group_by(gisjoin_1940, holc_city, holc_state) %>%
-  select(nhgisst_1940:tract_area_1940, numeric_city_code, state_ab, 
-         holc_city, area_accounted_for_1940: citypop_1930) %>%
-  unique()
+```{r join demo data from 1940 and code}
+
+# total population
+tract_demo_1940$tot_pop_1940 <- tract_demo_1940$BUB001
+
+# population by race
+tract_demo_1940$white_pop_1940 <- tract_demo_1940$BUQ001
+tract_demo_1940$non_white_pop_1940 <- tract_demo_1940$BUQ001
+
+# pct white and non-white
+tract_demo_1940$pct_white_1940 <- 100 * tract_demo_1940$white_pop_1940/(tract_demo_1940$white_pop_1940 + tract_demo_1940$non_white_pop_1940)
+
+tract_demo_1940$pct_non_white_1940 <- 100 * tract_demo_1940$non_white_pop_1940/(tract_demo_1940$white_pop_1940 + tract_demo_1940$non_white_pop_1940)
+
+# native born white
+tract_demo_1940$native_born_white_pop_1940 <- tract_demo_1940$BU5001
+
+# pct_native_born_white_1940
+tract_demo_1940$pct_native_born_white_1940 <- 100 * tract_demo_1940$native_born_white_pop_1940 /(tract_demo_1940$white_pop_1940)
+
+# black population
+tract_demo_1940$black_pop_1940 <- tract_demo_1940$BVG001
+
+# pct_black
+tract_demo_1940$pct_black_1940 <- 100 * tract_demo_1940$black_pop_1940/(tract_demo_1940$white_pop_1940 + tract_demo_1940$non_white_pop_1940)
 
 
-unique_tracts_1930 %>%
-  mutate(count = 1) %>%
-  group_by(gisjoin_1940, holc_city, holc_state, nhgiscty_1940, nhgisst_1940) %>%
-  summarise(scount = sum(count)) %>%
-  filter(scount != 1)
+
+
+# tot occupied dwellings
+tract_demo_1940$tot_occ_dwell_1940 <- tract_demo_1940$BVP001
+
+# population per occupied dwelling unit
+tract_demo_1940$pop_per_occ_dwell_1940 <- tract_demo_1940$BVQ001
+
+# Males 25+ by years edu
+
+tract_demo_1940$male_no_school <- tract_demo_1940$BUH001
+tract_demo_1940$male_1_4_y_school <- tract_demo_1940$BUH002
+tract_demo_1940$male_5_6_y_school <- tract_demo_1940$BUH003
+tract_demo_1940$male_7_8_y_school <- tract_demo_1940$BUH004
+tract_demo_1940$male_9_11_y_school <- tract_demo_1940$BUH005
+tract_demo_1940$male_12_y_school <- tract_demo_1940$BUH006
+tract_demo_1940$male_13_15_y_school <- tract_demo_1940$BUH007
+tract_demo_1940$male_16_y_school <- tract_demo_1940$BUH008
+
+# pct hs grads
+tract_demo_1940$pct_male_hs_grad <- 100 * (tract_demo_1940$male_12_y_school +
+                                             tract_demo_1940$male_13_15_y_school +
+                                             tract_demo_1940$male_16_y_school)/(tract_demo_1940$male_no_school + tract_demo_1940$male_1_4_y_school +
+tract_demo_1940$male_5_6_y_school +
+tract_demo_1940$male_7_8_y_school +
+tract_demo_1940$male_9_11_y_school +
+tract_demo_1940$male_12_y_school +
+tract_demo_1940$male_13_15_y_school +
+tract_demo_1940$male_16_y_school)
+
+
+# males median year of school
+tract_demo_1940$median_yrs_school_male <- tract_demo_1940$BUI001
+
+# Males and Labor force status, 14+
+
+tract_demo_1940$employed_male <-tract_demo_1940$BUX001 
+tract_demo_1940$male_in_lf_not_employed <-tract_demo_1940$BUX002 + tract_demo_1940$BUX002
+tract_demo_1940$male_not_in_lf <-tract_demo_1940$BUX004 + tract_demo_1940$BUX005 +
+  tract_demo_1940$BUX006 + tract_demo_1940$BUX007 + tract_demo_1940$BUX008
+
+# employment rate (in lf)
+tract_demo_1940$pct_male_employment_rate  <- 100 * tract_demo_1940$employed_male/(tract_demo_1940$employed_male + tract_demo_1940$male_in_lf_not_employed)
+
+tract_demo_1940$pct_male_employed_out_of_all_males_1940  <- 100 * tract_demo_1940$employed_male/(tract_demo_1940$employed_male + tract_demo_1940$male_in_lf_not_employed + tract_demo_1940$male_not_in_lf )
+
+# total dwelling units
+tract_demo_1940$all_dwellings <- tract_demo_1940$BU1001
+
+# occupied dwelling by tenure
+tract_demo_1940$owner_occ <- tract_demo_1940$BU2001
+tract_demo_1940$renter_occ <- tract_demo_1940$BU2002
+
+# pct_owner_occ
+
+tract_demo_1940$pct_owner_occ <- 100 * tract_demo_1940$owner_occ/(tract_demo_1940$owner_occ + tract_demo_1940$renter_occ)
+# pct_renter_occ
+tract_demo_1940$pct_renter_occ <- 100 * tract_demo_1940$renter_occ/(tract_demo_1940$owner_occ + tract_demo_1940$renter_occ)
+
+# vacant units total
+tract_demo_1940$pct_vacant <- 100 * (tract_demo_1940$all_dwellings-(tract_demo_1940$owner_occ + tract_demo_1940$renter_occ))/tract_demo_1940$all_dwellings
+
+# vacant units (universe is vacant units, but doesn't seem available)
+tract_demo_1940$vacant_for_sale_rent <- tract_demo_1940$BU4001
+tract_demo_1940$vacant_not_for_sale_rent <- tract_demo_1940$BU4002
+
+# units by type of structure  (total dwelling units)
+tract_demo_1940$single_family <- tract_demo_1940$BU6001 + tract_demo_1940$BU6002
+tract_demo_1940$two_family <- tract_demo_1940$BU6003 + tract_demo_1940$BU6004
+tract_demo_1940$three_family <- tract_demo_1940$BU6005 
+tract_demo_1940$four_family <- tract_demo_1940$BU6006
+tract_demo_1940$five_9_family <- tract_demo_1940$BU6008
+tract_demo_1940$ten_19_family <- tract_demo_1940$BU6009
+tract_demo_1940$twenty_p_family <- tract_demo_1940$BU6010
+tract_demo_1940$other_n_family <- tract_demo_1940$BU6011 + tract_demo_1940$BU6007
+
+# pct_single_family
+
+tract_demo_1940$pct_single_family <- 100 * tract_demo_1940$single_family / (tract_demo_1940$single_family + tract_demo_1940$two_family + tract_demo_1940$three_family + tract_demo_1940$four_family + tract_demo_1940$five_9_family + tract_demo_1940$ten_19_family + tract_demo_1940$twenty_p_family + tract_demo_1940$other_n_family) 
+
+
+# units by n occupants (occupied dwellings)
+tract_demo_1940$n_1_occupants <- tract_demo_1940$BU7001
+tract_demo_1940$n_2_occupants <- tract_demo_1940$BU7002
+tract_demo_1940$n_3_occupants <- tract_demo_1940$BU7003
+tract_demo_1940$n_4_occupants <- tract_demo_1940$BU7004
+tract_demo_1940$n_5_occupants <- tract_demo_1940$BU7005
+tract_demo_1940$n_6_occupants <- tract_demo_1940$BU7006
+tract_demo_1940$n_7_occupants <- tract_demo_1940$BU7007
+tract_demo_1940$n_8_occupants <- tract_demo_1940$BU7008
+tract_demo_1940$n_9_occupants <- tract_demo_1940$BU7009
+tract_demo_1940$n_10_occupants <- tract_demo_1940$BU7010
+tract_demo_1940$n_11_occupants <- tract_demo_1940$BU7011
+
+# occuupued dwelling units by avg persons per room
+tract_demo_1940$n_u_51_occ_per_room <- tract_demo_1940$BU8001
+tract_demo_1940$n_51_75_occ_per_room <- tract_demo_1940$BU8002
+tract_demo_1940$n_76_100_occ_per_room <- tract_demo_1940$BU8003
+tract_demo_1940$n_101_150_occ_per_room <- tract_demo_1940$BU8004
+tract_demo_1940$n_151_200_occ_per_room <- tract_demo_1940$BU8005
+tract_demo_1940$n_201p_occ_per_room <- tract_demo_1940$BU8006
+
+# avg persons per room all occupied
+tract_demo_1940$avg_occ_per_room <- (tract_demo_1940$n_u_51_occ_per_room * (.51/2) +
+                                           tract_demo_1940$n_51_75_occ_per_room * (.75-.51)/2 + 
+                                           tract_demo_1940$n_76_100_occ_per_room * (1-.76)/2 +
+                                           tract_demo_1940$n_101_150_occ_per_room * (1.5 - 1.01)/2 + 
+                                           tract_demo_1940$n_151_200_occ_per_room * (2-.151)/2 +
+                                           tract_demo_1940$n_201p_occ_per_room * 2.01)/
+  (tract_demo_1940$n_u_51_occ_per_room + tract_demo_1940$n_51_75_occ_per_room + tract_demo_1940$n_76_100_occ_per_room + tract_demo_1940$n_101_150_occ_per_room + tract_demo_1940$n_151_200_occ_per_room + tract_demo_1940$n_201p_occ_per_room) 
+
+# tenant occuupued dwelling units by avg persons per room
+tract_demo_1940$n_u_51_occ_per_room_ten <- tract_demo_1940$BU9001
+tract_demo_1940$n_51_75_occ_per_room_ten <- tract_demo_1940$BU9002
+tract_demo_1940$n_76_100_occ_per_room_ten <- tract_demo_1940$BU9003
+tract_demo_1940$n_101_150_occ_per_room_ten <- tract_demo_1940$BU9004
+tract_demo_1940$n_151_200_occ_per_room_ten <- tract_demo_1940$BU9005
+tract_demo_1940$n_201p_occ_per_room_ten <- tract_demo_1940$BU9006
+
+tract_demo_1940$avg_ten_occ_per_room <- (tract_demo_1940$n_u_51_occ_per_room_ten * (.51/2) +
+                                           tract_demo_1940$n_51_75_occ_per_room_ten * (.75-.51)/2 + 
+                                           tract_demo_1940$n_76_100_occ_per_room_ten * (1-.76)/2 +
+                                           tract_demo_1940$n_101_150_occ_per_room_ten * (1.5 - 1.01)/2 + 
+                                           tract_demo_1940$n_151_200_occ_per_room_ten * (2-.151)/2 +
+                                           tract_demo_1940$n_201p_occ_per_room_ten * 2.01)/
+  (tract_demo_1940$n_u_51_occ_per_room_ten + tract_demo_1940$n_51_75_occ_per_room_ten + tract_demo_1940$n_76_100_occ_per_room_ten + tract_demo_1940$n_101_150_occ_per_room_ten + tract_demo_1940$n_151_200_occ_per_room_ten + tract_demo_1940$n_201p_occ_per_room_ten) 
+
+# median home value
+tract_demo_1940$median_home_value <- tract_demo_1940$BVC001
+
+# median contract monthly rent
+tract_demo_1940$median_contract_rent <- tract_demo_1940$BVF001
+
+# repair status 
+tract_demo_1940$no_repair_needed <- tract_demo_1940$BVK001  
+tract_demo_1940$major_repair_needed <- tract_demo_1940$BVK002
+
+# pct_major_rep_needed
+tract_demo_1940$pct_major_rep_needed <- tract_demo_1940$major_repair_needed / 100 * (tract_demo_1940$major_repair_needed + tract_demo_1940$no_repair_needed)
+
+
+
+all_holc_tract_grades_demo <- left_join(all_holc_tract_grades_1940_b, tract_demo_1940, by = c("gisjoin_1940" = "GISJOIN")) %>%
+  select(gisjoin_1940:pct_grade_d_1940, tot_pop_1940, pop_per_occ_dwell_1940, 
+         median_yrs_school_male_1940 = median_yrs_school_male, tot_dwellings_1940 = all_dwellings,
+         median_home_value_1940 = median_home_value, median_contract_rent_1940 = median_contract_rent,
+         pct_male_hs_grad_1940= pct_male_hs_grad, avg_occ_per_room_1940 = avg_occ_per_room,
+         avg_ten_occ_per_room_1940 = avg_ten_occ_per_room, pct_white_1940:pct_black_1940, 
+         pct_male_employment_rate_1940 = pct_male_employment_rate,
+         pct_male_employed_out_of_all_males_1940, pct_owner_occ_1940 = pct_owner_occ,
+         pct_renter_occ_1940 = pct_renter_occ, pct_vacant_1940 = pct_vacant,
+         pct_single_family_1940 = pct_single_family, pct_major_rep_needed_1940 = pct_major_rep_needed
+         )
+
+```
+
+
+
+
+```{r}
+tract_demo_1940 %>%
+  ggplot(aes(x = BVP001)) +
+  geom_histogram()
+```
+
+
+
+
+
+
+# 1960s Data
+
+```{r join 60s data to 60s intersect by tract}
+
+
+# join with the intersect data
+sixties <- left_join(intersect_40_60, nhgis0023_ds92_1960_tract, by = c("gisjoin_1960" = "GISJOIN"))
+
+
+
+```
+
+
+```{r renaming relevant census variables, include = FALSE}
+# variable encodings in format: description (universe)
+
+# Total persons (persons) - Using the data from the printed report because the race data is from the printed report and want to keep consistent source
+
+sixties$tot_persons_printed <- sixties$B53001
+
+
+# RACE from printed report (Persons)
+
+sixties$white_printed <- sixties$B7B001
+sixties$black_printed <- sixties$B7B002
+sixties$other_printed <- sixties$B7B003
+
+# total foreign stock from printed report (foreign stock persons)
+
+sixties$foreign_stock_printed <- sixties$B7M001
+
+# foreign born (foreign stock persons)
+
+sixties$foreign_born <- sixties$B8J001
+
+
+# School completed (persons 25 yr and over)
+
+sixties$no_school <- sixties$B8R001
+sixties$school_yr_1_4 <- sixties$B8R002
+sixties$school_yr_5_7 <- sixties$B8R003
+sixties$school_yr_8 <- sixties$B8R004
+sixties$school_yr_hs_1_3 <- sixties$B8R005
+sixties$school_yr_hs_4 <- sixties$B8R006
+sixties$school_yr_college_1_3 <- sixties$B8R007
+sixties$school_yr_college_p <- sixties$B8R008
+
+
+# family income in 1959 (families)
+
+sixties$fam_income_less_1k <- sixties$B8W001
+sixties$fam_income_1_2k <- sixties$B8W002
+sixties$fam_income_2_3k <- sixties$B8W003
+sixties$fam_income_3_4k <- sixties$B8W004
+sixties$fam_income_4_5k <- sixties$B8W005
+sixties$fam_income_5_6k <- sixties$B8W006
+sixties$fam_income_6_7k <- sixties$B8W007
+sixties$fam_income_7_8k <- sixties$B8W008
+sixties$fam_income_8_9k <- sixties$B8W009
+sixties$fam_income_9_10k <- sixties$B8W010
+sixties$fam_income_10_15k <- sixties$B8W011
+sixties$fam_income_15_25k <- sixties$B8W012
+sixties$fam_income_25k_p <- sixties$B8W013
+
+
+# Total Housing Units (h units)
+sixties$tot_hunits <- sixties$CA5001
+
+
+# N owner occupied (occupied year round h units)
+sixties$owner_occupied <- sixties$B9O001
+
+# N renter occupied (occupied year round h units)
+sixties$renter_occupied <- sixties$B9O002
+
+
+# N vacant for rent (vacant year-round housing units)
+sixties$vacant_for_rent<- sixties$B8Q001
+# N vacant for sale (vacant year-round housing units)
+sixties$vacant_for_sale <- sixties$B8Q002
+
+
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+sixties$vacant_for_sale_2<- sixties$B9R001
+# N vacant for sale (vacant year-round housing units)
+sixties$vacant_for_rent_2 <- sixties$B9R002
+# N vacant for sale (vacant year-round housing units)
+sixties$vacant_other_2 <- sixties$B9R003
+
+
+# Occupied Units by Persons per Room (occupied units)
+sixties$persons_per_room_half_or_less <- sixties$B76001
+sixties$persons_per_room_point51_point75 <- sixties$B76002
+sixties$persons_per_room_point76_one<- sixties$B76003
+sixties$persons_per_room_onepone_or_more <- sixties$B76004
+
+
+# Renter occupied units reporting rent
+sixties$renter_occupied_units_reporting_rent <- sixties$B8A001
+
+# renter occupied unit aggregate monthly contract rent
+
+sixties$agg_monthly_contract_rent <- sixties$B8B001
+
+# value of property from printed report (housing units)
+
+
+sixties$property_value_u5k <- sixties$B7O001
+sixties$property_value_5000_7400 <- sixties$B7O002
+sixties$property_value_7500_9900 <- sixties$B7O003
+sixties$property_value_10000_12400 <- sixties$B7O004
+sixties$property_value_12500_14900 <- sixties$B7O005
+sixties$property_value_15000_17400 <- sixties$B7O006
+sixties$property_value_17500_19900 <- sixties$B7O007
+sixties$property_value_20000_24900 <- sixties$B7O008
+sixties$property_value_25000_34900 <- sixties$B7O009
+sixties$property_value_35000_plus <- sixties$B7O010
+
+
+# units in structure (housing units)
+
+sixties$units_1 <- sixties$B92001
+sixties$units_2 <- sixties$B92002
+sixties$units_3_4 <- sixties$B92003
+sixties$units_5_9 <- sixties$B92004
+sixties$units_10_P <- sixties$B92005
+
+
+# year structure built (all housing units)
+
+sixties$built_1950_1960 <- sixties$B96001
+sixties$built_1940_1949 <- sixties$B96002
+sixties$built_pre_1940 <- sixties$B96003
+
+
+
+# year head moved into household (occupied housing units)
+
+sixties$moved_1958_1960 <- sixties$CAJ001
+sixties$moved_in_1954_1957 <- sixties$CAJ002
+sixties$moved_in_1940_1953 <- sixties$CAJ003
+sixties$moved_in_pre_1940 <- sixties$CAJ004
+
+# persons in group quarters from printed report (persons in hhs)
+
+sixties$persons_group_quarters<- sixties$B54001
+
+
+# housing by condition
+
+sixties$condition_sound <- sixties$B67001
+sixties$condition_deteriorated <- sixties$B67002
+sixties$condition_dilapidated <- sixties$B67003
+
+# employment status
+sixties$employed_males <- sixties$B82001
+sixties$unemployed_males <- sixties$B82002
+sixties$armed_forces_males <- sixties$B82003
+sixties$not_in_lf_males <- sixties$B82004
+sixties$employed_females <- sixties$B82005
+sixties$unemployed_females <- sixties$B82006
+sixties$armed_forces_females <- sixties$B82007
+sixties$not_in_lf_females<- sixties$B82008
+
+
+# plumbing: DID NOT CODE ALL OPTIONS
+sixties$plumbing_sound_w_all_facilities <- sixties$B9V001
+
+sixties$plumbing_deteriorating_w_all_facilities <- sixties$B9V004
+sixties$plumbing_deteriorating_lackorshare_hwater <- sixties$B9V005
+sixties$plumbing_deteriorating_lackorshare_privatetoilet <- sixties$B9V006
+sixties$plumbing_delapidated <- sixties$B9V007
+
+# bathrooms
+sixties$one_bathroom <- sixties$B9Y001
+sixties$more_than_one_bathroom <- sixties$B9Y002
+sixties$shared_or_no_inside_bathroom <- sixties$B9Y003
+
+
+# rent buckets
+sixties$contract_rent_lt_20 <- sixties$CAV001
+sixties$contract_rent_20_29 <- sixties$CAV002
+sixties$contract_rent_30_39 <- sixties$CAV003
+sixties$contract_rent_40_49 <- sixties$CAV004
+sixties$contract_rent_50_59 <- sixties$CAV005
+sixties$contract_rent_60_69 <- sixties$CAV006
+sixties$contract_rent_70_79 <- sixties$CAV007
+sixties$contract_rent_80_89 <- sixties$CAV008
+sixties$contract_rent_90_99 <- sixties$CAV009
+sixties$contract_rent_l00_119 <- sixties$CAV010
+sixties$contract_rent_120_149 <- sixties$CAV011
+sixties$contract_rent_150p <- sixties$CAV012
+sixties$contract_rent_no_cash_rent <- sixties$CAV013
+
+
+# year structure built
+sixties$built_50_60 <- sixties$B7E001
+sixties$built_40_49 <- sixties$B7E002
+sixties$built_pre_40 <- sixties$B7E003
+
+# units in structure
+
+sixties$nunits_1 <- sixties$B7D001
+sixties$nunits_2 <- sixties$B7D002
+sixties$nunits_3_4 <- sixties$B7D003
+sixties$nunits_5_9 <- sixties$B7D004
+sixties$nunits_10_p <- sixties$B7D005
+
+
+# indoor heating other than wood burning
+# steam/hot water -> non wood burning
+# central warm air furnace -> non wood burning
+# built in electric -> non wood
+# floor wall pipeless furnce -> non wood
+
+# other with flue -> wood
+
+sixties$heating_steam <- sixties$B7H001
+sixties$heating_warm_air <- sixties$B7H002
+sixties$heating_built_in_room_unit <- sixties$B7H003
+sixties$heating_other_w_flue <- sixties$B7H004
+sixties$heating_other_wo_flue <- sixties$B7H005
+sixties$heating_none <- sixties$B7H006
+
+
+# foundation type -> really low correlation -> don't include
+sixties$basement <- sixties$B7G001
+sixties$concrete_slab<- sixties$B7G002
+sixties$basement_other <- sixties$B7G003
+
+
+# number of bathrooms
+
+sixties$one_bathroom <- sixties$B69001
+sixties$more_than_one_bathroom <- sixties$B69002
+sixties$shared_or_no <- sixties$B69003
+
+
+# functioning indoor plumbing
+sixties$plumbing_sound_1 <- sixties$B68001
+sixties$plumbing_sound_2 <- sixties$B68002
+sixties$plumbing_sound_3 <- sixties$B68003
+sixties$plumbing_deteriorating_1 <- sixties$B68004
+sixties$plumbing_deteriorating_2 <- sixties$B68005
+sixties$plumbing_deteriorating_3 <- sixties$B68006
+sixties$plumbing_delapidated <- sixties$B68007
+
+
+```
+
+
+```{r creating additional variables relevant for analysis, include = FALSE}
+
+# calculate population density (originally in meters squared area so scale to km)
+sixties$pop_density <- sixties$tot_persons_printed/sixties$tract_area_1960 * 1000000
+
+# pct non-white
+sixties$pct_non_white_printed <- (sixties$black_printed +
+                                      sixties$other_printed)/sixties$tot_persons_printed * 100
+
+# pct black
+sixties$pct_black_printed <- (sixties$black_printed)/sixties$tot_persons_printed * 100
+
+
+# % foreign stock
+sixties$pct_foreign_stock_printed<- (sixties$foreign_stock_printed)/sixties$tot_persons_printed * 100
+
+# % foreign born
+sixties$pct_foreign_born <- (sixties$foreign_born)/sixties$tot_persons_printed * 100
+
+# pct hs grads
+
+# calculate total persons who have school data
+sixties$tot_school_persons <- sixties$no_school + sixties$school_yr_1_4  +
+  sixties$school_yr_5_7 + sixties$school_yr_8 + sixties$school_yr_hs_1_3 +
+  sixties$school_yr_hs_4 + sixties$school_yr_college_1_3 +
+  sixties$school_yr_college_p
+
+# calculate total persons whose highest edu attainment is hs completion or greater
+sixties$tot_hs_grads <- sixties$school_yr_hs_4 +
+  sixties$school_yr_college_1_3 +
+  sixties$school_yr_college_p
+
+# calculate hs grads
+sixties$pct_hs_grad <- sixties$tot_hs_grads/sixties$tot_school_persons * 100
+
+# calculate total persons whose highest edu attainment is some college completion or greater
+sixties$tot_some_college <- sixties$school_yr_college_1_3 +
+  sixties$school_yr_college_p
+
+# calculate pct_some college
+sixties$pct_some_college <- sixties$tot_some_college/sixties$tot_school_persons * 100
+
+
+# calc weighted years of school
+sixties$weighted_tot_years_school <- (sixties$no_school * 0 + sixties$school_yr_1_4 * 2  +
+  sixties$school_yr_5_7 * 6 + sixties$school_yr_8 * 8 + sixties$school_yr_hs_1_3 * 10 +
+  sixties$school_yr_hs_4 * 12 + sixties$school_yr_college_1_3 * 14 +
+  sixties$school_yr_college_p * 16)/sixties$tot_school_persons
+
+
+
+# need to calculate income next -> how to choose something for this?? https://www.census.gov/data/tables/time-series/demo/income-poverty/historical-poverty-people.html
+
+# based on the above source, the pverty level for families of 3 in 1959 was 2,324 -> create indicator of below or above 3k income, roughly the poverty line for a family of 3. 
+
+# average household size according to the census in 1960 was 3.29 https://www.census.gov/library/publications/1962/dec/pc-s1-23.html#:~:text=The%20number%20of%20households%20in,of%20household%20was%203.29%20persons.
+
+# sum families with income in 1959 <3k and then divide by total # families
+
+
+sixties$all_families_with_income_data <- sixties$fam_income_less_1k + sixties$fam_income_1_2k + sixties$fam_income_2_3k +
+sixties$fam_income_3_4k + sixties$fam_income_4_5k + sixties$fam_income_5_6k +
+sixties$fam_income_6_7k + sixties$fam_income_7_8k + sixties$fam_income_8_9k +
+sixties$fam_income_9_10k + sixties$fam_income_10_15k + sixties$fam_income_15_25k +
+sixties$fam_income_25k_p
+
+sixties$all_families_with_income_lt_3k <- sixties$fam_income_less_1k + sixties$fam_income_1_2k + sixties$fam_income_2_3k 
+
+sixties$pct_families_below_3k_income <- (sixties$all_families_with_income_lt_3k/
+                                                     sixties$all_families_with_income_data) * 100
+
+sixties$all_families_with_income_lt_4k <- sixties$fam_income_less_1k + sixties$fam_income_1_2k + sixties$fam_income_2_3k +
+  sixties$fam_income_3_4k 
+
+sixties$pct_families_below_4k_income <-   (sixties$all_families_with_income_lt_4k/
+                                                     sixties$all_families_with_income_data) * 100 
+
+
+# add weighted family income
+sixties$weighted_family_income = (sixties$fam_income_less_1k * 500 + 
+                                                  sixties$fam_income_1_2k * 1500 + 
+                                                  sixties$fam_income_2_3k * 2500 +
+                                                  sixties$fam_income_3_4k * 3500 + 
+                                                  sixties$fam_income_4_5k * 4500 + 
+                                                  sixties$fam_income_5_6k * 5500 + 
+                                                  sixties$fam_income_6_7k * 6500 + 
+                                                  sixties$fam_income_7_8k * 7500 +
+                                                  sixties$fam_income_8_9k * 8500 +
+                                                  sixties$fam_income_9_10k * 9500 + 
+                                                  sixties$fam_income_10_15k * 12500 + 
+                                                  sixties$fam_income_15_25k * 20000 +
+                                                  sixties$fam_income_25k_p * 25000)/sixties$all_families_with_income_data
+
+
+
+# hhunits
+
+# other type of vacancy status with other option
+# N vacant for rent (vacant year-round housing units)
+sixties$vacant_all <- sixties$vacant_for_rent_2 + sixties$vacant_for_sale_2 + 
+  sixties$vacant_other_2
+
+sixties$pct_vacant_all <- 100 * sixties$vacant_all/sixties$tot_hunits
+
+
+# create var for occupied units which is all units minus vacant
+
+sixties$occupied_units <- sixties$tot_hunits - sixties$vacant_all
+
+
+# pct_owner_occupied out of all units
+sixties$pct_owner_occupied <- 100 * sixties$owner_occupied/sixties$occupied_units
+
+
+# pct renter occupied (occupied year round h units)
+sixties$pct_renter_occupied <- 100 * sixties$renter_occupied/sixties$occupied_units
+
+
+# pct units 1.01 or more people per room (highest category)
+sixties$pct_one_point_0_one_people_per_room_or_more <- 100 *  sixties$persons_per_room_onepone_or_more/sixties$occupied_units
+
+
+# average rent of owner occupied units
+sixties$avg_monthly_contract_rent <- sixties$agg_monthly_contract_rent/ sixties$renter_occupied_units_reporting_rent
+
+# sixties %>%  select(agg_monthly_contract_rent, renter_occupied_units_reporting_rent, avg_monthly_contract_rent, log_avg_monthly_contract_rent) %>% filter(avg_monthly_contract_rent > 300)
+
+# sixties$avg_monthly_contract_rent[sixties$renter_occupied_units_reporting_rent == 0] <- NA
+# sixties$avg_monthly_contract_rent[sixties$GISJOIN == 	"G08000100079" ] <- NA
+
+
+
+# log average rent of owner occupied units
+sixties$log_avg_monthly_contract_rent <- log(sixties$avg_monthly_contract_rent)
+
+
+
+# https://archive.curbed.com/2018/4/10/17219786/buying-a-house-mortgage-government-gi-bill says median home value was 11,900 in 1960
+
+sixties$houses_w_property_value_data <- sixties$property_value_u5k +
+  sixties$property_value_5000_7400 + sixties$property_value_7500_9900 +
+  sixties$property_value_10000_12400 + sixties$property_value_12500_14900 +
+  sixties$property_value_15000_17400 + sixties$property_value_17500_19900 +
+  sixties$property_value_20000_24900 + sixties$property_value_25000_34900 +
+  sixties$property_value_35000_plus
+
+
+# percent of houses of value under 5k
+
+sixties$pct_houses_w_property_value_u5k <- 100* sixties$property_value_u5k/sixties$houses_w_property_value_data
+
+# weighted property value
+
+sixties$weighted_prop_value <- (sixties$property_value_u5k * 2500 +
+                                                  sixties$property_value_5000_7400 * 6250  + 
+                                                  sixties$property_value_7500_9900 * 8750 +
+                                                  sixties$property_value_10000_12400 * 11250 + 
+                                                  sixties$property_value_12500_14900 * ((15000-12500)/2 + 12500) +
+                                                  sixties$property_value_15000_17400 * ((17500-15000)/2 + 15000) + 
+                                                  sixties$property_value_17500_19900 * ((20000-17500)/2 + 17500) +
+                                                  sixties$property_value_20000_24900 * ((25000-20000)/2 + 20000) + 
+                                                  sixties$property_value_25000_34900 * ((35000-25000)/2 + 25000) +
+                                                  sixties$property_value_35000_plus* (35000))/sixties$houses_w_property_value_data
+
+# pct 1 unit houses
+sixties$units_with_unit_data <- sixties$units_1 + sixties$units_2 + sixties$units_3_4 + sixties$units_5_9 + sixties$units_10_P
+sixties$pct_single_unit <- sixties$units_1/sixties$units_with_unit_data * 100
+
+# pct built pre 1940
+
+sixties$pct_built_pre_1940 <- sixties$built_pre_1940/(sixties$built_1950_1960 + sixties$built_1940_1949 + sixties$built_pre_1940) * 100
+
+
+
+# year head moved into household (occupied housing units)
+
+sixties$pct_moved_pre_1940 <- sixties$moved_in_pre_1940/(sixties$moved_1958_1960 + sixties$moved_in_1954_1957 + sixties$moved_in_1940_1953 + sixties$moved_in_pre_1940) * 100
+
+sixties$pct_moved_1958_1960 <- sixties$moved_1958_1960/(sixties$moved_1958_1960 + sixties$moved_in_1954_1957 + sixties$moved_in_1940_1953 + sixties$moved_in_pre_1940) * 100
+
+# pct_pop group quarters
+
+sixties$pct_persons_group_quarters <- 100 * sixties$persons_group_quarters/sixties$tot_persons_printed
+
+# CONDITION
+
+# housing by condition: pct deteriorated or dilapidated
+
+sixties$pct_housing_deteriorated_dilap <- (sixties$condition_deteriorated + sixties$condition_dilapidated)/ (sixties$condition_sound + sixties$condition_deteriorated + sixties$condition_dilapidated) * 100
+
+# pct males unemployed
+
+sixties$pct_unemployed_males <- 100 * sixties$unemployed_males/
+  (sixties$unemployed_males + sixties$employed_males
+   + sixties$armed_forces_males + sixties$not_in_lf_males)  
+
+
+# pct employed males over total
+
+sixties$employed_males <- sixties$B82001
+sixties$unemployed_males <- sixties$B82002
+sixties$armed_forces_males <- sixties$B82003
+sixties$not_in_lf_males <- sixties$B82004
+
+sixties$pct_employed_out_of_all_males <- 100 * sixties$employed_males/
+  (sixties$unemployed_males + sixties$employed_males +
+     sixties$armed_forces_males + sixties$not_in_lf_males)
+
+
+
+# plumbing: pct deteriorating or dilapidated
+sixties$pct_plumbing_detdilap <- 100 * (sixties$plumbing_deteriorating_w_all_facilities  +
+  sixties$plumbing_deteriorating_lackorshare_hwater +
+  sixties$plumbing_deteriorating_lackorshare_privatetoilet +
+  sixties$plumbing_delapidated )/sixties$tot_hunits
+
+# bathrooms
+
+sixties$pct_shared_or_bath_outside <- sixties$shared_or_no_inside_bathroom/ sixties$tot_hunits * 100
+sixties$pct_more_than_one_bathroom <- sixties$more_than_one_bathroom/sixties$tot_hunits * 100
+
+
+# rent buckets
+sixties$contract_rent_lt_20 <- sixties$CAV001
+sixties$contract_rent_20_29 <- sixties$CAV002
+sixties$contract_rent_30_39 <- sixties$CAV003
+sixties$contract_rent_40_49 <- sixties$CAV004
+sixties$contract_rent_50_59 <- sixties$CAV005
+sixties$contract_rent_60_69 <- sixties$CAV006
+sixties$contract_rent_70_79 <- sixties$CAV007
+sixties$contract_rent_80_89 <- sixties$CAV008
+sixties$contract_rent_90_99 <- sixties$CAV009
+sixties$contract_rent_l00_119 <- sixties$CAV010
+sixties$contract_rent_120_149 <- sixties$CAV011
+sixties$contract_rent_150p <- sixties$CAV012
+sixties$contract_rent_no_cash_rent <- sixties$CAV013
+
+all_houses_reporting_contract_rent <- sum(sixties$contract_rent_lt_20, na.rm = T) + sum(sixties$contract_rent_20_29, na.rm = T) +
+  sum(sixties$contract_rent_30_39, na.rm = T) + sum(sixties$contract_rent_40_49 , na.rm = T) + 
+  sum(sixties$contract_rent_50_59, na.rm = T) + sum(sixties$contract_rent_60_69, na.rm = T) +
+  sum(sixties$contract_rent_70_79, na.rm = T) + sum(sixties$contract_rent_80_89 , na.rm = T) + 
+  sum(sixties$contract_rent_90_99, na.rm = T) + sum(sixties$contract_rent_l00_119, na.rm = T) + 
+  sum(sixties$contract_rent_120_149, na.rm = T) + sum(sixties$contract_rent_150p, na.rm = T) +
+  sum(sixties$contract_rent_no_cash_rent, na.rm = T)
   
+
+.25 * all_houses_reporting_contract_rent 
+
+sum(sixties$contract_rent_lt_20, na.rm = T) + sum(sixties$contract_rent_20_29, na.rm = T) + sum(sixties$contract_rent_30_39, na.rm = T) + sum(sixties$contract_rent_40_49 , na.rm = T)
+
+# pct with rent < $50 (approximately 25 percentile of rent)
+
+sixties$pct_contract_rent_lt_50 <- 100 * (sixties$contract_rent_lt_20 + sixties$contract_rent_20_29 + sixties$contract_rent_30_39
+                                              + sixties$contract_rent_40_49)/(sixties$contract_rent_lt_20 + sixties$contract_rent_20_29 +
+                                                                                          sixties$contract_rent_30_39 + sixties$contract_rent_40_49 +
+                                                                                          sixties$contract_rent_50_59 + sixties$contract_rent_60_69 +
+                                                                                          sixties$contract_rent_70_79 + sixties$contract_rent_80_89 +
+                                                                                          sixties$contract_rent_90_99 + sixties$contract_rent_l00_119 +
+                                                                                          sixties$contract_rent_120_149 + sixties$contract_rent_150p)
+# number of units reporting cash rent
+sixties$reporting_contract_rent_calc <- sixties$contract_rent_lt_20 + sixties$contract_rent_20_29 +
+                                                                                          sixties$contract_rent_30_39 + sixties$contract_rent_40_49 +
+                                                                                          sixties$contract_rent_50_59 + sixties$contract_rent_60_69 +
+                                                                                          sixties$contract_rent_70_79 + sixties$contract_rent_80_89 +
+                                                                                          sixties$contract_rent_90_99 + sixties$contract_rent_l00_119 +
+                                                                                          sixties$contract_rent_120_149 + sixties$contract_rent_150p
+
+# weighted contract rent: 150+ coded as 150
+sixties$weighted_cash_contract_rent <- (sixties$contract_rent_lt_20 * 10 + sixties$contract_rent_20_29  * 24.5 + 
+  sixties$contract_rent_30_39 * 34.5 + sixties$contract_rent_40_49 * 44.5 + sixties$contract_rent_50_59 * 54.5 +
+  sixties$contract_rent_60_69 * 64.5 + sixties$contract_rent_70_79 * 74.5 + sixties$contract_rent_80_89 * 84.5 +
+  sixties$contract_rent_90_99 * 94.5 + sixties$contract_rent_l00_119 * 109.5 + sixties$contract_rent_120_149 * 134.5 +
+  sixties$contract_rent_150p * 150)/sixties$reporting_contract_rent_calc
+
+sixties$weighted_cash_contract_rent_lt_50 <- ifelse(sixties$weighted_cash_contract_rent < 50, 1, 0)
+
+
+
+
+
+sixties$owner_occ_property_value_u5k <- sixties$CAO001
+sixties$owner_occ_property_value_5000_7499 <- sixties$CAO002
+sixties$owner_occ_property_value_7500_9999 <- sixties$CAO003
+sixties$owner_occ_property_value_10000_12499 <- sixties$CAO004
+sixties$owner_occ_property_value_12500_14999 <- sixties$CAO005
+sixties$owner_occ_property_value_15000_17499 <- sixties$CAO006
+sixties$owner_occ_property_value_17500_19999 <- sixties$CAO007
+sixties$owner_occ_property_value_20000_24999 <- sixties$CAO008
+sixties$owner_occ_property_value_25000_34999 <- sixties$CAO009
+sixties$owner_occ_property_value_35000_plus <- sixties$CAO010
+
+
+
+
+sixties$tot_owner_occ_with_value = sixties$owner_occ_property_value_u5k + sixties$owner_occ_property_value_5000_7499 + sixties$owner_occ_property_value_7500_9999 + sixties$owner_occ_property_value_10000_12499 + sixties$owner_occ_property_value_12500_14999  + sixties$owner_occ_property_value_15000_17499 + sixties$owner_occ_property_value_17500_19999 + sixties$owner_occ_property_value_20000_24999 + sixties$owner_occ_property_value_25000_34999 + sixties$owner_occ_property_value_35000_plus 
+
+
+
+
+
+
+sixties$owner_occ_property_value = (sixties$owner_occ_property_value_u5k * 2500 + 
+                                                sixties$owner_occ_property_value_5000_7499 * 6250 +
+                                                sixties$owner_occ_property_value_7500_9999 * 8750 +
+                                                sixties$owner_occ_property_value_10000_12499 * 11250 +
+                                                sixties$owner_occ_property_value_12500_14999 * ((15000-12500)/2 + 12500)  +
+                                                sixties$owner_occ_property_value_15000_17499 * ((17500-15000)/2 + 15000) +
+                                                sixties$owner_occ_property_value_17500_19999 * ((20000-17500)/2 + 17500) +
+                                                sixties$owner_occ_property_value_20000_24999 * ((25000-20000)/2 + 20000) +
+                                                sixties$owner_occ_property_value_25000_34999 * ((35000-25000)/2 + 25000) +
+                                                sixties$owner_occ_property_value_35000_plus * 35000)/sixties$tot_owner_occ_with_value
+
+
+# structure avg age
+sixties$avg_age <- (sixties$built_50_60 * 5 + sixties$built_40_49 * 15.5 +
+                                        sixties$built_pre_40 * 21) / (sixties$built_50_60 +
+                                                                                     sixties$built_40_49 +
+                                                                                     sixties$built_pre_40)
+
+# pct built pre 1940
+sixties$pct_built_pre_40 = 100 * sixties$built_pre_40/(sixties$built_50_60 +
+                                                                                     sixties$built_40_49 +
+                                                                                     sixties$built_pre_40)
+
+
+# units in structure
+
+sixties$avg_nunits <- (sixties$nunits_1 * 1 +  sixties$nunits_2 * 2 + sixties$nunits_3_4 * 3.5 + sixties$nunits_5_9 * 7 + sixties$nunits_10_p * 10)/ (sixties$nunits_1 +  sixties$nunits_2 + sixties$nunits_3_4 + sixties$nunits_5_9 + sixties$nunits_10_p)
+
+
+# indoor heating other than wood burning
+
+sixties$heating_pct_non_wood_burn <- 100 * (sixties$heating_steam + sixties$heating_warm_air + sixties$heating_built_in_room_unit + sixties$heating_other_wo_flue)/(sixties$heating_steam + sixties$heating_warm_air + sixties$heating_built_in_room_unit + sixties$heating_other_w_flue + sixties$heating_other_wo_flue)
+
+# foundation type
+sixties$pct_concrete_slab_foundation <- 100 * sixties$basement/(sixties$basement + sixties$concrete_slab + sixties$basement_other)
+
+
+# number of bathrooms
+
+sixties$pct_more_than_one_bathroom <- 100 * sixties$more_than_one_bathroom / (sixties$more_than_one_bathroom + sixties$one_bathroom + sixties$shared_or_no)
+
+sixties$pct_shared_or_no_bath <- 100 * sixties$shared_or_no / (sixties$more_than_one_bathroom + sixties$one_bathroom + sixties$shared_or_no)
+
+# functioning indoor plumbing
+sixties$pct_plumbing_fuctional <- 100 * (sixties$plumbing_sound_1 + 
+                                                             sixties$plumbing_sound_2 +
+                                                             sixties$plumbing_sound_3)/ 
+  (sixties$plumbing_sound_1 +  sixties$plumbing_sound_2 +
+     sixties$plumbing_sound_3 + sixties$plumbing_deteriorating_1 +
+     sixties$plumbing_deteriorating_2 + sixties$plumbing_deteriorating_3 +
+     sixties$plumbing_delapidated)
+
 ```
-
-
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-tracts_selected %>%
-  group_by(holc_city, holc_state, citypop_1930, citypop_1940) %>%
-  summarise(mean(citypop_1930), mean(citypop_1940))
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 
 ```{r}
-# load demographic data that contains all potential variables
-nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
+colnames(sixties)
+
+sixties <- sixties %>%
+  select(gisjoin_1960:intersect_area, tot_persons_printed, pop_density:pct_plumbing_fuctional)
 
 
-# load demographic data that contains housing add on variables to look at land rents
-housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")%>%
-  select(GISJOIN, B7H001, B7H002, B7H003, B7H004, B7H005, B7H006, B7G001, B7G002, B7G003)
-housing_add_on_1960_tract_2 <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0036_ds92_1960_tract.csv")
+sixties_recode <- sixties %>% 
+  select(
+    gisjoin_1960: intersect_area,
+    pop_density_1960 = pop_density,
+    tot_persons_printed_1960 = tot_persons_printed,
+    pct_non_white_1960 = pct_non_white_printed,
+    pct_black_1960 = pct_black_printed,
+    pct_foreign_born_1960 = pct_foreign_born,
+    pct_hs_grad_1960 = pct_hs_grad,
+    pct_some_college_1960 = pct_some_college,
+    weighted_tot_years_school_1960 = weighted_tot_years_school,
+    pct_vacant_1960 = pct_vacant_all,
+    pct_owner_occupied_1960 = pct_owner_occupied,
+    pct_renter_occupied_1960 = pct_renter_occupied,
+    pct_one_point_0_one_people_per_room_or_more_1960 = pct_one_point_0_one_people_per_room_or_more,
+    # avg contract rent got messed up, better to use weighted
+    avg_monthly_contract_rent_1960 = avg_monthly_contract_rent,
+    weighted_prop_value_1960 = weighted_prop_value,
+    pct_single_unit_1960 = pct_single_unit,
+    pct_housing_deteriorated_dilap_1960 = pct_housing_deteriorated_dilap,
+    pct_unemployed_males_1960 = pct_unemployed_males,
+    pct_employed_out_of_all_males_1960 = pct_employed_out_of_all_males,
+    pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
+    pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
+    weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
+    pct_families_below_3k_income_1960 = pct_families_below_3k_income,
+    weighted_family_income_1960 = weighted_family_income,
+    owner_occ_property_value_1960 = owner_occ_property_value,
+    avg_age_1960 = avg_age,
+    avg_nunits_1960 = avg_nunits,
+    pct_plumbing_fuctional_1960 = pct_plumbing_fuctional,
+    pct_shared_or_no_bath_1960 = pct_shared_or_no_bath,
+    pct_more_than_one_bathroom_1960 =  pct_more_than_one_bathroom,
+    pct_concrete_slab_foundation_1960 = pct_concrete_slab_foundation,
+    heating_pct_non_wood_burn_1960 = heating_pct_non_wood_burn,
+    avg_nunits_1960 =  avg_nunits, 
+    pct_built_pre_40_1960 =  pct_built_pre_40
+      ) %>%
+  mutate(log_property_value_1960 = log(weighted_prop_value_1960),
+         log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
+         log_family_income_1960 = log(weighted_family_income_1960),
+         log_property_value_1960 = log(owner_occ_property_value_1960),
+         intersect_over_1940_tract = intersect_area/tract_area_1940)
 
-nhgis0023_ds92_1960_tract  %>%
-  select(GISJOIN, B68001)
+```
 
-housing_add_on_1960_tract <- left_join(housing_add_on_1960_tract, housing_add_on_1960_tract_2)
+```{r joining 1940 and 1960s data}
+# all_holc_tract_grades_demo
+# sixties_recode
+
+full_40_60 <- left_join(all_holc_tract_grades_demo, sixties_recode, by = c("gisjoin_1940" = "gisjoin_1940"))
+
+full_40_60_tract <- full_40_60 %>%
+  mutate(
+    tot_persons_printed_1960_in_1940 = tot_persons_printed_1960 * intersect_over_1940_tract,
+    pct_non_white_1960_in_1940 = pct_non_white_1960 * intersect_over_1940_tract,
+    pct_black_1960_in_1940 = pct_black_1960 * intersect_over_1940_tract
+  ) %>%
+  group_by(gisjoin_1940, region, nhgisst_1940, nhgiscty_1940, holc_state, state_ab, holc_city, numeric_city_code,
+           tract_area_1940 = tract_area_1940.x, citypop_1930, area_accounted_for_1940, prop_grade_D, prop_D_of_accounted_for,
+           prop_grade_C, prop_grade_C_D, prop_grade_A, prop_grade_B, prop_grade_A_B, pct_grade_d_1940, tot_pop_1940,
+           pop_per_occ_dwell_1940, median_yrs_school_male_1940, tot_dwellings_1940, median_home_value_1940, 
+           median_contract_rent_1940, pct_male_hs_grad_1940, avg_occ_per_room_1940, avg_ten_occ_per_room_1940, pct_white_1940, 
+           pct_non_white_1940, pct_native_born_white_1940, pct_black_1940, pct_male_employment_rate_1940, pct_male_employed_out_of_all_males_1940, 
+           pct_owner_occ_1940, pct_renter_occ_1940, pct_vacant_1940, pct_single_family_1940, pct_major_rep_needed_1940, pct_major_rep_needed_1940) %>%
+  summarise(tot_persons_printed_1960_in_1940 = sum(tot_persons_printed_1960_in_1940),
+            pct_non_white_1960_in_1940 = sum(pct_non_white_1960_in_1940),
+            pct_black_1960_in_1940 = sum(pct_black_1960_in_1940))
+```
 
 
-nhgis0023_ds92_1960_tract <- left_join(nhgis0023_ds92_1960_tract,housing_add_on_1960_tract)
+```{r sanity check on finished vars}
+
+# high numbers here could be indication of problems in areal interpolation weighting -> could try removing outliers
+
+full_40_60_tract %>%
+  ggplot(aes(x = tot_persons_printed_1960_in_1940)) +
+  geom_histogram()
+
+
+full_40_60_tract %>%
+  ggplot(aes(x = pct_non_white_1960_in_1940)) +
+  geom_histogram()
+
+full_40_60_tract %>%
+  ggplot(aes(x = pct_black_1960_in_1940)) +
+  geom_histogram()
+
+
+```
+
+
+```{r joining 1940 and 1960s data FINISH THESE - NEED TO WEIGHT}
+pct_black_1960 = pct_black_printed,
+    pct_foreign_born_1960 = pct_foreign_born,
+    pct_hs_grad_1960 = pct_hs_grad,
+    pct_some_college_1960 = pct_some_college,
+    weighted_tot_years_school_1960 = weighted_tot_years_school,
+    pct_vacant_1960 = pct_vacant_all,
+    pct_owner_occupied_1960 = pct_owner_occupied,
+    pct_renter_occupied_1960 = pct_renter_occupied,
+    pct_one_point_0_one_people_per_room_or_more_1960 = pct_one_point_0_one_people_per_room_or_more,
+    # avg contract rent got messed up, better to use weighted
+    avg_monthly_contract_rent_1960 = avg_monthly_contract_rent,
+    weighted_prop_value_1960 = weighted_prop_value,
+    pct_single_unit_1960 = pct_single_unit,
+    pct_housing_deteriorated_dilap_1960 = pct_housing_deteriorated_dilap,
+    pct_unemployed_males_1960 = pct_unemployed_males,
+    pct_employed_out_of_all_males_1960 = pct_employed_out_of_all_males,
+    pct_more_than_one_bathroom_1960 = pct_more_than_one_bathroom,
+    pct_contract_rent_lt_50_1960 = pct_contract_rent_lt_50,
+    weighted_cash_contract_rent_1960 = weighted_cash_contract_rent,
+    pct_families_below_3k_income_1960 = pct_families_below_3k_income,
+    weighted_family_income_1960 = weighted_family_income,
+    owner_occ_property_value_1960 = owner_occ_property_value,
+    avg_age_1960 = avg_age,
+    avg_nunits_1960 = avg_nunits,
+    pct_plumbing_fuctional_1960 = pct_plumbing_fuctional,
+    pct_shared_or_no_bath_1960 = pct_shared_or_no_bath,
+    pct_more_than_one_bathroom_1960 =  pct_more_than_one_bathroom,
+    pct_concrete_slab_foundation_1960 = pct_concrete_slab_foundation,
+    heating_pct_non_wood_burn_1960 = heating_pct_non_wood_burn,
+    avg_nunits_1960 =  avg_nunits, 
+    pct_built_pre_40_1960 =  pct_built_pre_40
+      ) %>%
+  mutate(log_property_value_1960 = log(weighted_prop_value_1960),
+         log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
+         log_family_income_1960 = log(weighted_family_income_1960),
+         log_property_value_1960 = log(owner_occ_property_value_1960),
+         intersect_over_1940_tract = intersect_area/tract_area_1940)
 
 ```
 
