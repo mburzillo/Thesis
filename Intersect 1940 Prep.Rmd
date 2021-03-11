@@ -25,20 +25,79 @@ additional_pop <- read_csv("1930 - 1940 City Population Data/holc_1940_tract_int
          tract_area_1940 = SHAPE_AREA,
          holc_area_1940 = area,
          holc_tract_intersect_area_1940 = area_2) %>%
-  select(-GISJOIN2, -SHAPE_LEN, -name, holc_id, -perimeter, -perimeter_2, -holc_id)
+  select(-GISJOIN2, -SHAPE_LEN, -name, holc_id, -perimeter, -perimeter_2, -holc_id) %>%
+  mutate(numeric_city_code = as.numeric(nhgiscty_1940))
+
+# get all city level data
+city_desc <- tracts_selected %>%
+  select(nhgisst_1960, nhgiscty_1960, nhgis_place_1940, holc_state, state_ab, 
+  region, holc_city, numeric_city_code, citypop_1930:city_1940_pct_completed_hs_25_plus, log_city_1940_avg_contract_rent:log_city_1940_avg_wage_emp_males) %>%
+  mutate(nhgiscty_1960 = as.character(nhgiscty_1960))
   
+
+# state abbreviation correspondence
+state_abs <- read_csv("50_us_states_all_data.csv") %>%
+  select(state, state_ab)
+
+# load region state_ab correspondence
+state_ab_region <- read_csv("state_ab_region.csv")
+
+full_state_specifications <- left_join(state_abs, state_ab_region)
+
+additional_pop %>%
+  mutate(count = 1) %>%
+  group_by(state, city, gisjoin_1940) %>%
+  summarise(scount = sum(count)) %>%
+  filter(scount != 1)
+
+additional_pop %>%
+  mutate(count = 1) %>%
+  group_by(state, city, nhgisst_1940, nhgiscty_1940) %>%
+  summarise(scount = sum(count)) %>%
+  filter(scount != 1)
+
+
+```
+
+```{r}
+
+# because these tracts are in multiple HOLC cities, they are showing up twice -> need to only include 1
+additional_pop %>%
+  select(gisjoin_1940, city, state) %>%
+  unique() %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1940) %>%
+  summarise(scount = sum(count)) %>%
+  filter(scount > 1)
+
+# goal is to only include the one with the largest area coverage
+
+problem_tracts <- additional_pop %>%
+  select(gisjoin_1940, city, state) %>%
+  unique() %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1940) %>%
+  summarise(scount = sum(count)) %>%
+  filter(scount > 1)
 
 ```
 
 
+
 ```{r}
+
+# holc city does not uniquely identify an numeric city (nhgis code)
+# what do we care about -> HOLC city population matched to a gisjoin
+
 all_holc_tract_grades_1940 <- additional_pop %>%
-  mutate(intersect_over_tract_1940 = holc_tract_intersect_area_1940/tract_area_1940) %>%
+  mutate(intersect_over_tract_1940 = holc_tract_intersect_area_1940/tract_area_1940,
+         state_ab = state, holc_city = city) %>%
+  select(-state, -city) %>%
   # for every 1960 tract in the dataset..., previously had city and state, but deleting because this separated tracts into two, one for each state,
   # if covering HOLC areas were in two different states. Want to keep HOLC city and state for city/state population merge
   group_by(gisjoin_1940) %>%
   # summarise
-  summarize(
+  mutate(
     tract_area_1940 = mean(tract_area_1940),
     # total area accounted for out of area of entire tract
     area_accounted_for_1940 = sum(intersect_over_tract_1940),
@@ -49,19 +108,163 @@ all_holc_tract_grades_1940 <- additional_pop %>%
     prop_grade_A = sum(ifelse(holc_grade == "A", intersect_over_tract_1940, 0)),
     prop_grade_B = sum(ifelse(holc_grade == "B", intersect_over_tract_1940, 0)),
     prop_grade_A_B = prop_grade_A + prop_grade_B
-    )
+    ) %>%
+  mutate(pct_grade_d_1940 = 100 * prop_grade_D) %>%
+  filter(area_accounted_for_1940 >= .5)
 
 # Sanity check
 all_holc_tract_grades_1940  %>%
-  ggplot(aes(x = prop_grade_C)) +
+  ggplot(aes(x = pct_grade_d_1940)) +
   geom_histogram()
 
 all_holc_tract_grades_1940 %>%
   mutate(count = 1) %>%
-  group_by(gisjoin_1940) %>%
+  group_by(holc_city) %>%
   summarise(scount = sum(count))
   
+
+# issue is that a tract is in 2 different HOLC cities -> assign the one that is in the majority
+all_holc_tract_grades_1940 %>%
+  # don't worry about any where area accounted for is less than .5 because these would be dropped anyways
+  #filter(area_accounted_for_1940 >= .5) %>%
+  mutate(count = 1, gt_point_5 = ifelse(area_accounted_for_1940 >= .5, 1, 0)) %>%
+  group_by(gisjoin_1940) %>%
+  summarise(scount = sum(count), SUM_GT = sum(gt_point_5)) %>%
+  filter(scount != 1) %>%
+  # don't worry about any where area accounted for is less than .5 because these would be dropped anyways
+  filter(SUM_GT != 0) %>%
+  select(gisjoin_1940) %>% 
+  list()
+
+
 ```
+
+
+```{r join with city data and fix name mismatches}
+
+# join with state spelled out and region
+all_holc_tract_grades_1940_2 <- left_join(all_holc_tract_grades_1940, full_state_specifications, by = c("state_ab")) %>%
+  rename(holc_state = state)
+
+# don't include numeric city code because only care about HOLC city population
+ipums_1930_cities_by_pop_full_sample_to_join <- ipums_1930_cities_by_pop_full_sample %>%
+  select(citypop_1930 = citypop_total, 
+         holc_city = cityname, state_ab = state)
+
+# HOLC name corrections to match city
+all_holc_tract_grades_1940_2$holc_city[all_holc_tract_grades_1940_2$holc_city == "Milwaukee Co."] <- "Milwaukee"
+all_holc_tract_grades_1940_2$holc_city[all_holc_tract_grades_1940_2$holc_city == "St.Louis"] <- "Saint Louis"
+
+```
+
+
+```{r join with city data}
+
+# join to get city populations
+all_holc_tract_grades_1940_a <- left_join(all_holc_tract_grades_1940_2, ipums_1930_cities_by_pop_full_sample_to_join)
+
+# include city pops for weird states
+all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Greater Kansas City" ] <- 121800 + 399700
+
+
+all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Bronx"] <- 1265258
+all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Brooklyn"] <- 2560401
+all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Manhattan"] <- 1867312
+all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Queens"] <- 1079129
+all_holc_tract_grades_1940_a$citypop_1930[all_holc_tract_grades_1940_a$holc_city == "Staten Island"] <- 158346
+
+# join issues remaining are just for the NYC surrounding counties, which seem fine to exclude.
+all_holc_tract_grades_1940_a %>%
+  #filter(holc_city == "Milwaukee Co.")
+  filter(is.na(citypop_1930))
+
+
+all_holc_tract_grades_1940_a %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1940) %>%
+  summarise(scount = sum(count))
+
+all_holc_tract_grades_1940_b  <- all_holc_tract_grades_1940_a %>%
+  select(gisjoin_1940, region, nhgisst_1940, nhgiscty_1940, holc_state, state_ab, holc_city, numeric_city_code,  tract_area_1940, citypop_1930, area_accounted_for_1940:prop_grade_A_B) %>%
+  unique()
+
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700025" & holc_city == "Somerville"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700027" & holc_city == "Cambridge"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700028" & holc_city == "Cambridge"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700030" & holc_city == "Arlington"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250K0004B" & holc_city == "Brookline"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250S0001" & holc_city == "Brookline"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250S0005" & holc_city == "Brookline"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0001A" & holc_city == "Brookline"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0001B" & holc_city == "Brookline"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0006D" & holc_city == "Dedham"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250X0003B" & holc_city == "Milton"))
+
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700025" & holc_city == "Somerville"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700027" & holc_city == "Cambridge"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G25001700028" & holc_city == "Cambridge"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250X0003B" & holc_city == "Milton"))
+all_holc_tract_grades_1940_b  <- subset(all_holc_tract_grades_1940_b, !(gisjoin_1940 == "G2500250W0001B" & holc_city == "Brookline"))
+
+
+# still a bunch of duplicates - seems to be the saame issue where they are in multiple HOLC cities
+all_holc_tract_grades_1940_b %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1940, holc_state) %>%
+  summarise(scount = sum(count)) %>%
+  filter(scount > 1)
+
+
+```
+
+
+```{r}
+all_holc_tract_grades_1940_b %>%
+  filter(gisjoin_1940 == "G2500250X0003B")
+```
+
+```{r}
+all_holc_tract_grades_1940_2 
+
+ipums_pop_city_code <- ipums_1930_cities_by_pop_full_sample %>%
+  select(citypop_1930 = citypop_total, 
+         numeric_city_code = city)
+
+all_holc_tract_grades_1940_3 <- left_join(all_holc_tract_grades_1940_2, ipums_pop_city_code)
+
+all_holc_tract_grades_1940_3 %>%
+  mutate(count = 1) %>%
+  group_by(holc_city, state_ab) %>%
+  summarise(scount = sum(count))
+
+all_holc_tract_grades_1940_2 %>%
+  mutate(count = 1) %>%
+  group_by(holc_city, state_ab) %>%
+  summarise(scount = sum(count))
+
+
+# unsuccessfully joined: Denver CO, Macon GA, Augusta GA, Chicago IL
+all_holc_tract_grades_1940_3 %>%
+  filter(is.na(citypop_1930)) %>%
+  select(holc_city, holc_state) %>%
+  unique
+
+unique_tracts_1930 <- all_holc_tract_grades_1940_3 %>%
+  group_by(gisjoin_1940, holc_city, holc_state) %>%
+  select(nhgisst_1940:tract_area_1940, numeric_city_code, state_ab, 
+         holc_city, area_accounted_for_1940: citypop_1930) %>%
+  unique()
+
+
+unique_tracts_1930 %>%
+  mutate(count = 1) %>%
+  group_by(gisjoin_1940, holc_city, holc_state, nhgiscty_1940, nhgisst_1940) %>%
+  summarise(scount = sum(count)) %>%
+  filter(scount != 1)
+  
+```
+
+
 
 
 ## Including Plots
@@ -69,7 +272,31 @@ all_holc_tract_grades_1940 %>%
 You can also embed plots, for example:
 
 ```{r pressure, echo=FALSE}
-plot(pressure)
+tracts_selected %>%
+  group_by(holc_city, holc_state, citypop_1930, citypop_1940) %>%
+  summarise(mean(citypop_1930), mean(citypop_1940))
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+# load demographic data that contains all potential variables
+nhgis0023_ds92_1960_tract <- read_csv("Demographic Data/1960 All Vars/nhgis0023_csv/nhgis0023_ds92_1960_tract.csv")
+
+
+# load demographic data that contains housing add on variables to look at land rents
+housing_add_on_1960_tract <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0035_ds92_1960_tract.csv")%>%
+  select(GISJOIN, B7H001, B7H002, B7H003, B7H004, B7H005, B7H006, B7G001, B7G002, B7G003)
+housing_add_on_1960_tract_2 <- read_csv("Demographic Data/1960 All Vars/1960 Housing Add-On/nhgis0036_ds92_1960_tract.csv")
+
+nhgis0023_ds92_1960_tract  %>%
+  select(GISJOIN, B68001)
+
+housing_add_on_1960_tract <- left_join(housing_add_on_1960_tract, housing_add_on_1960_tract_2)
+
+
+nhgis0023_ds92_1960_tract <- left_join(nhgis0023_ds92_1960_tract,housing_add_on_1960_tract)
+
+```
+
