@@ -72,7 +72,7 @@ nhgis0023_ds92_1960_tract <- left_join(nhgis0023_ds92_1960_tract,housing_add_on_
 citypop_40_holc <- read_csv("Demographic Data/ipums_citypop_1940_holc_city_state.csv") 
 ```
 
-```{r}
+```{r looking at problem tracts}
 
 # because these tracts are in multiple HOLC cities, they are showing up twice -> need to only include 1
 additional_pop %>%
@@ -148,6 +148,44 @@ all_holc_tract_grades_1940 %>%
   filter(SUM_GT != 0) %>%
   select(gisjoin_1940) %>% 
   list()
+
+# see how many tracts are fully covered by HOLC area
+additional_pop %>%
+  mutate(intersect_over_tract_1940 = holc_tract_intersect_area_1940/tract_area_1940,
+         state_ab = state, holc_city = city) %>%
+  select(-state, -city) %>%
+  # for every 1960 tract in the dataset..., previously had city and state, but deleting because this separated tracts into two, one for each state,
+  # if covering HOLC areas were in two different states. Want to keep HOLC city and state for city/state population merge
+  group_by(gisjoin_1940) %>%
+  # summarise
+  summarize(
+    tract_area_1940 = mean(tract_area_1940),
+    # total area accounted for out of area of entire tract
+    area_accounted_for_1940 = sum(intersect_over_tract_1940),
+    max_area = max(intersect_over_tract_1940),
+    full_cov = ifelse(max_area > .99, 1, 0),
+    cov_95 = ifelse(max_area > .95, 1, 0),
+    cov_90 = ifelse(max_area > .9, 1, 0),
+    prop_grade_D = sum(ifelse(holc_grade == "D", intersect_over_tract_1940, 0)),
+    prop_grade_C = sum(ifelse(holc_grade == "C", intersect_over_tract_1940, 0)),
+    prop_grade_A = sum(ifelse(holc_grade == "A", intersect_over_tract_1940, 0)),
+    prop_grade_B = sum(ifelse(holc_grade == "B", intersect_over_tract_1940, 0)),
+    max_prop = max(prop_grade_A, prop_grade_B, prop_grade_C, prop_grade_D),
+    full_cov_grade = ifelse(max_prop > .99, 1, 0),
+    cov_95_grade = ifelse(max_prop > .95, 1, 0),
+    cov_90_grade = ifelse(max_prop > .9, 1, 0)
+    ) %>%
+  filter(area_accounted_for_1940 >= .5) %>%
+  summarise(count_full_cov = sum(full_cov),
+            count_95 = sum(cov_95),
+            count_90 = sum(cov_90),
+            median_cov = median(max_area),
+            median_max_cov = median(max_prop),
+            count_full_cov_grade = sum(full_cov_grade),
+            count_95_grade = sum(cov_95_grade),
+            count_90_grade = sum(cov_90_grade),
+            mean_area_accounted_for = mean(area_accounted_for_1940),
+            median_area_accounted_for = median(area_accounted_for_1940))
 
 
 ```
@@ -247,14 +285,6 @@ all_holc_tract_grades_1940_b %>%
 all_holc_tract_grades_1940_b %>%
   ggplot(aes(x = pct_grade_d_1940)) +
   geom_histogram()
-
-```
-
-
-```{r}
-
-all_holc_tract_grades_1940_b %>%
-  filter(holc_city == "Chicago")
 
 ```
 
@@ -502,7 +532,8 @@ all_holc_tract_grades_demo$median_contract_rent_1940[all_holc_tract_grades_demo$
 all_holc_tract_grades_demo <- all_holc_tract_grades_demo %>%  
   mutate(log_contract_rent_1940 = log(median_contract_rent_1940),
          log_home_value_1940 = log(median_home_value_1940),
-         tract_area_1940 = tract_area_1940/1000,
+         # convert tract area to sq km
+         tract_area_1940 = tract_area_1940/1000000,
          citypop_1930 = citypop_1930/10000)
 
 
@@ -924,6 +955,12 @@ sixties$pct_renter_occupied <- 100 * sixties$renter_occupied/sixties$occupied_un
 sixties$pct_one_point_0_one_people_per_room_or_more <- 100 *  sixties$persons_per_room_onepone_or_more/sixties$occupied_units
 
 
+# avg_people_per_room
+# Occupied Units by Persons per Room (occupied units)
+sixties$avg_occ_per_room_1960 <- (sixties$persons_per_room_half_or_less * .25 + 
+                                    sixties$persons_per_room_point51_point75 * (.75+.51)/2 + 
+                                    sixties$persons_per_room_point76_one * (1 +.76)/2 + sixties$persons_per_room_onepone_or_more * 1) /(sixties$persons_per_room_half_or_less + sixties$persons_per_room_point51_point75 + sixties$persons_per_room_point76_one + sixties$persons_per_room_onepone_or_more)
+
 # average rent of owner occupied units
 sixties$avg_monthly_contract_rent <- sixties$agg_monthly_contract_rent/ sixties$renter_occupied_units_reporting_rent
 
@@ -1214,6 +1251,7 @@ sixties_recode <- sixties %>%
     weighted_family_income_1960 = weighted_family_income,
     owner_occ_property_value_1960 = owner_occ_property_value,
     avg_age_1960 = avg_age,
+    avg_occ_per_room_1960,
     avg_nunits_1960 = avg_nunits,
     pct_plumbing_fuctional_1960 = pct_plumbing_fuctional,
     pct_shared_or_no_bath_1960 = pct_shared_or_no_bath,
@@ -1284,6 +1322,7 @@ full_40_60_tract <- full_40_60 %>%
     pct_concrete_slab_foundation_1960_in_1940 = pct_concrete_slab_foundation_1960 * intersect_over_1940_tract,
     heating_pct_non_wood_burn_1960_in_1940 = heating_pct_non_wood_burn_1960 * intersect_over_1940_tract,
     avg_nunits_1960_in_1940 =  avg_nunits_1960 * intersect_over_1940_tract, 
+    avg_occ_per_room_1960 = avg_occ_per_room_1960 * intersect_over_1940_tract,
     pct_built_pre_40_1960_in_1940 =  pct_built_pre_40_1960 * intersect_over_1940_tract,
     log_property_value_1960_in_1940 = log_property_value_1960 * intersect_over_1940_tract,
     log_contract_rent_1960_in_1940 = log_contract_rent_1960 * intersect_over_1940_tract,
@@ -1325,6 +1364,7 @@ full_40_60_tract <- full_40_60 %>%
             owner_occ_property_value_1960_in_1940 = sum(owner_occ_property_value_1960_in_1940),
             avg_age_1960 = sum(avg_age_1960),
             avg_nunits_1960 = sum(avg_nunits_1960),
+            avg_occ_per_room_1960 = sum(avg_occ_per_room_1960),
             pct_plumbing_fuctional_1960_in_1940 = sum(pct_plumbing_fuctional_1960_in_1940),
             pct_shared_or_no_bath_1960_in_1940 = sum(pct_shared_or_no_bath_1960_in_1940),
             pct_more_than_one_bathroom_1960_in_1940 =  sum(pct_more_than_one_bathroom_1960_in_1940),
@@ -1339,6 +1379,34 @@ full_40_60_tract <- full_40_60 %>%
             intersect_over_1940_tract_in_1940 = sum(intersect_over_1940_tract_in_1940),
             log_mean_hvalue_1960_in_1940 = sum(log_mean_hvalue_1960_in_1940))
 ```
+
+```{r assess average coverage/similarity between tracts, include = FALSE}
+
+full_40_60 %>%
+  group_by(gisjoin_1940) %>%
+  summarise(mean_intersect_over_tract = mean(intersect_over_1940_tract),
+            median_intersect_over_tract = median(intersect_over_1940_tract),
+            max_intersect_over_tract = max(intersect_over_1940_tract)) %>%
+  mutate(full_coverage = ifelse(mean_intersect_over_tract > .999, 1, 0),
+         near_full_coverage_90 = ifelse(max_intersect_over_tract > .9, 1, 0),
+         near_full_coverage_95 = ifelse(max_intersect_over_tract > .95, 1, 0)) %>%
+  summarise(tot_full_cov = sum(full_coverage), full_cov_90 = sum(near_full_coverage_90), full_cov_95 = sum(near_full_coverage_95))
+
+# create a list of tracts with full coverage only
+gis_1940_full_coverage <- c(full_40_60 %>%
+  group_by(gisjoin_1940) %>%
+  summarise(mean_intersect_over_tract = mean(intersect_over_1940_tract),
+            median_intersect_over_tract = median(intersect_over_1940_tract),
+            max_intersect_over_tract = max(intersect_over_1940_tract)) %>%
+  mutate(full_coverage = ifelse(mean_intersect_over_tract > .999, 1, 0),
+         near_full_coverage_90 = ifelse(max_intersect_over_tract > .9, 1, 0),
+         near_full_coverage_95 = ifelse(max_intersect_over_tract > .95, 1, 0)) %>%
+  filter(full_coverage == 1) %>%
+  select(gisjoin_1940))
+
+
+```
+
 
 
 ```{r sanity check on finished vars}
@@ -1403,10 +1471,11 @@ colnames(full_40_60_tract)
 
 ```
 
-```{r create 1940s unemployment rate var}
+```{r create 1940s unemployment rate var, etc. }
 
 full_40_60_tract <- full_40_60_tract %>%
-  mutate(pct_male_unemployment_1940 = 100 - pct_male_employment_rate_1940)
+  mutate(pct_male_unemployment_1940 = 100 - pct_male_employment_rate_1940,
+         tot_pop_1940 = tot_pop_1940/1000)
   
 
 ```
@@ -1423,6 +1492,16 @@ missing <- full_40_60_tract %>%
 
 summary(missing)
 
+
+# create a subset of the data that only has tracts with full coverage
+
+gis_1940_full_coverage$gisjoin_1940
+
+full_coverage_sub <- full_40_60_tract %>%
+  filter(gisjoin_1940 %in% gis_1940_full_coverage$gisjoin_1940)
+
+# write as csv
+write.csv(full_coverage_sub, "full_coverage_sub.csv")
 
 ```
 

@@ -196,6 +196,7 @@ city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City
 
 # According to census records (https://www2.census.gov/library/publications/decennial/1930/population-volume-1/03815512v1ch07.pdf), NYC contains the 5 boroughs of Bronx, Brooklyn, Manhattan, Queens, and Richmond (Staten Island). All had 1930 pops well over 60k. Should all be included. Writing in these population numbers from the census doc linked here.
 
+
 city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Bronx"] <- 1265258
 city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Brooklyn"] <- 2560401
 city_pop_name_1930_in_richmond$citypop_total[city_pop_name_1930_in_richmond$City == "Manhattan"] <- 1867312

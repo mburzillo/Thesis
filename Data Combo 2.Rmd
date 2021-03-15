@@ -818,10 +818,6 @@ nrow(big_join_demo %>%
   filter(selected_into_treatment == 1))
 
 
-unique(big_join_demo_3$selected_into_treatment)
-unique(big_join_demo_2$selected_tracts)
-unique(big_join_demo_2$holc_coverage_tracts)
-
 
 # seems to be good up through here...
 
