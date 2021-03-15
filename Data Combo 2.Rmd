@@ -551,6 +551,13 @@ big_join_demo$pct_renter_occupied <- 100 * big_join_demo$renter_occupied/big_joi
 big_join_demo$pct_one_point_0_one_people_per_room_or_more <- 100 *  big_join_demo$persons_per_room_onepone_or_more/big_join_demo$occupied_units
 
 
+# avg_people_per_room
+# Occupied Units by Persons per Room (occupied units)
+big_join_demo$avg_occ_per_room_1960 <- (big_join_demo$persons_per_room_half_or_less * .25 + 
+                                    big_join_demo$persons_per_room_point51_point75 * (.75+.51)/2 + 
+                                    big_join_demo$persons_per_room_point76_one * (1 +.76)/2 + big_join_demo$persons_per_room_onepone_or_more * 1) /(big_join_demo$persons_per_room_half_or_less + big_join_demo$persons_per_room_point51_point75 + big_join_demo$persons_per_room_point76_one + big_join_demo$persons_per_room_onepone_or_more)
+
+
 # average rent of owner occupied units
 big_join_demo$avg_monthly_contract_rent <- big_join_demo$agg_monthly_contract_rent/ big_join_demo$renter_occupied_units_reporting_rent
 
@@ -1023,6 +1030,7 @@ big_join_recode <- big_join_final %>%
     owner_occ_property_value_1960 = owner_occ_property_value,
     avg_age_1960 = avg_age,
     avg_nunits_1960 = avg_nunits,
+    avg_occ_per_room_1960,
     pct_plumbing_fuctional_1960 = pct_plumbing_fuctional,
     pct_shared_or_no_bath_1960 = pct_shared_or_no_bath,
     pct_more_than_one_bathroom_1960 =  pct_more_than_one_bathroom,
