@@ -282,9 +282,7 @@ big_join_demo$renter_occupied_units_reporting_rent <- big_join_demo$B8A001
 
 big_join_demo$agg_monthly_contract_rent <- big_join_demo$B8B001
 
-# value of property from printed report (housing units)
-
-
+# value of property from printed report (all housing units)
 big_join_demo$property_value_u5k <- big_join_demo$B7O001
 big_join_demo$property_value_5000_7400 <- big_join_demo$B7O002
 big_join_demo$property_value_7500_9900 <- big_join_demo$B7O003
@@ -1045,7 +1043,7 @@ big_join_recode <- big_join_final %>%
   mutate(log_property_value_1960 = log(weighted_prop_value_1960),
          log_contract_rent_1960 = log(weighted_cash_contract_rent_1960),
          log_family_income_1960 = log(weighted_family_income_1960),
-         log_property_value_1960 = log(owner_occ_property_value_1960),
+         log_owner_occ_property_value_1960 = log(owner_occ_property_value_1960),
          log_city_1940_avg_contract_rent = log(city_1940_avg_contract_rent),
          log_city_1940_avg_h_value_ = log(city_1940_avg_h_value_),
          log_city_1940_avg_wage_emp_males = log(city_1940_avg_wage_emp_males_14_p),
