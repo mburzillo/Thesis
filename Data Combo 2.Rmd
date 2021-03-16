@@ -436,7 +436,8 @@ big_join_demo$pop_density <- big_join_demo$tot_persons_printed/big_join_demo$tra
 
 # pct non-white
 big_join_demo$pct_non_white_printed <- (big_join_demo$black_printed +
-                                      big_join_demo$other_printed)/big_join_demo$tot_persons_printed * 100
+                                      big_join_demo$other_printed)/(big_join_demo$black_printed +
+                                      big_join_demo$other_printed + big_join_demo$white_printed) * 100
 
 # pct black
 big_join_demo$pct_black_printed <- (big_join_demo$black_printed)/big_join_demo$tot_persons_printed * 100
@@ -540,11 +541,11 @@ big_join_demo$occupied_units <- big_join_demo$tot_hunits - big_join_demo$vacant_
 
 
 # pct_owner_occupied out of all units
-big_join_demo$pct_owner_occupied <- 100 * big_join_demo$owner_occupied/big_join_demo$occupied_units
+big_join_demo$pct_owner_occupied <- 100 * big_join_demo$owner_occupied/(big_join_demo$owner_occupied + big_join_demo$renter_occupied)
 
 
 # pct renter occupied (occupied year round h units)
-big_join_demo$pct_renter_occupied <- 100 * big_join_demo$renter_occupied/big_join_demo$occupied_units
+big_join_demo$pct_renter_occupied <- 100 * big_join_demo$renter_occupied/(big_join_demo$owner_occupied + big_join_demo$renter_occupied)
 
 
 # pct units 1.01 or more people per room (highest category)
@@ -998,6 +999,8 @@ big_join_recode <- big_join_final %>%
     city_1940_pct_all_males_18_64_employed,
     city_1940_pct_all_males_14_plus_employed,
     city_1940_pct_completed_hs_25_plus,
+    city_1940_avg_y_school,
+    city_1940_pct_non_white,
     tract_area_1960,
     holc_coverage_tracts,
     selected_tracts, selected_into_treatment,

@@ -100,11 +100,13 @@ ipums_1940_city <- full_join(ipums_1940_hh_level, ipums_1940_person_level) %>%
     city_1940_pct_emp_males_14_plus = pct_emp_males_14_plus,
     city_1940_avg_wage_emp_males_14_p = avg_wage_emp_males_14_p,
     city_1940_pct_black = pct_black_perwt,
+    city_1940_pct_non_white = pct_non_white_perwt,
     city_1940_pct_completed_hs = pct_completed_hs,
     city_1940_pct_completed_hs_male_18_64 = pct_completed_hs_male_18_64,
     city_1940_pct_all_males_18_64_employed = pct_all_males_18_64_employed,
     city_1940_pct_all_males_14_plus_employed = pct_all_males_14_plus_emp,
-    city_1940_pct_completed_hs_25_plus = pct_completed_hs_25_plus
+    city_1940_pct_completed_hs_25_plus = pct_completed_hs_25_plus,
+    city_1940_avg_y_school_perwt = avg_y_school_perwt
   )
 
 city_names_pops_growth_ipums <- left_join(city_names_pops_growth,ipums_1940_city, by = c("numeric_city_code" = "city") )
@@ -715,8 +717,10 @@ tracts_selected <- tracts_selected %>%
     city_reg_estimated_radius = "reg estimated radius",
     city_hh_1940,
     city_1940_pct_owner_occ_non_v:city_1940_pct_black,
+    city_1940_pct_non_white,
     city_1940_pct_emp_males_14_plus,
     city_1940_pct_completed_hs,
+    city_1940_avg_y_school = city_1940_avg_y_school_perwt,
     city_1940_pct_completed_hs_male_18_64,
     city_1940_pct_all_males_18_64_employed,
     city_1940_pct_all_males_14_plus_employed,

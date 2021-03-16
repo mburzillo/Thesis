@@ -290,5 +290,36 @@ cities_60k_plus_full_sample <- ipums_1930_cities_by_pop_full_sample %>%
 
 ipums_1930_cities_by_pop_full_sample  %>%
   filter(state == "IL")
+
+ipums_1930_cities_by_pop_full_sample %>%
+  filter(citypop_total != 0) %>%
+  arrange(-citypop_total)
+```
+
+```{r city population graph for table, include = FALSE}
+
+ipums_full_sample_collapsed_1930 %>%
+  mutate(citypop = citypop * 100/1000) %>%
+  filter(citypop != 0, citypop < 400000/1000) %>%
+  ggplot(aes(x = citypop)) +
+  geom_histogram(bins = 80) +
+  geom_vline(xintercept = 40000/1000, color = "red") +
+  geom_vline(xintercept = 60000/1000, color = "red") +
+  theme_bw() +
+  ggtitle("Histogram of City Populations for all Cities Defined in the 1930 Decennial Census") +
+  xlab("1930 City Population (1000s)") +
+  ylab("Frequency") +
+  labs(caption = "City population is shown for cities defined as place points with city population data in the 1930 Decennial\nCensus. The 18 largest out of the 913 cities total, which had populations above 400,000, were exluded from\nthe visual to better examine the lower range of the distribution. Red bands at populations of 40,000 and\n60,000 delineate the relevant population range for cities considered in the research design. Many large cities\ntoday, including Phoenix, AZ; Ann Arbor, MI; and Raleigh, NC, fell within this range in 1930.") +
+  theme(plot.caption = element_text(hjust = 0, size = 10)) 
+
+ggsave("hist_1930_plot.png",
+       plot = last_plot(),
+       device = png(),
+       width = 7.5, height =6)
+
+ipums_full_sample_collapsed_1930 %>%
+  filter(citypop != 0) 
+  
+
 ```
 

@@ -944,11 +944,11 @@ sixties$occupied_units <- sixties$tot_hunits - sixties$vacant_all
 
 
 # pct_owner_occupied out of all units
-sixties$pct_owner_occupied <- 100 * sixties$owner_occupied/sixties$occupied_units
+sixties$pct_owner_occupied <- 100 * sixties$owner_occupied/(sixties$owner_occupied + sixties$renter_occupied)
 
 
 # pct renter occupied (occupied year round h units)
-sixties$pct_renter_occupied <- 100 * sixties$renter_occupied/sixties$occupied_units
+sixties$pct_renter_occupied <- 100 * sixties$renter_occupied/(sixties$owner_occupied + sixties$renter_occupied)
 
 
 # pct units 1.01 or more people per room (highest category)
@@ -1213,6 +1213,7 @@ sixties$mean_hvalue <- (sixties$hvalue_u_5000 * 2500 +
 
 
 ```
+
 
 
 ```{r rename shit}
@@ -1512,5 +1513,18 @@ full_40_60_tract %>%
   group_by(holc_city, holc_state, numeric_city_code) %>%
   summarise(mean(citypop_1930)) %>%
   view()
+
+full_40_60_tract %>%
+  ungroup()%>%
+  mutate(pct_change_black = 100 * (pct_black_1960_in_1940 - pct_black_1940)/pct_black_1940,
+         pct_change_non_white = 100 * (pct_non_white_1960_in_1940 - pct_non_white_1940)/pct_non_white_1940,
+         pct_white_1960_in_1940 = 1 - pct_non_white_1960_in_1940,
+         pct_change_white = (pct_white_1960_in_1940 - pct_white_1940)/pct_white_1940) %>%
+  select(pct_black_1960_in_1940, pct_black_1940, pct_change_black, pct_non_white_1960_in_1940,pct_non_white_1940, pct_change_non_white, pct_change_white, pct_white_1960_in_1940, pct_grade_d_1940) %>%
+  ggplot(aes(x = pct_grade_d_1940, y = pct_change_white)) +
+  geom_point()+
+  geom_smooth()
+
+
 ```
 
