@@ -1325,7 +1325,6 @@ full_40_60_tract <- full_40_60 %>%
     avg_nunits_1960_in_1940 =  avg_nunits_1960 * intersect_over_1940_tract, 
     avg_occ_per_room_1960 = avg_occ_per_room_1960 * intersect_over_1940_tract,
     pct_built_pre_40_1960_in_1940 =  pct_built_pre_40_1960 * intersect_over_1940_tract,
-    log_property_value_1960_in_1940 = log_property_value_1960 * intersect_over_1940_tract,
     log_contract_rent_1960_in_1940 = log_contract_rent_1960 * intersect_over_1940_tract,
     log_family_income_1960_in_1940 = log_family_income_1960 * intersect_over_1940_tract,
     log_property_value_1960_in_1940 = log_property_value_1960 * intersect_over_1940_tract,
@@ -1373,7 +1372,6 @@ full_40_60_tract <- full_40_60 %>%
             heating_pct_non_wood_burn_1960_in_1940 = sum(heating_pct_non_wood_burn_1960_in_1940),
             avg_nunits_1960_in_1940 =  sum(avg_nunits_1960_in_1940), 
             pct_built_pre_40_1960_in_1940 =  sum(pct_built_pre_40_1960_in_1940),
-            log_property_value_1960_in_1940 = sum(log_property_value_1960_in_1940),
             log_contract_rent_1960_in_1940 = sum(log_contract_rent_1960_in_1940),
             log_family_income_1960_in_1940 = sum(log_family_income_1960_in_1940),
             log_property_value_1960_in_1940 = sum(log_property_value_1960_in_1940),
@@ -1527,4 +1525,11 @@ full_40_60_tract %>%
 
 
 ```
+
+
+```{r}
+associational_full_group_sub <- full_40_60_tract %>%
+  filter(tot_pop_1940 != 0, tot_dwellings_1940 != 0, tot_persons_printed_1960_in_1940 != 0, tot_hunits_1960_in_1940 != 0)
+```
+
 

@@ -1075,4 +1075,45 @@ big_join_recode %>%
   filter(area_accounted_for_1960 >= .5)
 ```
 
+```{r visualizing distribution of pct_grade_D, include = FALSE}
+causal_training_sub <- big_join_recode %>%
+  filter(low_density_1960 != 1, area_accounted_for_1960 >= .5, holc_coverage_tracts == 1, citypop_1930 >= 60000)
+
+causal_training_sub %>%
+  ggplot(aes(x = pct_grade_d)) +
+  geom_histogram(bins = 50) +
+  theme_bw()+
+  ggtitle("Distribution of the HOLC Grade D Coverage Score among 1940s Tracts in the\nTraining Group") +
+  xlab("HOLC Grade D Coverage Score") +
+  ylab("Number of 1940s Census Tracts") +
+  labs(caption = "This plot shows the distribution of the HOLC Grade D Coverage Score, which denotes the percent of a 1940\ncensus tract's area that is covered by an HOLC 'D'/'Red' graded area, for all 1940 census tracts in the\nHOLC grade prediction model training group, which consists of all tracts in HOLC-surveyed cities with 1930\npopulations above 60,000 with at least 50% area overlap with an HOLC-graded area. The distribution is\nheavily concentrated at the extremes of zero and 100.") +
+  theme(plot.caption = element_text(hjust = 0, size = 10)) 
+
+ggsave("causal_training_d_hist.png",
+       plot = last_plot(),
+       device = png(),
+       width = 7.5, height =6)
+```
+
+
+```{r visualizing distribution of pct_grade_D, include = FALSE}
+big_join_recode %>%
+  filter(low_density_1960 != 1, area_accounted_for_1960 >= .5, holc_coverage_tracts == 1, citypop_1930 >= 40000, citypop_1930 <= 60000) %>%
+  ggplot(aes(x = pct_grade_d)) +
+  geom_histogram() +
+  theme_bw()+
+  ggtitle("Distribution of the % HOLC Grade D Score among 1940s Tracts in the Training\nGroup") +
+  xlab("% HOLC Grade D Score") +
+  ylab("Number of 1940s Census Tracts")
+
+```
+
+
+```{r}
+
+causal_full_group_sub <- big_join_recode %>%
+  filter(tot_pop_1940 != 0)
+
+```
+
 
