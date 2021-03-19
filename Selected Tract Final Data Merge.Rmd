@@ -1028,7 +1028,7 @@ tracts_selected %>%
   filter(treatment == 0) %>%
   summarise(mean_persons = mean(weighted_cash_contract_rent, na.rm = T))
 
-
+tracts_selected
 
 ```
 

@@ -166,6 +166,9 @@ big_join %>%
   group_by(selected_into_treatment) %>%
   summarize(sum(count))
 
+
+big_join %>%
+  filter(is.na(area_accounted_for_1960), selected_into_treatment == 1)
 ```
 
 
@@ -1060,6 +1063,11 @@ city_treatment_status_2 <- city_treatment_status %>%
 big_join_recode <- left_join(big_join_recode, city_treatment_status_2)
   
 ```
+```{r}
+# rejoin area accounted for because seems to be missing for some reason
+
+big_join_recode
+```
 
 
 ```{r write to csv}
@@ -1116,4 +1124,68 @@ causal_full_group_sub <- big_join_recode %>%
 
 ```
 
+```{r seeing if correct tracts are being selected, include = FALSE}
+
+desired_tracts <- big_join_recode %>%
+  filter(area_accounted_for_1960 >= .5, citypop_1930 >= 40000, citypop_1930 <= 60000)
+
+selected_by_mechanism <- big_join_recode %>%
+  filter(selected_into_treatment == 1, low_density_1960 == 0)
+
+# 86 tracts in desired tracts that are not in selected tracts
+length(setdiff(desired_tracts$gisjoin_1960, selected_by_mechanism$gisjoin_1960))
+# 266 tracts in selected group that are not in deisred tracts
+length(setdiff(selected_by_mechanism$gisjoin_1960, desired_tracts$gisjoin_1960))
+
+# 338 n both lists
+length(intersect(desired_tracts$gisjoin_1960, selected_by_mechanism$gisjoin_1960))
+
+full_join(desired_tracts, selected_by_mechanism)
+
+338/424
+
+# 242 with > 75% coverage
+44/242
+
+17/97
+
+55/286
+
+
+50/272
+
+
+# for some reason, area accounted for is not joining
+
+big_join_recode %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1, low_density_1960 == 0) %>%
+  group_by(selected_into_treatment, holc_city, citypop_1930) %>%
+  summarise(tot = sum(count), citypop = mean(citypop_1930)) %>%
+  filter(selected_into_treatment == 0) %>%
+  summarise(mean(tot), mean(citypop))
+
+
+
+treat <- big_join_recode %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1, low_density_1960 == 0) %>%
+  group_by(selected_into_treatment, holc_city, citypop_1930) %>%
+  summarise(tracts_in_city = sum(count), citypop_1930 = mean(citypop_1930), citypop_1990 = mean(citypop_1990)) %>%
+  mutate(pct_growth_30_90 = 100 * (citypop_1990 - citypop_1930)/citypop_1930) %>%
+  filter(selected_into_treatment == 1)
+
+control <- big_join_recode %>%
+  mutate(count = 1) %>%
+  filter(selected_tracts == 1, low_density_1960 == 0) %>%
+  group_by(selected_into_treatment, holc_city, citypop_1930) %>%
+  summarise(tracts_in_city = sum(count), citypop_1930 = mean(citypop_1930), citypop_1990 = mean(citypop_1990)) %>%
+  mutate(pct_growth_30_90 = 100 * (citypop_1990 - citypop_1930)/citypop_1930) %>%
+  filter(selected_into_treatment == 0)
+  
+mean(treat$citypop_1930)
+mean(control$citypop_1930)
+mean(treat$pct_growth_30_90)
+mean(control$pct_growth_30_90)
+```
 
