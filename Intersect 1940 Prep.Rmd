@@ -1530,6 +1530,16 @@ full_40_60_tract %>%
 ```{r}
 associational_full_group_sub <- full_40_60_tract %>%
   filter(tot_pop_1940 != 0, tot_dwellings_1940 != 0, tot_persons_printed_1960_in_1940 != 0, tot_hunits_1960_in_1940 != 0)
+
+
+associational_full_group_sub %>%
+  mutate(tracts = 1) %>%
+  filter(!(is.na(citypop_1930)), !(is.na(citypop_1930))) %>%
+  group_by(region, holc_state, holc_city, citypop_1930) %>%
+  summarise(n_tracts = sum(tracts)) %>%view()
 ```
 
+```{r}
+
+```
 

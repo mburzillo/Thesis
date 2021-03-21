@@ -1189,3 +1189,8 @@ mean(treat$pct_growth_30_90)
 mean(control$pct_growth_30_90)
 ```
 
+```{r}
+
+colnames(big_join_recode)
+```
+
