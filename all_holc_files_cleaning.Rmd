@@ -75,8 +75,8 @@ all_holc_tract_grades <- all_holc_overlay %>%
     )
 
 
-all_holc_overlay %>%
-  filter(city == "Greater Kansas City")
+all_holc_tract_grades %>%
+  filter(GISJOIN == "G0400130PH0095")
 ```
 
 ```{r joining population data with data from Caclulating 1930_City_Populations RMD, include = FALSE}
